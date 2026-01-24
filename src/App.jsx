@@ -19,7 +19,7 @@ function App() {
     return (
         <AuthProvider>
             <CartProvider>
-                <Router>
+                <Router basename="/swapsafe-marketplace">
                     <div className="app">
                         <Header />
                         <main className="main-content">
