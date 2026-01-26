@@ -23,7 +23,15 @@ function ProductCard({ product }) {
     return (
         <Link to={`/product/${id}`} className="product-card card">
             <div className="product-image">
-                <img src={images[0]} alt={title} loading="lazy" />
+                <img
+                    src={images[0]}
+                    alt={title}
+                    loading="lazy"
+                    onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/400x400/1a1a2e/8b5cf6?text=No+Image';
+                    }}
+                />
 
                 {/* Badges */}
                 {featured && (

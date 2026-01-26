@@ -549,6 +549,8 @@
 }
 
 .deco-circle {
+    display: none;
+    /* Hidden to fix visual bug */
     position: absolute;
     border-radius: 50%;
     opacity: 0.15;
