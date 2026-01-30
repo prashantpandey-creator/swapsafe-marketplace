@@ -12,7 +12,11 @@ const getToken = () => localStorage.getItem('swapsafe_token');
 const apiRequest = async (endpoint, options = {}) => {
     const token = getToken();
 
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
     const config = {
+        signal: controller.signal,
         headers: {
             'Content-Type': 'application/json',
             ...(token && { Authorization: `Bearer ${token}` }),
@@ -21,10 +25,12 @@ const apiRequest = async (endpoint, options = {}) => {
         ...options
     };
 
-    console.log(`📡 Fetching: ${API_URL}${endpoint}`); // Debug Log
+    console.log(`📡 Fetching: ${API_URL}${endpoint}`);
 
     try {
         const response = await fetch(`${API_URL}${endpoint}`, config);
+        clearTimeout(id);
+
         const data = await response.json();
 
         if (!response.ok) {
@@ -34,7 +40,14 @@ const apiRequest = async (endpoint, options = {}) => {
 
         return data;
     } catch (error) {
+        clearTimeout(id);
         console.error(`💥 Network/Fetch Error for ${endpoint}:`, error);
+        if (error.name === 'AbortError') {
+            throw new Error('Request timed out. Server might be down.');
+        }
+        if (error.message.includes('Failed to fetch')) {
+            throw new Error('Cannot connect to server. Please check your connection.');
+        }
         throw error;
     }
 };
