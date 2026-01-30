@@ -1,8 +1,40 @@
+```css
 /* Browse Page Styles */
 
 .browse-page {
+    position: relative;
     min-height: 100vh;
-    background: transparent;
+    /* Clean slate for stacking */
+    isolation: isolate;
+}
+
+/* Guruji / Shadow Warrior Background */
+.browse-page::before {
+    content: '';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100vw;
+    height: 100vh;
+    background-image: url('/src/assets/shadow_guruji_warrior.png');
+    /* Will need to move image here */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.15;
+    /* Subtle/Shadowy */
+    filter: grayscale(100%) contrast(120%) brightness(0.8);
+    pointer-events: none;
+    z-index: -1;
+    mix-blend-mode: overlay;
+}
+
+/* Ensure content is readable */
+.browse-content,
+.browse-header {
+    position: relative;
+    z-index: 2;
 }
 
 /* Header */

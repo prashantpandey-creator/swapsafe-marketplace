@@ -2,6 +2,9 @@
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+console.log('🔌 API Service Initialized');
+console.log('🌍 API URL:', API_URL);
+
 // Helper to get auth token
 const getToken = () => localStorage.getItem('swapsafe_token');
 
@@ -18,14 +21,22 @@ const apiRequest = async (endpoint, options = {}) => {
         ...options
     };
 
-    const response = await fetch(`${API_URL}${endpoint}`, config);
-    const data = await response.json();
+    console.log(`📡 Fetching: ${API_URL}${endpoint}`); // Debug Log
 
-    if (!response.ok) {
-        throw new Error(data.error || 'API request failed');
+    try {
+        const response = await fetch(`${API_URL}${endpoint}`, config);
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error('❌ API Error Response:', data);
+            throw new Error(data.error || 'API request failed');
+        }
+
+        return data;
+    } catch (error) {
+        console.error(`💥 Network/Fetch Error for ${endpoint}:`, error);
+        throw error;
     }
-
-    return data;
 };
 
 // ============ Auth API ============

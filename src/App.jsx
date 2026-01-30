@@ -25,7 +25,7 @@ function App() {
             <CartProvider>
                 <Router>
                     <BackgroundManager />
-                    <div className="app">
+                    <div className="app" style={{ position: 'relative', zIndex: 1 }}>
                         <Header />
                         <main className="main-content" style={{ paddingTop: '80px' }}>
                             <Routes>
