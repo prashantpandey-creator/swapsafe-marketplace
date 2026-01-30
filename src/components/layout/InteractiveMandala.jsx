@@ -22,48 +22,27 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             mouseRef.current = { x: e.clientX, y: e.clientY };
         };
 
-        window.addEventListener('resize', handleResize);
-        window.addEventListener('mousemove', handleMouseMove);
-        // Add touch support for "taking control" on mobile tap
-        window.addEventListener('touchstart', (e) => {
+        const handleTouch = (e) => {
             isAuto.current = false;
             mouseRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-        });
+        }
+
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('touchstart', handleTouch);
+        window.addEventListener('touchmove', handleTouch);
 
         handleResize();
 
-        // PARTICLE SYSTEM (Class definitions omitted for brevity, implied same)
-        // ... (Keep existing Particle class)
-
-        const drawMandala = () => {
-            tick++;
-
-            const { width, height } = canvas;
-            const cx = width / 2;
-            const cy = height / 2;
-
-            // AUTOPILOT LOGIC
-            if (isAuto.current) {
-                // Lissajous figure for organic wandering
-                const time = tick * 0.005;
-                const radiusX = width * 0.3;
-                const radiusY = height * 0.3;
-
-                mouseRef.current = {
-                    x: cx + Math.sin(time) * radiusX,
-                    y: cy + Math.cos(time * 1.5) * radiusY
-                };
-            }
-
-            const mx = mouseRef.current.x;
-            const my = mouseRef.current.y;
+        // PARTICLE SYSTEM
+        class Particle {
             constructor(x, y, angle, speed) {
                 this.x = x;
                 this.y = y;
                 this.vx = Math.cos(angle) * speed;
                 this.vy = Math.sin(angle) * speed;
                 this.age = 0;
-                this.life = 400 + Math.random() * 200; // Lives long enough to reach edge
+                this.life = 400 + Math.random() * 200;
             }
 
             update(mouse) {
@@ -71,9 +50,6 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                 this.y += this.vy;
                 this.age++;
 
-                // Slight "attraction" to mouse? 
-                // Or "steering" towards mouse
-                // Let's make it subtle: gravity well
                 const dx = mouse.x - this.x;
                 const dy = mouse.y - this.y;
                 const dist = Math.hypot(dx, dy);
@@ -99,6 +75,20 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             const { width, height } = canvas;
             const cx = width / 2;
             const cy = height / 2;
+
+            // AUTOPILOT LOGIC
+            if (isAuto.current) {
+                // Lissajous figure for organic wandering
+                const time = tick * 0.005;
+                const radiusX = width * 0.3;
+                const radiusY = height * 0.3;
+
+                mouseRef.current = {
+                    x: cx + Math.sin(time) * radiusX,
+                    y: cy + Math.cos(time * 1.5) * radiusY
+                };
+            }
+
             const mx = mouseRef.current.x;
             const my = mouseRef.current.y;
 
@@ -107,22 +97,16 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             ctx.fillRect(0, 0, width, height);
 
             // --- SPAWN NEW PARTICLES ---
-            // Slowly and deliberately
-            if (tick % 5 === 0) { // Every 5 frames
+            if (tick % 5 === 0) {
                 const spawnCount = 4;
                 for (let i = 0; i < spawnCount; i++) {
-                    // Bias angle towards mouse?
                     const angleToMouse = Math.atan2(my - cy, mx - cx);
-                    // Random angle but weighted? No, let's do full spread
-                    // But maybe faster towards mouse
-
                     const angle = (Math.random() * Math.PI * 2);
                     const speed = 0.5 + Math.random() * 0.5;
 
-                    // If angle is close to mouse angle, boost speed?
                     const angleDiff = Math.abs(angle - angleToMouse);
                     let finalSpeed = speed;
-                    if (angleDiff < 1) finalSpeed += 1; // Faster towards mouse
+                    if (angleDiff < 1) finalSpeed += 1;
 
                     particles.push(new Particle(cx, cy, angle, finalSpeed));
                 }
@@ -132,26 +116,20 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             ctx.strokeStyle = 'rgba(255, 165, 0, 0.15)';
             ctx.lineWidth = 1;
 
-            // Spatial Partitioning (Grid) for performance? 
-            // Naive N^2 is fine for < 300 particles
-            if (particles.length > 500) particles.shift(); // Cap count
+            if (particles.length > 500) particles.shift();
 
             for (let i = 0; i < particles.length; i++) {
                 const p = particles[i];
                 p.update({ x: mx, y: my });
 
-                // Draw Connections (The "Connected" part)
-                // Connect to neighbors close by
                 for (let j = i + 1; j < particles.length; j++) {
                     const p2 = particles[j];
                     const dx = p.x - p2.x;
                     const dy = p.y - p2.y;
                     const distSq = dx * dx + dy * dy;
 
-                    if (distSq < 6000) { // ~80px max dist
+                    if (distSq < 6000) {
                         const alpha = 1 - (distSq / 6000);
-
-                        // Color based on distance to center (Rainbow Web)
                         const distToCenter = Math.hypot(p.x - cx, p.y - cy);
                         const hue = (tick * 0.5 + distToCenter * 0.5) % 360;
 
@@ -188,6 +166,8 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         return () => {
             window.removeEventListener('resize', handleResize);
             window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('touchstart', handleTouch);
+            window.removeEventListener('touchmove', handleTouch);
             cancelAnimationFrame(animationFrameId);
         };
     }, [variant]); // Re-run effect if variant changes
