@@ -8,7 +8,11 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
         let animationFrameId;
-        let time = 0;
+
+        // Two time scales
+        let time = 0; // Slow, for geometry evolution
+        let tick = 0; // Fast, for flickering/electricity
+
         let bloom = 0;
 
         const handleResize = () => {
@@ -29,8 +33,9 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         const GOLDEN_ANGLE = PI * (3 - Math.sqrt(5));
 
         const drawMandala = () => {
-            // HIGH SPEED & TRIPPY
-            time += 0.005;
+            // TIME SCALES
+            time += 0.002; // Medium generation speed (was 0.005)
+            tick += 0.1;   // Fast flicker speed
 
             if (bloom < 1) bloom += 0.005;
             const activeBloom = bloom * (2 - bloom);
@@ -41,88 +46,104 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             const mx = mouseRef.current.x;
             const my = mouseRef.current.y;
 
-            // TRIPPY TRAILS: Don't fully clear the canvas
-            // Using a low opacity fill creates a "motion blur" / dream trail effect
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.15)';
+            // CLEARING: Increased opacity to clean up the "mess"
+            // 0.25 allows some trails but keeps it readable
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.25)';
             ctx.fillRect(0, 0, width, height);
 
-            ctx.lineWidth = 2; // Thicker electronic lines
+            ctx.lineWidth = 2;
 
             const nx = (mx / width) - 0.5;
             const ny = (my / height) - 0.5;
             const mouseDist = Math.hypot(nx, ny);
 
-            // --- LAYER 1: NEON PHYLLOTAXIS (Electronic Seeds) ---
+            // --- LAYER 1: STABLE PHYLLOTAXIS (The Base) ---
             const dots = 300 * activeBloom;
-            const spread = 5 + Math.sin(time * 2) * 2; // Breathing spread
+            const spread = 6;
 
             for (let i = 0; i < dots; i++) {
-                const r = spread * Math.sqrt(i) * (1 + mouseDist);
-                const theta = i * GOLDEN_ANGLE + time * 0.5;
+                const r = spread * Math.sqrt(i) * (1 + mouseDist * 0.5);
+                const theta = i * GOLDEN_ANGLE + time * 0.2; // Slow rotation
 
                 const x = cx + r * Math.cos(theta);
                 const y = cy + r * Math.sin(theta);
 
-                const hue = (time * 100 + i * 0.5) % 360; // RGB Rainbow Cycle
-                ctx.fillStyle = `hsla(${hue}, 100%, 70%, 0.8)`;
+                // Color flickers fast (using 'tick')
+                const hue = (tick * 10 + i * 0.5) % 360;
+                ctx.fillStyle = `hsla(${hue}, 100%, 60%, 0.6)`;
 
                 ctx.beginPath();
                 ctx.arc(x, y, 1.5, 0, TAU);
                 ctx.fill();
             }
 
-            // --- LAYER 2: HYPER ROSE CURVES (The Trippy Flower) ---
-            // Overlapping high-frequency rose curves
+            // --- LAYER 2: MORPHING GEOMETRY (The "Generation") ---
+            // We want to see the pattern "generating" => k changing smoothly
             const roseLayers = 3;
-            const kBase = 4;
+            const maxRadius = 350;
 
             for (let j = 0; j < roseLayers; j++) {
                 ctx.beginPath();
-                const radius = 200 * (j + 1) * activeBloom;
-                const phase = (time * (j + 1)) + (j * TAU / 3);
-                const k = kBase + Math.sin(time * 0.5 + j) * 2; // Morphing number of petals
+                const layerIndex = j + 1;
+                const radius = (maxRadius / roseLayers) * layerIndex * activeBloom;
 
-                // Electronic Color Palette: Cyan, Magenta, Electric Gold
-                const layerHue = (time * 50 + j * 120) % 360;
-                ctx.strokeStyle = `hsla(${layerHue}, 100%, 60%, 0.4)`;
-                ctx.shadowBlur = 10;
+                const rotation = time * (0.5 / layerIndex);
+
+                // The "Generation" logic: k evolves over time
+                // Patters shift from 4 petals -> 8 -> 6 etc.
+                const kBase = 4 + Math.sin(time * 0.5) * 3;
+
+                // Fast flicker color
+                const layerHue = (tick * 5 + j * 90) % 360;
+                ctx.strokeStyle = `hsla(${layerHue}, 100%, 65%, 0.5)`;
+
+                // Electric Jitter (Fast tick)
+                const jitter = Math.sin(tick * 2 + j) * 2;
+                ctx.shadowBlur = 10 + jitter;
                 ctx.shadowColor = `hsla(${layerHue}, 100%, 50%, 0.8)`;
 
-                for (let theta = 0; theta < TAU * k; theta += 0.05) {
+                const resolution = 0.05;
+                for (let theta = 0; theta < TAU * Math.ceil(kBase + 2); theta += resolution) {
                     // Rose Equation: r = cos(k * theta)
-                    // Distorted by mouse
-                    const distortion = Math.sin(theta * 10 + time * 5) * (mouseDist * 50);
-                    const r = (radius * Math.cos(k * theta)) + distortion;
+                    // The "k" is the gene of the flower
+                    const k = kBase + (mouseDist * 2);
 
-                    const x = cx + r * Math.cos(theta + phase);
-                    const y = cy + r * Math.sin(theta + phase);
+                    const r = radius * Math.cos(k * theta);
+
+                    const x = cx + r * Math.cos(theta + rotation);
+                    const y = cy + r * Math.sin(theta + rotation);
 
                     if (theta === 0) ctx.moveTo(x, y);
                     else ctx.lineTo(x, y);
                 }
                 ctx.stroke();
-                ctx.shadowBlur = 0; // Reset
+                ctx.shadowBlur = 0;
             }
 
-            // --- LAYER 3: ELECTRIC ARCS (The Connectivity) ---
-            // Random lightning-like connections
-            if (Math.random() > 0.8) {
-                const lightningPoints = 5;
-                ctx.beginPath();
-                const angleStart = Math.random() * TAU;
-                let lx = cx + Math.cos(angleStart) * 100;
-                let ly = cy + Math.sin(angleStart) * 100;
-                ctx.moveTo(lx, ly);
+            // --- LAYER 3: HIGH SPEED DATA STREAMS (The "Fast" part) ---
+            // Orbiting electrons that move VERY fast
+            const particles = 12;
+            const orbitR = 400 * activeBloom;
 
-                for (let p = 0; p < lightningPoints; p++) {
-                    lx += (Math.random() - 0.5) * 150;
-                    ly += (Math.random() - 0.5) * 150;
-                    ctx.lineTo(lx, ly);
+            for (let p = 0; p < particles; p++) {
+                // Moving fast around the ring
+                const angle = (p / particles) * TAU + (tick * 0.05);
+                const x = cx + orbitR * Math.cos(angle);
+                const y = cy + orbitR * Math.sin(angle);
+
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, TAU);
+                ctx.fill();
+
+                // Connect to center briefly to show "beams"
+                if (Math.random() > 0.95) {
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(x, y);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${Math.random() * 0.5})`;
+                    ctx.stroke();
                 }
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-                ctx.lineWidth = 3;
-                ctx.stroke();
-                ctx.lineWidth = 2; // Reset
             }
 
             animationFrameId = requestAnimationFrame(drawMandala);
