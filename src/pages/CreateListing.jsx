@@ -130,6 +130,49 @@ function CreateListing() {
         }
     }
 
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    const handleMagicFill = async () => {
+        if (formData.images.length === 0) {
+            setErrors({ ...errors, images: 'Upload a photo first to use Magic Fill' });
+            return;
+        }
+
+        setIsAnalyzing(true);
+        try {
+            // In real app, we'd pass the actual image file
+            const analysis = await aiAPI.analyzeImage(formData.imageFiles[0]);
+
+            setFormData(prev => ({
+                ...prev,
+                title: analysis.title,
+                category: analysis.category,
+                condition: analysis.condition,
+                description: prev.description || `${analysis.title}. ${analysis.features.join('. ')}.`,
+                price: analysis.estimatedPrice.toString(),
+                originalPrice: analysis.originalPrice.toString()
+            }));
+
+            // Also set estimation data for later steps
+            setAiEstimate({
+                value: analysis.estimatedPrice,
+                retailPrice: analysis.originalPrice,
+                confidence: analysis.confidence,
+                reasoning: analysis.reasoning,
+                priceRange: { low: analysis.estimatedPrice * 0.9, high: analysis.estimatedPrice * 1.1 }
+            });
+
+            // Move to Step 1 to show filled data? Or stay here?
+            // Staying here lets them see "Magic Fill" worked, then they go back/forward
+
+        } catch (error) {
+            console.error(error);
+            setErrors({ ...errors, images: 'AI Analysis failed. Please enter details manually.' });
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
     const handleSubmit = async () => {
         if (!validateStep(3)) return
 
@@ -346,6 +389,47 @@ function CreateListing() {
                                 )}
                             </div>
                             {errors.images && <span className="form-error">{errors.images}</span>}
+
+                            {/* AI Magic Fill Button */}
+                            {formData.images.length > 0 && (
+                                <div className="magic-fill-section glass-panel p-4 mt-4 rounded-xl border border-legion-gold/30 bg-legion-gold/5">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-legion-gold/20 flex items-center justify-center text-legion-gold">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+                                                    <path d="M12 2a10 10 0 1 0 10 10H12V2z" />
+                                                    <path d="M21 12h-8" />
+                                                    <path d="M12 12v8" />
+                                                    <path d="M15 9l-3 3-3-3" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-white">Visual Verifier™</h4>
+                                                <p className="text-xs text-slate-400">Auto-fill details from your photos using AI</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            className="btn btn-primary btn-sm flex items-center gap-2"
+                                            onClick={handleMagicFill}
+                                            disabled={isAnalyzing}
+                                        >
+                                            {isAnalyzing ? (
+                                                <>
+                                                    <span className="spinner w-4 h-4"></span>
+                                                    Scanning...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                                                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                                                    </svg>
+                                                    Magic Fill
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="photo-tips">
                                 <h4>Photo Tips</h4>
