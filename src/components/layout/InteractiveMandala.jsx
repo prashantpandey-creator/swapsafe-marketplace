@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 
 const InteractiveMandala = ({ variant = 'home' }) => {
     const canvasRef = useRef(null);
+    const mouseRef = useRef({ x: 0, y: 0 });
     const isAuto = useRef(true); // Start in autopilot mode
 
     useEffect(() => {
@@ -9,12 +10,19 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         const ctx = canvas.getContext('2d');
         let animationFrameId;
 
+        // Initialize mouse in center
+        mouseRef.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+
         let particles = [];
         let tick = 0;
 
         const handleResize = () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            // Reset mouse to center on resize if still auto
+            if (isAuto.current) {
+                mouseRef.current = { x: canvas.width / 2, y: canvas.height / 2 };
+            }
         };
 
         const handleMouseMove = (e) => {
@@ -50,6 +58,7 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                 this.y += this.vy;
                 this.age++;
 
+                // Slight "attraction" to mouse (gravity well)
                 const dx = mouse.x - this.x;
                 const dy = mouse.y - this.y;
                 const dist = Math.hypot(dx, dy);
@@ -83,9 +92,10 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                 const radiusX = width * 0.3;
                 const radiusY = height * 0.3;
 
+                // Wander around center
                 mouseRef.current = {
                     x: cx + Math.sin(time) * radiusX,
-                    y: cy + Math.cos(time * 1.5) * radiusY
+                    y: cy + Math.cos(time * 1.3) * radiusY
                 };
             }
 
@@ -122,6 +132,7 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                 const p = particles[i];
                 p.update({ x: mx, y: my });
 
+                // Draw Connections
                 for (let j = i + 1; j < particles.length; j++) {
                     const p2 = particles[j];
                     const dx = p.x - p2.x;
