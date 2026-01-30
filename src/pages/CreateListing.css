@@ -561,6 +561,225 @@
     text-align: center;
 }
 
+/* Magic Camera & AI Scanner */
+.magic-upload-step {
+    text-align: center;
+    padding: var(--space-8) 0;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.magic-header {
+    margin-bottom: var(--space-10);
+}
+
+.magic-icon {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: var(--space-4);
+    filter: drop-shadow(0 0 20px rgba(253, 224, 71, 0.4));
+}
+
+.magic-header h1 {
+    font-size: 3rem;
+    background: var(--gradient-text);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: var(--space-2);
+}
+
+.upload-zone {
+    max-width: 500px;
+    margin: 0 auto var(--space-6);
+    aspect-ratio: 4/3;
+    background: rgba(255, 255, 255, 0.03);
+    border: 3px dashed rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-2xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.upload-zone:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--primary-400);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.camera-icon-large {
+    font-size: 4rem;
+    margin-bottom: var(--space-2);
+    opacity: 0.8;
+}
+
+.upload-cta {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: white;
+}
+
+.upload-sub {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+}
+
+/* AI Overlay */
+.ai-scanning-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.scanner-container {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.scanner-circle {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    margin-bottom: var(--space-6);
+    box-shadow: 0 0 50px rgba(99, 102, 241, 0.3);
+}
+
+.scanning-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.6;
+}
+
+.scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--primary-400);
+    box-shadow: 0 0 15px var(--primary-400);
+    animation: scanMove 1.5s ease-in-out infinite;
+}
+
+@keyframes scanMove {
+    0% {
+        top: 0;
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        top: 100%;
+        opacity: 0;
+    }
+}
+
+.typewriter {
+    font-family: monospace;
+    font-size: var(--font-size-lg);
+    color: var(--primary-300);
+    border-right: 2px solid var(--primary-400);
+    white-space: nowrap;
+    overflow: hidden;
+    animation: typing 3s steps(30, end), blink .75s step-end infinite;
+    display: block;
+    margin-bottom: var(--space-2);
+}
+
+@keyframes typing {
+    from {
+        width: 0
+    }
+
+    to {
+        width: 100%
+    }
+}
+
+@keyframes blink {
+
+    from,
+    to {
+        border-color: transparent
+    }
+
+    50% {
+        border-color: var(--primary-400);
+    }
+}
+
+.listing-progress-compact {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-6);
+    padding: 0 var(--space-4);
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+}
+
+.back-btn:hover {
+    color: white;
+}
+
+.steps-dots {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.dot.active {
+    background: var(--primary-500);
+}
+
 /* Responsive */
 @media (max-width: 600px) {
     .photo-grid {

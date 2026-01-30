@@ -185,13 +185,8 @@ async function createUsers() {
             continue;
         }
 
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(userData.password, salt);
-
         user = new User({
-            ...userData,
-            password: hashedPassword
+            ...userData
         });
 
         await user.save();
@@ -266,6 +261,9 @@ async function seed() {
     console.log('================================\n');
 
     await connectDB();
+
+    // Clear existing data to ensure passwords are fresh
+    await clearExistingData();
 
     // Create users
     const users = await createUsers();

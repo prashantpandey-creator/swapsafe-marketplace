@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { formatPrice, getTimeAgo, getConditionColor } from '../../data/mockData';
 import GuardianBadge from '../trust/GuardianBadge';
+import { useWishlist } from '../../context/WishlistContext';
 import './ProductCard.css';
 
 function ProductCard({ product }) {
@@ -26,13 +27,24 @@ function ProductCard({ product }) {
     const productId = _id || id
     const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0
     const hasDelivery = deliveryAvailable || deliveryOptions?.shipping
-    const sellerVerified = seller.verified || seller.isVerified
-    const sellerRating = seller.rating || 0
+    // Defensive coding: seller might be an empty object, or the destructuring default might be overridden by null
+    const safeSeller = seller || {}
+    const sellerVerified = safeSeller.verified || safeSeller.isVerified
+    const sellerRating = safeSeller.rating || 0
     // ... existing avatar logic ...
-    const sellerAvatar = seller.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.name || 'User')}&background=8b5cf6&color=fff`
+    const sellerAvatar = safeSeller.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeSeller.name || 'User')}&background=8b5cf6&color=fff`
 
     // Handle missing images
     const imageUrl = images.length > 0 ? images[0] : 'https://via.placeholder.com/400x400/1a1a2e/8b5cf6?text=No+Image'
+
+    const { isInWishlist, toggleWishlist } = useWishlist()
+    const isLiked = isInWishlist(productId)
+
+    const handleWishlistToggle = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        toggleWishlist(product)
+    }
 
     return (
         <Link to={`/product/${productId}`} className="product-card">
@@ -65,8 +77,12 @@ function ProductCard({ product }) {
 
                 {/* Quick Actions Overlay (Hover) */}
                 <div className="product-actions">
-                    <button className="action-btn" title="Add to Wishlist" onClick={(e) => e.preventDefault()}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <button
+                        className={`action-btn ${isLiked ? 'bg-pink-500 text-white border-pink-500' : ''}`}
+                        title={isLiked ? "Remove from Wishlist" : "Add to Wishlist"}
+                        onClick={handleWishlistToggle}
+                    >
+                        <svg viewBox="0 0 24 24" fill={isLiked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                         </svg>
                     </button>
@@ -101,9 +117,9 @@ function ProductCard({ product }) {
 
                 <div className="product-footer">
                     <div className="seller-info">
-                        <img src={sellerAvatar} alt={seller.name || 'Seller'} className="seller-avatar" />
+                        <img src={sellerAvatar} alt={safeSeller.name || 'Seller'} className="seller-avatar" />
                         <span className="seller-name">
-                            {seller.name || 'Anonymous'}
+                            {safeSeller.name || 'Anonymous'}
                             {sellerVerified && (
                                 <svg viewBox="0 0 24 24" fill="currentColor" className="verified-icon">
                                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />

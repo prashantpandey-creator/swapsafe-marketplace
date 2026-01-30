@@ -1,0 +1,26 @@
+/* Settings.css */
+.settings-page {
+    min-height: 80vh;
+}
+
+.settings-sidebar {
+    position: sticky;
+    top: 100px;
+}
+
+@media (max-width: 768px) {
+    .settings-sidebar {
+        position: relative;
+        top: 0;
+        margin-bottom: 2rem;
+    }
+}
+
+.form-group label {
+    font-weight: 500;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    box-shadow: 0 0 0 2px rgba(255, 165, 0, 0.2);
+}

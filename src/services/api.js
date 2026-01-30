@@ -190,18 +190,76 @@ export const aiAPI = {
     }
 };
 
+// ============ Payment/Order API ============
+
+export const paymentAPI = {
+    createOrder: async (orderData) => {
+        return await apiRequest('/payment/create-order', {
+            method: 'POST',
+            body: JSON.stringify(orderData)
+        });
+    },
+
+    verifyPayment: async (paymentData) => {
+        return await apiRequest('/payment/verify', {
+            method: 'POST',
+            body: JSON.stringify(paymentData)
+        });
+    },
+
+    getOrders: async (role = 'buyer') => {
+        return await apiRequest(`/payment/orders?role=${role}`);
+    },
+
+    getOrderById: async (id) => {
+        return await apiRequest(`/payment/orders/${id}`);
+    }
+};
+
+// ============ Shield/Safety API ============
+
+export const shieldAPI = {
+    report: async (reportData) => {
+        return await apiRequest('/shield/report', {
+            method: 'POST',
+            body: JSON.stringify(reportData)
+        });
+    },
+
+    getTrustScore: async (userId) => {
+        return await apiRequest(`/shield/trust-score/${userId}`);
+    },
+
+    analyzeListing: async (data) => {
+        return await apiRequest('/shield/analyze-listing', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+};
+
 // ============ Image Upload Helper ============
 
+// Image Upload Helper
 export const uploadImage = async (file) => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            // For now, return base64 - in production, upload to cloud storage
-            resolve(reader.result);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        headers: {
+            ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: formData
     });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Upload failed');
+    }
+
+    return data.url; // Returns Cloudinary URL
 };
 
 export const uploadImages = async (files) => {
@@ -213,6 +271,8 @@ export default {
     auth: authAPI,
     listings: listingsAPI,
     ai: aiAPI,
+    payment: paymentAPI,
+    shield: shieldAPI,
     uploadImage,
     uploadImages
 };

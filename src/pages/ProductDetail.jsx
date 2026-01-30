@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { Shield, Check, MapPin, MessageSquare, ShoppingBag, Heart, Share2, AlertTriangle, Package, Calendar, Flag } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import { listingsAPI } from '../services/api'
+import { listingsAPI, shieldAPI } from '../services/api'
 import { formatPrice, getTimeAgo, getConditionColor, conditions } from '../data/mockData'
 import GuardianBadge from '../components/trust/GuardianBadge'
-import TrustIndicators from '../components/trust/TrustIndicators'
-import './ProductDetail.css'
+import './ProductDetail.css' // We can keep this for specific overrides, but mostly use Tailwind
 
 function ProductDetail() {
     const { id } = useParams()
@@ -17,9 +18,13 @@ function ProductDetail() {
     const [product, setProduct] = useState(null)
     const [selectedImage, setSelectedImage] = useState(0)
     const [showContactModal, setShowContactModal] = useState(false)
-    const [deliveryMethod, setDeliveryMethod] = useState('meetup')
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState(null)
+
+    // Scroll to top on mount
+    useEffect(() => {
+        window.scrollTo(0, 0)
+    }, [id])
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -41,18 +46,18 @@ function ProductDetail() {
 
     if (isLoading) {
         return (
-            <div className="product-detail-loading">
-                <div className="skeleton" style={{ width: '100%', height: '400px' }}></div>
+            <div className="min-h-screen pt-24 pb-12 flex justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-legion-gold"></div>
             </div>
         )
     }
 
     if (!product) {
         return (
-            <div className="product-not-found container">
-                <h2>Product Not Found</h2>
-                <p>The item you're looking for doesn't exist or has been removed.</p>
-                <Link to="/browse" className="btn btn-primary">Browse Items</Link>
+            <div className="min-h-screen pt-24 pb-12 container mx-auto px-4 text-center">
+                <h2 className="text-2xl font-bold mb-4">Item Not Found</h2>
+                <p className="text-gray-400 mb-6">The listing you are looking for has been removed or sold.</p>
+                <Link to="/browse" className="btn btn-primary">Back to Market</Link>
             </div>
         )
     }
@@ -64,250 +69,318 @@ function ProductDetail() {
         originalPrice,
         category,
         condition,
-        images,
-        seller,
+        images = [],
+        seller = {}, // Safe access
         location,
         createdAt,
-        views,
-        likes,
         aiVerified,
-        aiScore,
+        views,
         deliveryAvailable,
-        meetupAvailable
+        deliveryOptions
     } = product
 
     const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0
     const conditionInfo = conditions.find(c => c.value === condition)
-    const isOwnListing = user?.id === seller.id
+    const isOwnListing = user?.id === (seller._id || seller.id)
+    const safeSeller = seller || {}
 
     const handleBuyNow = () => {
-        if (!isAuthenticated) {
-            navigate('/login', { state: { from: `/product/${id}` } })
-            return
-        }
-        navigate(`/checkout/${id}?method=${deliveryMethod}`)
+        if (!isAuthenticated) return navigate('/login', { state: { from: `/product/${id}` } })
+        navigate(`/checkout/${id}`)
     }
 
     const handleAddToCart = () => {
+        if (!isAuthenticated) return navigate('/login', { state: { from: `/product/${id}` } })
         addToCart({
-            id: product.id,
+            id: product._id || product.id,
             title: product.title,
             price: product.price,
             image: product.images[0],
-            seller: product.seller,
-            deliveryMethod
+            seller: safeSeller,
+            deliveryMethod: deliveryAvailable ? 'shipping' : 'meetup'
         })
     }
 
     const handleContact = () => {
-        if (!isAuthenticated) {
-            navigate('/login', { state: { from: `/product/${id}` } })
-            return
-        }
+        if (!isAuthenticated) return navigate('/login', { state: { from: `/product/${id}` } })
         setShowContactModal(true)
     }
 
     return (
-        <div className="product-detail">
-            <div className="container">
+        <div className="pt-24 pb-12 min-h-screen bg-legion-bg">
+            <div className="container mx-auto px-4">
                 {/* Breadcrumb */}
-                <nav className="breadcrumb">
-                    <Link to="/">Home</Link>
+                <nav className="flex items-center gap-2 text-sm text-gray-400 mb-6">
+                    <Link to="/" className="hover:text-legion-gold transition-colors">Home</Link>
                     <span>/</span>
-                    <Link to="/browse">Browse</Link>
+                    <Link to="/browse" className="hover:text-legion-gold transition-colors">Marketplace</Link>
                     <span>/</span>
-                    <Link to={`/browse/${category}`}>{category}</Link>
-                    <span>/</span>
-                    <span>{title.substring(0, 30)}...</span>
+                    <span className="text-gray-500 truncate max-w-[200px]">{title}</span>
                 </nav>
 
-                <div className="product-detail-grid">
-                    {/* Left Column: Image Gallery */}
-                    <div className="product-gallery">
-                        <div className="main-image glass-panel">
-                            <img src={images[selectedImage]} alt={title} />
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
 
-                            {aiVerified && (
-                                <div className="absolute top-4 left-4 z-10">
+                    {/* --- LEFT COLUMN: IMAGES (Span 7) --- */}
+                    <div className="lg:col-span-7 space-y-4">
+                        {/* Main Image Stage */}
+                        <div className="relative aspect-[4/3] bg-legion-card rounded-2xl overflow-hidden border border-white/10 shadow-2xl group">
+                            <img
+                                src={images[selectedImage] || 'https://via.placeholder.com/800'}
+                                alt={title}
+                                className="w-full h-full object-contain bg-black/50"
+                            />
+
+                            {/* Overlay Badges */}
+                            <div className="absolute top-4 left-4 flex flex-col gap-2">
+                                {aiVerified && (
                                     <GuardianBadge level="verified" animated={true} />
-                                </div>
-                            )}
+                                )}
+                                {discount > 0 && (
+                                    <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                                        {discount}% OFF
+                                    </span>
+                                )}
+                            </div>
 
-                            {discount > 0 && (
-                                <span className="discount-badge">-{discount}% OFF</span>
-                            )}
+                            <button className="absolute top-4 right-4 p-2 bg-black/40 backdrop-blur-md rounded-full text-white/70 hover:text-red-500 hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100">
+                                <Heart size={20} />
+                            </button>
                         </div>
 
+                        {/* Thumbnails */}
                         {images.length > 1 && (
-                            <div className="thumbnail-list">
-                                {images.map((img, index) => (
+                            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                                {images.map((img, idx) => (
                                     <button
-                                        key={index}
-                                        className={`thumbnail ${selectedImage === index ? 'active' : ''}`}
-                                        onClick={() => setSelectedImage(index)}
+                                        key={idx}
+                                        onClick={() => setSelectedImage(idx)}
+                                        className={`relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${selectedImage === idx ? 'border-legion-gold shadow-lg shadow-legion-gold/20' : 'border-transparent opacity-60 hover:opacity-100'
+                                            }`}
                                     >
-                                        <img src={img} alt={`${title} - ${index + 1}`} />
+                                        <img src={img} alt="" className="w-full h-full object-cover" />
                                     </button>
                                 ))}
                             </div>
                         )}
-                    </div>
 
-                    {/* Center Column: Product Details */}
-                    <div className="product-info-section">
-                        <div className="product-header">
-                            <div className="flex items-center gap-3 mb-3">
-                                <span className={`condition-tag badge badge-${getConditionColor(condition)}`}>
-                                    {conditionInfo?.label}
-                                </span>
-                                {aiVerified && <span className="text-emerald-400 text-xs font-medium flex items-center gap-1">
-                                    <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM11 16h2v2h-2zm0-6h2v4h-2z" /></svg>
-                                    Guardian Verified
-                                </span>}
+                        {/* Description Block */}
+                        <div className="bg-legion-card border border-white/10 rounded-2xl p-6 md:p-8 mt-8">
+                            <h3 className="text-xl font-bold text-white mb-4">Description</h3>
+                            <div className="prose prose-invert max-w-none text-gray-300 whitespace-pre-line">
+                                {description}
                             </div>
 
-                            <h1>{title}</h1>
-
-                            <div className="product-meta-row">
-                                <span className="meta-item">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                        <circle cx="12" cy="12" r="3" />
-                                    </svg>
-                                    {views} views
-                                </span>
-                                <span className="meta-item">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                                    </svg>
-                                    {likes} likes
-                                </span>
-                                <span className="meta-item">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <polyline points="12 6 12 12 16 14" />
-                                    </svg>
-                                    {getTimeAgo(createdAt)}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="description-content glass-panel p-6 rounded-xl">
-                            <p>{description}</p>
-                        </div>
-
-                        <div className="product-specs glass-panel p-6 rounded-xl">
-                            <h3>Item Details</h3>
-                            <div className="specs-grid">
-                                <div className="spec-item">
-                                    <span className="spec-label">Condition</span>
-                                    <span className="spec-value">{conditionInfo?.label}</span>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-8 border-t border-white/10">
+                                <div>
+                                    <span className="block text-xs uppercase tracking-wider text-gray-500 mb-1">Condition</span>
+                                    <span className={`text-sm font-medium px-2 py-1 rounded bg-white/5 inline-block text-${getConditionColor(condition)}-400`}>
+                                        {conditionInfo?.label || condition}
+                                    </span>
                                 </div>
-                                <div className="spec-item">
-                                    <span className="spec-label">Category</span>
-                                    <span className="spec-value" style={{ textTransform: 'capitalize' }}>{category}</span>
+                                <div>
+                                    <span className="block text-xs uppercase tracking-wider text-gray-500 mb-1">Category</span>
+                                    <span className="text-sm font-medium text-white capitalize">{category}</span>
                                 </div>
-                                <div className="spec-item">
-                                    <span className="spec-label">Listed</span>
-                                    <span className="spec-value">{new Date(createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                <div>
+                                    <span className="block text-xs uppercase tracking-wider text-gray-500 mb-1">Listed</span>
+                                    <span className="text-sm font-medium text-white">{getTimeAgo(createdAt)}</span>
                                 </div>
-                                <div className="spec-item">
-                                    <span className="spec-label">Item ID</span>
-                                    <span className="spec-value">#{id}</span>
+                                <div>
+                                    <span className="block text-xs uppercase tracking-wider text-gray-500 mb-1">Views</span>
+                                    <span className="text-sm font-medium text-white">{views || 0}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Right Column: Actions & Trust */}
-                    <aside className="product-sidebar">
-                        {/* Pricing & Buy */}
-                        <div className="pricing-card glass-panel p-6 rounded-xl border border-glass-border">
-                            <div className="price-row mb-4">
-                                <span className="current-price text-4xl font-bold">{formatPrice(price)}</span>
+                    {/* --- RIGHT COLUMN: INFO & ACTIONS (Span 5) --- */}
+                    <div className="lg:col-span-5 space-y-6">
+
+                        {/* Title Block */}
+                        <div>
+                            <div className="flex justify-between items-start mb-2">
+                                <h1 className="text-3xl font-black text-white leading-tight">{title}</h1>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-400 text-sm">
+                                <MapPin size={14} />
+                                <span>{location?.city || 'Unknown Location'}, {location?.state}</span>
+                            </div>
+                        </div>
+
+                        {/* Price Card */}
+                        <div className="bg-legion-card border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                            {/* Background Glow */}
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-legion-gold/5 blur-[50px] rounded-full pointer-events-none"></div>
+
+                            <div className="flex items-end gap-3 mb-6">
+                                <span className="text-4xl font-bold text-white">{formatPrice(price)}</span>
                                 {originalPrice && (
-                                    <span className="original-price text-lg text-slate-500 line-through ml-2">{formatPrice(originalPrice)}</span>
+                                    <span className="text-lg text-gray-500 line-through mb-1.5">{formatPrice(originalPrice)}</span>
                                 )}
                             </div>
 
                             {!isOwnListing ? (
-                                <div className="action-buttons flex flex-col gap-3">
-                                    <button className="btn btn-primary w-full py-4 text-lg font-bold shadow-lg shadow-primary-500/20" onClick={handleBuyNow}>
-                                        Buy Now
+                                <div className="space-y-3">
+                                    <button
+                                        onClick={handleBuyNow}
+                                        className="w-full bg-legion-gold hover:bg-yellow-500 text-legion-bg font-bold text-lg py-4 rounded-xl shadow-lg shadow-legion-gold/20 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2"
+                                    >
+                                        <Shield size={20} className="text-legion-bg" />
+                                        Secure Buy
                                     </button>
                                     <div className="grid grid-cols-2 gap-3">
                                         <button
-                                            className={`btn ${isInCart(id) ? 'btn-secondary' : 'btn-outline'}`}
                                             onClick={handleAddToCart}
-                                            disabled={isInCart(id)}
+                                            disabled={isInCart(product._id || product.id)}
+                                            className={`w-full font-bold py-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${isInCart(product._id || product.id)
+                                                ? 'bg-white/10 border-transparent text-gray-400 cursor-not-allowed'
+                                                : 'border-white/20 hover:border-white text-white bg-transparent'
+                                                }`}
                                         >
-                                            {isInCart(id) ? 'In Cart' : 'Add to Cart'}
+                                            <ShoppingBag size={18} />
+                                            {isInCart(product._id || product.id) ? 'In Cart' : 'Add to Cart'}
                                         </button>
-                                        <button className="btn btn-secondary" onClick={handleContact}>
+                                        <button
+                                            onClick={handleContact}
+                                            className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <MessageSquare size={18} />
                                             Chat
                                         </button>
                                     </div>
+                                    <button
+                                        onClick={async () => {
+                                            if (!isAuthenticated) return navigate('/login')
+                                            const reason = prompt("Why are you reporting this listing? (e.g. Fraud, Counterfeit, Spam)")
+                                            if (reason) {
+                                                try {
+                                                    await shieldAPI.report({
+                                                        type: 'listing',
+                                                        targetId: product._id || product.id,
+                                                        reason,
+                                                        details: 'User reported via Product Page'
+                                                    })
+                                                    alert("Report submitted. Thank you for keeping SwapSafe secure.")
+                                                } catch (err) {
+                                                    alert("Failed to submit report. Please try again.")
+                                                }
+                                            }
+                                        }}
+                                        className="w-full text-gray-500 hover:text-red-400 text-sm py-2 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <Flag size={14} />
+                                        Report this listing
+                                    </button>
                                 </div>
                             ) : (
-                                <Link to="/dashboard?tab=listings" className="btn btn-secondary w-full">
-                                    Manage Listing
+                                <Link to="/dashboard" className="block w-full text-center bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-xl transition-all">
+                                    Manage Your Listing
                                 </Link>
                             )}
-                        </div>
 
-                        {/* Seller Card */}
-                        <div className="seller-card glass-panel p-5 rounded-xl border border-glass-border">
-                            <Link to={`/profile/${seller._id || seller.id}`} className="flex items-center gap-4 mb-4">
-                                <img src={seller.avatar || 'https://via.placeholder.com/50'} alt={seller.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-glass-border" />
-                                <div>
-                                    <div className="font-bold flex items-center gap-1">
-                                        {seller.name}
-                                        {(seller.verified || seller.isVerified) && (
-                                            <GuardianBadge
-                                                level={seller.rating >= 4.8 ? 'gold' : seller.rating >= 4.5 ? 'silver' : 'verified'}
-                                                showLabel={false}
-                                            />
-                                        )}
-                                    </div>
-                                    <div className="text-sm text-slate-400 flex items-center gap-1">
-                                        <span className="text-amber-400">★</span> {seller.rating || 0} • {seller.totalSales || 0} sales
-                                    </div>
-                                </div>
-                            </Link>
-                            <div className="text-xs text-slate-500 border-t border-glass-border pt-3 mt-3 flex justify-between">
-                                <span>Response time</span>
-                                <span className="text-slate-300">Within 1 hr</span>
+                            {/* Safety Note */}
+                            <div className="mt-6 flex items-start gap-3 bg-legion-gold/5 p-3 rounded-lg border border-legion-gold/10">
+                                <Shield className="text-legion-gold shrink-0 mt-0.5" size={16} />
+                                <p className="text-xs text-gray-300 leading-relaxed">
+                                    <span className="text-legion-gold font-bold">SwapSafe Guarantee:</span> Your money is held in escrow until you confirm the item is as described.
+                                </p>
                             </div>
                         </div>
 
-                        {/* Guardian Trust Indicators */}
-                        <TrustIndicators />
-                    </aside>
+                        {/* Seller Card */}
+                        <div className="bg-legion-card border border-white/10 rounded-2xl p-6">
+                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Seller Information</h3>
+                            <Link to={`/profile/${safeSeller._id || safeSeller.id}`} className="flex items-center gap-4 group">
+                                <div className="relative">
+                                    <img
+                                        src={safeSeller.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeSeller.name || 'User')}`}
+                                        alt={safeSeller.name}
+                                        className="w-14 h-14 rounded-full object-cover ring-2 ring-white/10 group-hover:ring-legion-gold transition-all"
+                                    />
+                                    {(safeSeller.verified || safeSeller.isVerified) && (
+                                        <div className="absolute -bottom-1 -right-1 bg-legion-bg rounded-full p-0.5">
+                                            <GuardianBadge level="verified" showLabel={false} size="sm" />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold text-lg text-white group-hover:text-legion-gold transition-colors">{safeSeller.name || 'Anonymous User'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-sm text-gray-400 mt-1">
+                                        <span className="flex items-center gap-1 text-yellow-400">
+                                            ★ {safeSeller.rating || 0}
+                                        </span>
+                                        <span>•</span>
+                                        <span>{safeSeller.totalSales || 0} sales</span>
+                                    </div>
+                                </div>
+                                <div className="text-gray-500 group-hover:text-white transition-colors">
+                                    →
+                                </div>
+                            </Link>
+                        </div>
+
+                        {/* Delivery Options */}
+                        <div className="bg-legion-card border border-white/10 rounded-2xl p-6">
+                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Delivery Options</h3>
+                            <div className="space-y-3">
+                                <div className={`flex items-center gap-3 p-3 rounded-xl border ${deliveryAvailable ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/5 border-red-500/10 opacity-50'}`}>
+                                    <Package className={deliveryAvailable ? 'text-green-400' : 'text-red-400'} size={20} />
+                                    <div>
+                                        <span className="block text-sm font-bold text-white">Nationwide Shipping</span>
+                                        <span className="text-xs text-gray-400">{deliveryAvailable ? 'Available via Secure Courier' : 'Not available for this item'}</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 p-3 rounded-xl border bg-white/5 border-white/10">
+                                    <div className="relative">
+                                        <MapPin className="text-gray-300" size={20} />
+                                    </div>
+                                    <div>
+                                        <span className="block text-sm font-bold text-white">Local Meetup</span>
+                                        <span className="text-xs text-gray-400">Meet in {location?.city} (Public Safe Zones Rec.)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
 
             {/* Contact Modal */}
             {showContactModal && (
-                <div className="modal-overlay" onClick={() => setShowContactModal(false)}>
-                    <div className="modal glass-panel border border-glass-border" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header border-b border-glass-border pb-4 mb-4">
-                            <h3 className="text-xl font-bold">Message Seller</h3>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowContactModal(false)}></div>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="relative bg-legion-card border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+                    >
+                        <h3 className="text-xl font-bold text-white mb-4">Message Seller</h3>
+                        <textarea
+                            className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white focus:border-legion-gold outline-none resize-none min-h-[120px]"
+                            placeholder={`Hi ${safeSeller.name}, is this item still available?`}
+                            autoFocus
+                        ></textarea>
+                        <div className="flex gap-3 mt-4 justify-end">
+                            <button
+                                onClick={() => setShowContactModal(false)}
+                                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowContactModal(false)
+                                    navigate(`/messages?product=${id}`)
+                                }}
+                                className="bg-legion-gold text-legion-bg font-bold px-6 py-2 rounded-lg hover:bg-yellow-500 transition-colors"
+                            >
+                                Send Message
+                            </button>
                         </div>
-                        <div className="modal-body mb-6">
-                            <textarea
-                                className="w-full bg-slate-900/50 border border-glass-border rounded-lg p-3 text-slate-200 focus:border-primary-500 outline-none"
-                                placeholder="Hi, I'm interested in this item..."
-                                rows={4}
-                            ></textarea>
-                        </div>
-                        <div className="modal-footer flex justify-end gap-3">
-                            <button className="btn btn-secondary" onClick={() => setShowContactModal(false)}>Cancel</button>
-                            <button className="btn btn-primary" onClick={() => {
-                                setShowContactModal(false)
-                                navigate(`/messages?product=${id}`)
-                            }}>Send</button>
-                        </div>
-                    </div>
+                    </motion.div>
                 </div>
             )}
         </div>
