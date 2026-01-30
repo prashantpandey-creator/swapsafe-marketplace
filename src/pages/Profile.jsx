@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import ProductCard from '../components/common/ProductCard'
+import GuardianBadge from '../components/trust/GuardianBadge'
 import { mockListings } from '../data/mockData'
 import './Profile.css'
 
@@ -40,11 +41,12 @@ function Profile() {
                             <h1>
                                 {user.name}
                                 {user.verified && (
-                                    <span className="verified-badge" title="Verified Seller">
-                                        <svg viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                                        </svg>
-                                    </span>
+                                    <div className="ml-2">
+                                        <GuardianBadge
+                                            level={user.rating >= 4.8 ? 'gold' : user.rating >= 4.5 ? 'silver' : 'verified'}
+                                            showLabel={true}
+                                        />
+                                    </div>
                                 )}
                             </h1>
                             <p className="profile-meta">

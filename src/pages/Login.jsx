@@ -1,7 +1,38 @@
+import { useState } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import './Auth.css'
 import logo from '../assets/buyers_legion_logo.png'
 
 function Login() {
-    // ... hooks ...
+    const navigate = useNavigate()
+    const location = useLocation()
+    const { login, isLoading, error } = useAuth()
+
+    const [formData, setFormData] = useState({
+        email: '',
+        password: ''
+    })
+    const [formError, setFormError] = useState('')
+
+    const from = location.state?.from || '/'
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        setFormError('')
+
+        if (!formData.email || !formData.password) {
+            setFormError('Please fill in all fields')
+            return
+        }
+
+        const result = await login(formData.email, formData.password)
+        if (result.success) {
+            navigate(from, { replace: true })
+        } else {
+            setFormError(result.error)
+        }
+    }
 
     return (
         <div className="auth-page">
