@@ -4,17 +4,12 @@ import InteractiveMandala from './InteractiveMandala';
 const BackgroundManager = () => {
     const location = useLocation();
 
-    let variant = 'home';
-    if (location.pathname.startsWith('/product/')) {
-        variant = 'product'; // Minimal + Gold
-    } else if (location.pathname.startsWith('/browse')) {
-        variant = 'browse'; // Minimal + Blue
-    } else if (location.pathname !== '/') {
-        variant = 'minimal'; // Minimal
+    // STRICT: Only show on Home Page
+    if (location.pathname !== '/') {
+        return null;
     }
-    // Default is 'home' (Full intensity)
 
-    return <InteractiveMandala variant={variant} />;
+    return <InteractiveMandala variant="home" />;
 };
 
 export default BackgroundManager;

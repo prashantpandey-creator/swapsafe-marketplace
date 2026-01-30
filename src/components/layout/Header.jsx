@@ -5,6 +5,8 @@ import { Shield, Menu, X, Search, User, MessageSquare, ShoppingBag } from 'lucid
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 
+import logo from '../../assets/buyers_legion_logo.png';
+
 const Header = () => {
     const { user, logout } = useAuth();
     const { cartItems } = useCart();
@@ -32,13 +34,17 @@ const Header = () => {
         >
             <div className="container mx-auto px-4 flex items-center justify-between">
                 {/* Logo */}
-                <Link to="/" className="flex items-center gap-2 group">
-                    <div className="relative">
-                        <Shield className="w-8 h-8 text-legion-gold fill-legion-gold/20" />
+                <Link to="/" className="flex items-center gap-3 group">
+                    <div className="relative w-12 h-12">
                         <motion.div
-                            className="absolute inset-0 bg-legion-gold/40 blur-lg rounded-full"
-                            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+                            className="absolute inset-0 bg-legion-gold/50 blur-xl rounded-full"
+                            animate={{ opacity: [0.4, 0.7, 0.4] }}
                             transition={{ duration: 3, repeat: Infinity }}
+                        />
+                        <img
+                            src={logo}
+                            alt="Buyers Legion Shield"
+                            className="w-full h-full object-contain relative z-10 drop-shadow-[0_0_10px_rgba(255,165,0,0.5)]"
                         />
                     </div>
                     <span className="text-2xl font-black tracking-tight text-white group-hover:text-legion-gold transition-colors">
