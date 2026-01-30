@@ -43,7 +43,7 @@ function Register() {
 
         const result = await register(formData)
         if (result.success) {
-            navigate('/dashboard')
+            navigate('/shop-setup')
         } else {
             setFormError(result.error)
         }

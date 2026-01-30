@@ -13,6 +13,7 @@ import Messages from './pages/Messages'
 import Checkout from './pages/Checkout'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import ShopSetup from './pages/ShopSetup'
 import Dashboard from './pages/Dashboard'
 import TrackOrder from './pages/TrackOrder'
 
@@ -40,6 +41,7 @@ function App() {
                                 <Route path="/checkout/:id" element={<Checkout />} />
                                 <Route path="/login" element={<Login />} />
                                 <Route path="/register" element={<Register />} />
+                                <Route path="/shop-setup" element={<ShopSetup />} />
                                 <Route path="/dashboard" element={<Dashboard />} />
                                 <Route path="/track/:orderId" element={<TrackOrder />} />
                             </Routes>
