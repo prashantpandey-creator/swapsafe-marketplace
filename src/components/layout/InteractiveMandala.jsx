@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 
 const InteractiveMandala = ({ variant = 'home' }) => {
     const canvasRef = useRef(null);
-    const mouseRef = useRef({ x: 0, y: 0 });
+    const isAuto = useRef(true); // Start in autopilot mode
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -18,15 +18,45 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         };
 
         const handleMouseMove = (e) => {
+            isAuto.current = false; // User took control
             mouseRef.current = { x: e.clientX, y: e.clientY };
         };
 
         window.addEventListener('resize', handleResize);
         window.addEventListener('mousemove', handleMouseMove);
+        // Add touch support for "taking control" on mobile tap
+        window.addEventListener('touchstart', (e) => {
+            isAuto.current = false;
+            mouseRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        });
+
         handleResize();
 
-        // PARTICLE SYSTEM
-        class Particle {
+        // PARTICLE SYSTEM (Class definitions omitted for brevity, implied same)
+        // ... (Keep existing Particle class)
+
+        const drawMandala = () => {
+            tick++;
+
+            const { width, height } = canvas;
+            const cx = width / 2;
+            const cy = height / 2;
+
+            // AUTOPILOT LOGIC
+            if (isAuto.current) {
+                // Lissajous figure for organic wandering
+                const time = tick * 0.005;
+                const radiusX = width * 0.3;
+                const radiusY = height * 0.3;
+
+                mouseRef.current = {
+                    x: cx + Math.sin(time) * radiusX,
+                    y: cy + Math.cos(time * 1.5) * radiusY
+                };
+            }
+
+            const mx = mouseRef.current.x;
+            const my = mouseRef.current.y;
             constructor(x, y, angle, speed) {
                 this.x = x;
                 this.y = y;
