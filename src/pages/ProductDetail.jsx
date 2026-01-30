@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import { mockListings, formatPrice, getTimeAgo, getConditionColor, conditions } from '../data/mockData'
+import { listingsAPI } from '../services/api'
+import { formatPrice, getTimeAgo, getConditionColor, conditions } from '../data/mockData'
+import GuardianBadge from '../components/trust/GuardianBadge'
 import './ProductDetail.css'
 
 function ProductDetail() {
@@ -16,14 +18,24 @@ function ProductDetail() {
     const [showContactModal, setShowContactModal] = useState(false)
     const [deliveryMethod, setDeliveryMethod] = useState('meetup')
     const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState(null)
 
     useEffect(() => {
-        // Simulate API call
-        setTimeout(() => {
-            const found = mockListings.find(l => l.id === id)
-            setProduct(found)
-            setIsLoading(false)
-        }, 500)
+        const fetchProduct = async () => {
+            setIsLoading(true)
+            setError(null)
+            try {
+                const response = await listingsAPI.getById(id)
+                setProduct(response.listing || response)
+            } catch (err) {
+                console.error('Failed to fetch product:', err)
+                setError('Failed to load product')
+                setProduct(null)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        fetchProduct()
     }, [id])
 
     if (isLoading) {
@@ -109,19 +121,14 @@ function ProductDetail() {
                 </nav>
 
                 <div className="product-detail-grid">
-                    {/* Image Gallery */}
+                    {/* Left Column: Image Gallery */}
                     <div className="product-gallery">
-                        <div className="main-image">
+                        <div className="main-image glass-panel">
                             <img src={images[selectedImage]} alt={title} />
 
                             {aiVerified && (
-                                <div className="ai-verified-badge">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                                        <polyline points="22 4 12 14.01 9 11.01" />
-                                    </svg>
-                                    AI Verified
-                                    <span className="ai-score">{aiScore}%</span>
+                                <div className="absolute top-4 left-4 z-10">
+                                    <GuardianBadge level="verified" animated={true} />
                                 </div>
                             )}
 
@@ -145,12 +152,19 @@ function ProductDetail() {
                         )}
                     </div>
 
-                    {/* Product Info */}
+                    {/* Center Column: Product Details */}
                     <div className="product-info-section">
                         <div className="product-header">
-                            <span className={`condition-tag badge badge-${getConditionColor(condition)}`}>
-                                {conditionInfo?.label}
-                            </span>
+                            <div className="flex items-center gap-3 mb-3">
+                                <span className={`condition-tag badge badge-${getConditionColor(condition)}`}>
+                                    {conditionInfo?.label}
+                                </span>
+                                {aiVerified && <span className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM11 16h2v2h-2zm0-6h2v4h-2z" /></svg>
+                                    Guardian Verified
+                                </span>}
+                            </div>
+
                             <h1>{title}</h1>
 
                             <div className="product-meta-row">
@@ -177,288 +191,133 @@ function ProductDetail() {
                             </div>
                         </div>
 
-                        {/* Pricing */}
-                        <div className="pricing-card card-glass">
-                            <div className="price-row">
-                                <span className="current-price">{formatPrice(price)}</span>
+                        <div className="description-content glass-panel p-6 rounded-xl">
+                            <p>{description}</p>
+                        </div>
+
+                        <div className="product-specs glass-panel p-6 rounded-xl">
+                            <h3>Item Details</h3>
+                            <div className="specs-grid">
+                                <div className="spec-item">
+                                    <span className="spec-label">Condition</span>
+                                    <span className="spec-value">{conditionInfo?.label}</span>
+                                </div>
+                                <div className="spec-item">
+                                    <span className="spec-label">Category</span>
+                                    <span className="spec-value" style={{ textTransform: 'capitalize' }}>{category}</span>
+                                </div>
+                                <div className="spec-item">
+                                    <span className="spec-label">Listed</span>
+                                    <span className="spec-value">{new Date(createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                </div>
+                                <div className="spec-item">
+                                    <span className="spec-label">Item ID</span>
+                                    <span className="spec-value">#{id}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column: Actions & Trust */}
+                    <aside className="product-sidebar">
+                        {/* Pricing & Buy */}
+                        <div className="pricing-card glass-panel p-6 rounded-xl border border-glass-border">
+                            <div className="price-row mb-4">
+                                <span className="current-price text-4xl font-bold">{formatPrice(price)}</span>
                                 {originalPrice && (
-                                    <span className="original-price">{formatPrice(originalPrice)}</span>
+                                    <span className="original-price text-lg text-slate-500 line-through ml-2">{formatPrice(originalPrice)}</span>
                                 )}
                             </div>
 
-                            {discount > 0 && (
-                                <p className="savings">You save {formatPrice(originalPrice - price)} ({discount}% off)</p>
+                            {!isOwnListing ? (
+                                <div className="action-buttons flex flex-col gap-3">
+                                    <button className="btn btn-primary w-full py-4 text-lg font-bold shadow-lg shadow-primary-500/20" onClick={handleBuyNow}>
+                                        Buy Now
+                                    </button>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            className={`btn ${isInCart(id) ? 'btn-secondary' : 'btn-outline'}`}
+                                            onClick={handleAddToCart}
+                                            disabled={isInCart(id)}
+                                        >
+                                            {isInCart(id) ? 'In Cart' : 'Add to Cart'}
+                                        </button>
+                                        <button className="btn btn-secondary" onClick={handleContact}>
+                                            Chat
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <Link to="/dashboard?tab=listings" className="btn btn-secondary w-full">
+                                    Manage Listing
+                                </Link>
                             )}
                         </div>
 
-                        {/* Delivery Options */}
-                        <div className="delivery-options">
-                            <h3>How do you want to get it?</h3>
-                            <div className="option-cards">
-                                {meetupAvailable && (
-                                    <label className={`option-card ${deliveryMethod === 'meetup' ? 'selected' : ''}`}>
-                                        <input
-                                            type="radio"
-                                            name="delivery"
-                                            value="meetup"
-                                            checked={deliveryMethod === 'meetup'}
-                                            onChange={() => setDeliveryMethod('meetup')}
-                                        />
-                                        <div className="option-icon">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                                <circle cx="12" cy="10" r="3" />
-                                            </svg>
-                                        </div>
-                                        <div className="option-info">
-                                            <strong>Safe Meetup</strong>
-                                            <span>Meet at a safe public location</span>
-                                        </div>
-                                        <span className="option-price">Free</span>
-                                    </label>
-                                )}
-
-                                {deliveryAvailable && (
-                                    <label className={`option-card ${deliveryMethod === 'delivery' ? 'selected' : ''}`}>
-                                        <input
-                                            type="radio"
-                                            name="delivery"
-                                            value="delivery"
-                                            checked={deliveryMethod === 'delivery'}
-                                            onChange={() => setDeliveryMethod('delivery')}
-                                        />
-                                        <div className="option-icon">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <rect x="1" y="3" width="15" height="13" />
-                                                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-                                                <circle cx="5.5" cy="18.5" r="2.5" />
-                                                <circle cx="18.5" cy="18.5" r="2.5" />
-                                            </svg>
-                                        </div>
-                                        <div className="option-info">
-                                            <strong>Home Delivery</strong>
-                                            <span>Delivered to your doorstep</span>
-                                        </div>
-                                        <span className="option-price">Varies</span>
-                                    </label>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Escrow Info */}
-                        <div className="escrow-info card-glass">
-                            <div className="escrow-header">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                                </svg>
-                                <strong>Protected by SwapSafe Escrow</strong>
-                            </div>
-                            <p>Your payment is held securely until you receive and approve the item. Full refund if the item is not as described.</p>
-                        </div>
-
-                        {/* Action Buttons */}
-                        {!isOwnListing && (
-                            <div className="action-buttons">
-                                <button className="btn btn-primary btn-lg" onClick={handleBuyNow}>
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                                    </svg>
-                                    Buy Now - Secure Payment
-                                </button>
-
-                                <div className="secondary-actions">
-                                    <button
-                                        className={`btn ${isInCart(id) ? 'btn-secondary' : 'btn-outline'}`}
-                                        onClick={handleAddToCart}
-                                        disabled={isInCart(id)}
-                                    >
-                                        {isInCart(id) ? 'Added to Cart' : 'Add to Cart'}
-                                    </button>
-                                    <button className="btn btn-secondary" onClick={handleContact}>
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                                        </svg>
-                                        Message Seller
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {isOwnListing && (
-                            <div className="own-listing-notice">
-                                <p>This is your listing</p>
-                                <Link to="/dashboard?tab=listings" className="btn btn-secondary">
-                                    Manage Listing
-                                </Link>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Sidebar */}
-                    <aside className="product-sidebar">
                         {/* Seller Card */}
-                        <div className="seller-card card">
-                            <div className="card-header">
-                                <h3>Seller</h3>
-                            </div>
-                            <div className="card-body">
-                                <Link to={`/profile/${seller.id}`} className="seller-profile">
-                                    <img src={seller.avatar} alt={seller.name} className="avatar avatar-lg" />
-                                    <div className="seller-details">
-                                        <strong>
-                                            {seller.name}
-                                            {seller.verified && (
-                                                <svg viewBox="0 0 24 24" fill="currentColor" className="verified-icon">
-                                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                                                </svg>
-                                            )}
-                                        </strong>
-                                        <span className="seller-stats">
-                                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                                            </svg>
-                                            {seller.rating} • {seller.totalSales} sales
-                                        </span>
+                        <div className="seller-card glass-panel p-5 rounded-xl border border-glass-border">
+                            <Link to={`/profile/${seller._id || seller.id}`} className="flex items-center gap-4 mb-4">
+                                <img src={seller.avatar || 'https://via.placeholder.com/50'} alt={seller.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-glass-border" />
+                                <div>
+                                    <div className="font-bold flex items-center gap-1">
+                                        {seller.name}
+                                        {(seller.verified || seller.isVerified) && (
+                                            <GuardianBadge level="verified" showLabel={false} />
+                                        )}
                                     </div>
-                                </Link>
-
-                                <div className="seller-meta">
-                                    <div className="meta-row">
-                                        <span>Member since</span>
-                                        <span>{new Date(seller.joinedDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</span>
-                                    </div>
-                                    <div className="meta-row">
-                                        <span>Response time</span>
-                                        <span>Usually within 1 hour</span>
+                                    <div className="text-sm text-slate-400 flex items-center gap-1">
+                                        <span className="text-amber-400">★</span> {seller.rating || 0} • {seller.totalSales || 0} sales
                                     </div>
                                 </div>
+                            </Link>
+                            <div className="text-xs text-slate-500 border-t border-glass-border pt-3 mt-3 flex justify-between">
+                                <span>Response time</span>
+                                <span className="text-slate-300">Within 1 hr</span>
                             </div>
                         </div>
 
-                        {/* Location Card */}
-                        <div className="location-card card">
-                            <div className="card-header">
-                                <h3>Location</h3>
-                            </div>
-                            <div className="card-body">
-                                <div className="location-info">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                        <circle cx="12" cy="10" r="3" />
-                                    </svg>
-                                    <span>{location.city}, {location.state}</span>
-                                </div>
-                                <div className="map-placeholder">
-                                    <span>Map will be shown during meetup scheduling</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Safety Tips */}
-                        <div className="safety-card card">
-                            <div className="card-header">
-                                <h3>Safety Tips</h3>
-                            </div>
-                            <div className="card-body">
-                                <ul className="safety-list">
-                                    <li>
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <polyline points="20 6 9 17 4 12" />
-                                        </svg>
-                                        Meet in safe, public places
-                                    </li>
-                                    <li>
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <polyline points="20 6 9 17 4 12" />
-                                        </svg>
-                                        Inspect item before payment
-                                    </li>
-                                    <li>
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <polyline points="20 6 9 17 4 12" />
-                                        </svg>
-                                        Use only in-app payments
-                                    </li>
-                                    <li>
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <polyline points="20 6 9 17 4 12" />
-                                        </svg>
-                                        Report suspicious activity
-                                    </li>
-                                </ul>
-                            </div>
+                        {/* Guardian Trust Indicators */}
+                        <div className="trust-card glass-panel p-5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+                            <h3 className="text-sm font-bold text-emerald-400 mb-3 flex items-center gap-2">
+                                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" /></svg>
+                                Guardian Protected
+                            </h3>
+                            <ul className="text-xs text-slate-300 space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <span className="text-emerald-500">✓</span> Payment held in escrow
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-emerald-500">✓</span> Verified seller identity
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-emerald-500">✓</span> 24/7 Support mediation
+                                </li>
+                            </ul>
                         </div>
                     </aside>
-                </div>
-
-                {/* Description Section */}
-                <div className="product-description">
-                    <h2>Description</h2>
-                    <div className="description-content">
-                        <p>{description}</p>
-                    </div>
-
-                    <div className="product-specs">
-                        <h3>Item Details</h3>
-                        <div className="specs-grid">
-                            <div className="spec-item">
-                                <span className="spec-label">Condition</span>
-                                <span className="spec-value">{conditionInfo?.label} - {conditionInfo?.description}</span>
-                            </div>
-                            <div className="spec-item">
-                                <span className="spec-label">Category</span>
-                                <span className="spec-value" style={{ textTransform: 'capitalize' }}>{category}</span>
-                            </div>
-                            <div className="spec-item">
-                                <span className="spec-label">Listed</span>
-                                <span className="spec-value">{new Date(createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                            </div>
-                            <div className="spec-item">
-                                <span className="spec-label">Item ID</span>
-                                <span className="spec-value">#{id}</span>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
             {/* Contact Modal */}
             {showContactModal && (
                 <div className="modal-overlay" onClick={() => setShowContactModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3>Message Seller</h3>
-                            <button className="close-btn" onClick={() => setShowContactModal(false)}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                            </button>
+                    <div className="modal glass-panel border border-glass-border" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header border-b border-glass-border pb-4 mb-4">
+                            <h3 className="text-xl font-bold">Message Seller</h3>
                         </div>
-                        <div className="modal-body">
-                            <div className="message-product-preview">
-                                <img src={images[0]} alt={title} />
-                                <div>
-                                    <strong>{title}</strong>
-                                    <span>{formatPrice(price)}</span>
-                                </div>
-                            </div>
+                        <div className="modal-body mb-6">
                             <textarea
-                                className="form-textarea"
-                                placeholder="Hi, I'm interested in this item. Is it still available?"
+                                className="w-full bg-slate-900/50 border border-glass-border rounded-lg p-3 text-slate-200 focus:border-primary-500 outline-none"
+                                placeholder="Hi, I'm interested in this item..."
                                 rows={4}
                             ></textarea>
                         </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setShowContactModal(false)}>
-                                Cancel
-                            </button>
+                        <div className="modal-footer flex justify-end gap-3">
+                            <button className="btn btn-secondary" onClick={() => setShowContactModal(false)}>Cancel</button>
                             <button className="btn btn-primary" onClick={() => {
                                 setShowContactModal(false)
                                 navigate(`/messages?product=${id}`)
-                            }}>
-                                Send Message
-                            </button>
+                            }}>Send</button>
                         </div>
                     </div>
                 </div>

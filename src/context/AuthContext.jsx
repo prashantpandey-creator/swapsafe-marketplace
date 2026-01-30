@@ -1,4 +1,5 @@
 import { createContext, useContext, useReducer, useEffect } from 'react'
+import { authAPI } from '../services/api'
 
 const AuthContext = createContext(null)
 
@@ -39,107 +40,98 @@ function authReducer(state, action) {
             }
         case 'UPDATE_USER':
             return { ...state, user: { ...state.user, ...action.payload } }
+        case 'CLEAR_ERROR':
+            return { ...state, error: null }
         default:
             return state
     }
 }
-
-// Mock user data for demo
-const mockUsers = [
-    {
-        id: '1',
-        name: 'Prashant Pandey',
-        email: 'prashant@example.com',
-        password: 'password123',
-        phone: '+91 98765 43210',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Prashant',
-        rating: 4.8,
-        totalSales: 24,
-        totalPurchases: 12,
-        joinedDate: '2024-06-15',
-        isVerified: true,
-        address: {
-            street: '123 MG Road',
-            city: 'Mumbai',
-            state: 'Maharashtra',
-            pincode: '400001'
-        }
-    }
-]
 
 export function AuthProvider({ children }) {
     const [state, dispatch] = useReducer(authReducer, initialState)
 
     // Check for existing session on mount
     useEffect(() => {
-        const savedUser = localStorage.getItem('swapsafe_user')
-        if (savedUser) {
-            dispatch({ type: 'AUTH_SUCCESS', payload: JSON.parse(savedUser) })
-        } else {
-            dispatch({ type: 'AUTH_ERROR', payload: null })
+        const checkAuth = async () => {
+            const token = localStorage.getItem('swapsafe_token')
+            const savedUser = localStorage.getItem('swapsafe_user')
+
+            if (token && savedUser) {
+                try {
+                    // Verify token with backend
+                    const data = await authAPI.getProfile()
+                    localStorage.setItem('swapsafe_user', JSON.stringify(data.user))
+                    dispatch({ type: 'AUTH_SUCCESS', payload: data.user })
+                } catch (error) {
+                    // Token invalid, clear storage
+                    localStorage.removeItem('swapsafe_token')
+                    localStorage.removeItem('swapsafe_user')
+                    dispatch({ type: 'AUTH_ERROR', payload: null })
+                }
+            } else if (savedUser) {
+                // Fallback to local storage if no token (legacy)
+                dispatch({ type: 'AUTH_SUCCESS', payload: JSON.parse(savedUser) })
+            } else {
+                dispatch({ type: 'AUTH_ERROR', payload: null })
+            }
         }
+
+        checkAuth()
     }, [])
 
     const login = async (email, password) => {
         dispatch({ type: 'AUTH_START' })
 
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
-        const user = mockUsers.find(u => u.email === email && u.password === password)
-
-        if (user) {
-            const { password: _, ...userWithoutPassword } = user
-            localStorage.setItem('swapsafe_user', JSON.stringify(userWithoutPassword))
-            dispatch({ type: 'AUTH_SUCCESS', payload: userWithoutPassword })
+        try {
+            const data = await authAPI.login(email, password)
+            localStorage.setItem('swapsafe_user', JSON.stringify(data.user))
+            dispatch({ type: 'AUTH_SUCCESS', payload: data.user })
             return { success: true }
-        } else {
-            dispatch({ type: 'AUTH_ERROR', payload: 'Invalid email or password' })
-            return { success: false, error: 'Invalid email or password' }
+        } catch (error) {
+            const errorMessage = error.message || 'Invalid email or password'
+            dispatch({ type: 'AUTH_ERROR', payload: errorMessage })
+            return { success: false, error: errorMessage }
         }
     }
 
     const register = async (userData) => {
         dispatch({ type: 'AUTH_START' })
 
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
-        const existingUser = mockUsers.find(u => u.email === userData.email)
-        if (existingUser) {
-            dispatch({ type: 'AUTH_ERROR', payload: 'Email already registered' })
-            return { success: false, error: 'Email already registered' }
+        try {
+            const data = await authAPI.register(userData.name, userData.email, userData.password)
+            localStorage.setItem('swapsafe_user', JSON.stringify(data.user))
+            dispatch({ type: 'AUTH_SUCCESS', payload: data.user })
+            return { success: true }
+        } catch (error) {
+            const errorMessage = error.message || 'Registration failed'
+            dispatch({ type: 'AUTH_ERROR', payload: errorMessage })
+            return { success: false, error: errorMessage }
         }
-
-        const newUser = {
-            id: Date.now().toString(),
-            name: userData.name,
-            email: userData.email,
-            phone: userData.phone || '',
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.name}`,
-            rating: 0,
-            totalSales: 0,
-            totalPurchases: 0,
-            joinedDate: new Date().toISOString().split('T')[0],
-            isVerified: false,
-            address: null
-        }
-
-        localStorage.setItem('swapsafe_user', JSON.stringify(newUser))
-        dispatch({ type: 'AUTH_SUCCESS', payload: newUser })
-        return { success: true }
     }
 
     const logout = () => {
+        authAPI.logout()
         localStorage.removeItem('swapsafe_user')
         dispatch({ type: 'LOGOUT' })
     }
 
     const updateProfile = async (updates) => {
-        const updatedUser = { ...state.user, ...updates }
-        localStorage.setItem('swapsafe_user', JSON.stringify(updatedUser))
-        dispatch({ type: 'UPDATE_USER', payload: updates })
-        return { success: true }
+        try {
+            const data = await authAPI.updateProfile(updates)
+            localStorage.setItem('swapsafe_user', JSON.stringify(data.user))
+            dispatch({ type: 'UPDATE_USER', payload: data.user })
+            return { success: true }
+        } catch (error) {
+            // Fallback to local update if API fails
+            const updatedUser = { ...state.user, ...updates }
+            localStorage.setItem('swapsafe_user', JSON.stringify(updatedUser))
+            dispatch({ type: 'UPDATE_USER', payload: updates })
+            return { success: true }
+        }
+    }
+
+    const clearError = () => {
+        dispatch({ type: 'CLEAR_ERROR' })
     }
 
     return (
@@ -148,7 +140,8 @@ export function AuthProvider({ children }) {
             login,
             register,
             logout,
-            updateProfile
+            updateProfile,
+            clearError
         }}>
             {children}
         </AuthContext.Provider>

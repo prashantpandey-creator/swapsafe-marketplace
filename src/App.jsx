@@ -4,6 +4,7 @@ import { CartProvider } from './context/CartContext'
 import Header from './components/layout/Header'
 import Footer from './components/layout/Footer'
 import Home from './pages/Home'
+import Landing from './pages/Landing'
 import Browse from './pages/Browse'
 import ProductDetail from './pages/ProductDetail'
 import CreateListing from './pages/CreateListing'
@@ -15,16 +16,20 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import TrackOrder from './pages/TrackOrder'
 
+import BackgroundManager from './components/layout/BackgroundManager'
+// ... imports ...
+
 function App() {
     return (
         <AuthProvider>
             <CartProvider>
-                <Router basename="/swapsafe-marketplace">
+                <Router>
+                    <BackgroundManager />
                     <div className="app">
                         <Header />
-                        <main className="main-content">
+                        <main className="main-content" style={{ paddingTop: '80px' }}>
                             <Routes>
-                                <Route path="/" element={<Home />} />
+                                <Route path="/" element={<Landing />} />
                                 <Route path="/browse" element={<Browse />} />
                                 <Route path="/browse/:category" element={<Browse />} />
                                 <Route path="/product/:id" element={<ProductDetail />} />

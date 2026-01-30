@@ -6,7 +6,10 @@
     height: 80px;
     z-index: var(--z-sticky);
     transition: all var(--transition-base);
-    background: transparent;
+    background: rgba(15, 15, 35, 0.85);
+    /* Always visible background */
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .header-scrolled {

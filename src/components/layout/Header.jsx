@@ -1,176 +1,144 @@
-import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import { useCart } from '../../context/CartContext'
-import './Header.css'
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Shield, Menu, X, Search, User, MessageSquare, ShoppingBag } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 
-function Header() {
-    const [isScrolled, setIsScrolled] = useState(false)
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-    const [searchQuery, setSearchQuery] = useState('')
-    const { isAuthenticated, user, logout } = useAuth()
-    const { itemCount } = useCart()
-    const navigate = useNavigate()
+const Header = () => {
+    const { user, logout } = useAuth();
+    const { cartItems } = useCart();
+    const [isScrolled, setIsScrolled] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const location = useLocation();
 
     useEffect(() => {
         const handleScroll = () => {
-            setIsScrolled(window.scrollY > 20)
-        }
-        window.addEventListener('scroll', handleScroll)
-        return () => window.removeEventListener('scroll', handleScroll)
-    }, [])
+            setIsScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
-    const handleSearch = (e) => {
-        e.preventDefault()
-        if (searchQuery.trim()) {
-            navigate(`/browse?search=${encodeURIComponent(searchQuery)}`)
-            setSearchQuery('')
-        }
-    }
-
-    const handleLogout = () => {
-        logout()
-        navigate('/')
-    }
+    // Close mobile menu on route change
+    useEffect(() => {
+        setIsMobileMenuOpen(false);
+    }, [location]);
 
     return (
-        <header className={`header ${isScrolled ? 'header-scrolled' : ''}`}>
-            <div className="header-container">
+        <header
+            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-legion-bg/90 backdrop-blur-md shadow-lg py-3' : 'bg-transparent py-5'
+                }`}
+        >
+            <div className="container mx-auto px-4 flex items-center justify-between">
                 {/* Logo */}
-                <Link to="/" className="header-logo">
-                    <div className="logo-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                            <path d="M2 17l10 5 10-5" />
-                            <path d="M2 12l10 5 10-5" />
-                        </svg>
+                <Link to="/" className="flex items-center gap-2 group">
+                    <div className="relative">
+                        <Shield className="w-8 h-8 text-legion-gold fill-legion-gold/20" />
+                        <motion.div
+                            className="absolute inset-0 bg-legion-gold/40 blur-lg rounded-full"
+                            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+                            transition={{ duration: 3, repeat: Infinity }}
+                        />
                     </div>
-                    <span className="logo-text">SwapSafe</span>
+                    <span className="text-2xl font-black tracking-tight text-white group-hover:text-legion-gold transition-colors">
+                        BUYERS<span className="text-legion-gold">LEGION</span>
+                    </span>
                 </Link>
 
-                {/* Search Bar */}
-                <form className="header-search" onSubmit={handleSearch}>
-                    <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="11" cy="11" r="8" />
-                        <path d="M21 21l-4.35-4.35" />
-                    </svg>
-                    <input
-                        type="text"
-                        placeholder="Search for items..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="search-input"
-                    />
-                </form>
+                {/* Desktop Navigation */}
+                <nav className="hidden md:flex items-center gap-8">
+                    <Link to="/browse" className="text-gray-300 hover:text-white font-medium transition-colors">Marketplace</Link>
+                    <Link to="/community" className="text-gray-300 hover:text-white font-medium transition-colors">Brotherhood</Link>
+                    <Link to="/sell" className="text-gray-300 hover:text-white font-medium transition-colors">Sell Item</Link>
+                </nav>
 
-                {/* Navigation */}
-                <nav className={`header-nav ${isMobileMenuOpen ? 'open' : ''}`}>
-                    <Link to="/browse" className="nav-link">Browse</Link>
-                    <Link to="/sell" className="nav-link nav-link-sell">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M12 5v14M5 12h14" />
-                        </svg>
-                        Sell
+                {/* Actions */}
+                <div className="hidden md:flex items-center gap-4">
+                    <Link to="/search" className="p-2 text-gray-300 hover:text-legion-gold transition-colors">
+                        <Search className="w-5 h-5" />
                     </Link>
 
-                    {isAuthenticated ? (
+                    {user ? (
                         <>
-                            <Link to="/messages" className="nav-link nav-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                                </svg>
-                                <span className="nav-badge">3</span>
+                            <Link to="/messages" className="p-2 text-gray-300 hover:text-legion-gold transition-colors relative">
+                                <MessageSquare className="w-5 h-5" />
+                                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                             </Link>
-
-                            <div className="nav-dropdown">
-                                <button className="nav-profile">
-                                    <img
-                                        src={user?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'}
-                                        alt={user?.name}
-                                        className="avatar avatar-sm"
-                                    />
-                                    <span className="hide-mobile">{user?.name?.split(' ')[0]}</span>
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M6 9l6 6 6-6" />
-                                    </svg>
-                                </button>
-                                <div className="dropdown-menu">
-                                    <Link to="/dashboard" className="dropdown-item">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <rect x="3" y="3" width="7" height="7" />
-                                            <rect x="14" y="3" width="7" height="7" />
-                                            <rect x="14" y="14" width="7" height="7" />
-                                            <rect x="3" y="14" width="7" height="7" />
-                                        </svg>
-                                        Dashboard
-                                    </Link>
-                                    <Link to={`/profile/${user?.id}`} className="dropdown-item">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                            <circle cx="12" cy="7" r="4" />
-                                        </svg>
-                                        My Profile
-                                    </Link>
-                                    <Link to="/dashboard?tab=listings" className="dropdown-item">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                                            <line x1="7" y1="7" x2="7.01" y2="7" />
-                                        </svg>
-                                        My Listings
-                                    </Link>
-                                    <Link to="/dashboard?tab=orders" className="dropdown-item">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                                            <line x1="3" y1="6" x2="21" y2="6" />
-                                            <path d="M16 10a4 4 0 0 1-8 0" />
-                                        </svg>
-                                        Orders
-                                    </Link>
-                                    <div className="dropdown-divider"></div>
-                                    <button onClick={handleLogout} className="dropdown-item dropdown-item-danger">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                                            <polyline points="16 17 21 12 16 7" />
-                                            <line x1="21" y1="12" x2="9" y2="12" />
-                                        </svg>
-                                        Logout
-                                    </button>
-                                </div>
+                            <Link to="/cart" className="p-2 text-gray-300 hover:text-legion-gold transition-colors relative">
+                                <ShoppingBag className="w-5 h-5" />
+                                {cartItems.length > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-legion-gold text-legion-bg text-xs font-bold rounded-full flex items-center justify-center">
+                                        {cartItems.length}
+                                    </span>
+                                )}
+                            </Link>
+                            <div className="relative group">
+                                <Link to="/dashboard">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-legion-gold to-yellow-600 p-[2px]">
+                                        <div className="w-full h-full rounded-full bg-legion-card flex items-center justify-center overflow-hidden">
+                                            {user.avatar ? (
+                                                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <User className="w-5 h-5 text-gray-300" />
+                                            )}
+                                        </div>
+                                    </div>
+                                </Link>
                             </div>
                         </>
                     ) : (
-                        <div className="nav-auth">
-                            <Link to="/login" className="btn btn-ghost">Log in</Link>
-                            <Link to="/register" className="btn btn-primary">Sign up</Link>
+                        <div className="flex items-center gap-3">
+                            <Link to="/login" className="text-white hover:text-legion-gold font-medium transition-colors">
+                                Login
+                            </Link>
+                            <Link to="/register" className="btn-primary py-2 px-4 shadow-lg shadow-legion-gold/20">
+                                Join Legion
+                            </Link>
                         </div>
                     )}
+                </div>
 
-                    {/* Cart */}
-                    {itemCount > 0 && (
-                        <Link to="/checkout" className="nav-cart">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="9" cy="21" r="1" />
-                                <circle cx="20" cy="21" r="1" />
-                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                            </svg>
-                            <span className="cart-badge">{itemCount}</span>
-                        </Link>
-                    )}
-                </nav>
-
-                {/* Mobile Menu Toggle */}
+                {/* Mobile Menu Button */}
                 <button
-                    className="mobile-menu-toggle"
+                    className="md:hidden text-white"
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    aria-label="Toggle menu"
                 >
-                    <span></span>
-                    <span></span>
-                    <span></span>
+                    {isMobileMenuOpen ? <X /> : <Menu />}
                 </button>
             </div>
-        </header>
-    )
-}
 
-export default Header
+            {/* Mobile Menu */}
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="md:hidden bg-legion-card border-t border-white/10"
+                    >
+                        <div className="container mx-auto px-4 py-4 flex flex-col gap-4">
+                            <Link to="/browse" className="text-gray-300 hover:text-white py-2">Marketplace</Link>
+                            <Link to="/community" className="text-gray-300 hover:text-white py-2">Brotherhood</Link>
+                            <Link to="/sell" className="text-gray-300 hover:text-white py-2">Sell Item</Link>
+                            <hr className="border-white/10" />
+                            {user ? (
+                                <>
+                                    <Link to="/dashboard" className="text-gray-300 hover:text-white py-2">Dashboard</Link>
+                                    <button onClick={logout} className="text-red-400 text-left py-2">Logout</button>
+                                </>
+                            ) : (
+                                <div className="flex flex-col gap-3">
+                                    <Link to="/login" className="btn-secondary text-center">Login</Link>
+                                    <Link to="/register" className="btn-primary text-center">Join Legion</Link>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </header>
+    );
+};
+
+export default Header;

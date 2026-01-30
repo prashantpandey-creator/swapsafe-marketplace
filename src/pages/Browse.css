@@ -2,14 +2,15 @@
 
 .browse-page {
     min-height: 100vh;
-    background: var(--bg-primary);
+    background: transparent;
 }
 
 /* Header */
 .browse-header {
-    background: var(--bg-secondary);
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
     padding: var(--space-8) 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--glass-border);
 }
 
 .browse-header-content {
@@ -22,10 +23,11 @@
 .browse-header h1 {
     font-size: var(--font-size-2xl);
     margin-bottom: var(--space-1);
+    color: #f8fafc;
 }
 
 .browse-header p {
-    color: var(--text-muted);
+    color: #94a3b8;
     margin: 0;
 }
 
@@ -42,9 +44,9 @@
 /* View Toggle */
 .view-toggle {
     display: flex;
-    background: var(--bg-glass);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-lg);
+    background: var(--glass-base);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
     overflow: hidden;
 }
 
@@ -56,17 +58,18 @@
     justify-content: center;
     background: none;
     border: none;
-    color: var(--text-muted);
+    color: #94a3b8;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
 }
 
 .view-btn:hover {
-    color: var(--text-primary);
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .view-btn.active {
-    background: var(--primary-600);
+    background: var(--guardian-primary);
     color: white;
 }
 
@@ -86,11 +89,11 @@
     justify-content: center;
     min-width: 20px;
     height: 20px;
-    background: var(--primary-500);
+    background: var(--guardian-primary);
     color: white;
     font-size: var(--font-size-xs);
     font-weight: 700;
-    border-radius: var(--radius-full);
+    border-radius: 50%;
 }
 
 /* Content Layout */
@@ -108,9 +111,10 @@
     height: fit-content;
     max-height: calc(100vh - 120px);
     overflow-y: auto;
-    background: var(--bg-card);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: var(--radius-xl);
+    background: var(--glass-base);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
     padding: var(--space-6);
 }
 
@@ -123,19 +127,20 @@
 
 .sidebar-header h3 {
     font-size: var(--font-size-lg);
+    color: #f8fafc;
 }
 
 .clear-filters {
     background: none;
     border: none;
-    color: var(--primary-400);
+    color: var(--guardian-primary-light);
     font-size: var(--font-size-sm);
     cursor: pointer;
-    transition: color var(--transition-fast);
+    transition: color 0.2s ease;
 }
 
 .clear-filters:hover {
-    color: var(--primary-300);
+    color: var(--guardian-primary);
 }
 
 .close-sidebar {
@@ -144,7 +149,7 @@
     height: 32px;
     background: none;
     border: none;
-    color: var(--text-muted);
+    color: #94a3b8;
     cursor: pointer;
 }
 
@@ -156,7 +161,7 @@
 /* Filter Groups */
 .filter-group {
     padding: var(--space-5) 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--glass-border);
 }
 
 .filter-group:last-child {
@@ -167,7 +172,7 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     margin-bottom: var(--space-4);
-    color: var(--text-secondary);
+    color: #cbd5e1;
 }
 
 .filter-options {
@@ -179,24 +184,49 @@
 .filter-option {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: background var(--transition-fast);
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+    backdrop-filter: blur(4px);
 }
 
 .filter-option:hover {
-    background: var(--bg-glass);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(4px);
+}
+
+/* Selected state using :has logic or standard checked styling */
+.filter-option:has(input:checked) {
+    background: linear-gradient(90deg, rgba(124, 58, 237, 0.2), rgba(124, 58, 237, 0.1));
+    border-color: rgba(124, 58, 237, 0.4);
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.15);
 }
 
 .filter-option input {
-    accent-color: var(--primary-500);
+    /* Hide radio visually but keep accessible */
+    appearance: none;
+    -webkit-appearance: none;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    position: absolute;
 }
 
 .filter-option span {
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
+    font-size: 14px;
+    color: #94a3b8;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.filter-option:has(input:checked) span {
+    color: #fff;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(124, 58, 237, 0.5);
 }
 
 /* Price Inputs */
@@ -211,10 +241,14 @@
     flex: 1;
     padding: var(--space-2) var(--space-3);
     font-size: var(--font-size-sm);
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--glass-border);
+    color: white;
+    border-radius: 6px;
 }
 
 .price-inputs span {
-    color: var(--text-muted);
+    color: #94a3b8;
     font-size: var(--font-size-sm);
 }
 
@@ -226,18 +260,18 @@
 
 .price-presets button {
     padding: var(--space-1) var(--space-3);
-    background: var(--bg-glass);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-md);
-    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    color: #94a3b8;
     font-size: var(--font-size-xs);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
 }
 
 .price-presets button:hover {
-    background: var(--primary-600);
-    border-color: var(--primary-600);
+    background: var(--guardian-primary);
+    border-color: var(--guardian-primary);
     color: white;
 }
 
@@ -258,10 +292,10 @@
     position: relative;
     width: 44px;
     height: 24px;
-    background: var(--bg-glass);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-full);
-    transition: all var(--transition-fast);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    transition: all 0.2s ease;
 }
 
 .toggle-switch::after {
@@ -271,14 +305,14 @@
     left: 2px;
     width: 18px;
     height: 18px;
-    background: var(--text-muted);
+    background: #cbd5e1;
     border-radius: 50%;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
 }
 
 .filter-toggle input:checked+.toggle-switch {
-    background: var(--primary-600);
-    border-color: var(--primary-600);
+    background: var(--guardian-primary);
+    border-color: var(--guardian-primary);
 }
 
 .filter-toggle input:checked+.toggle-switch::after {
@@ -288,7 +322,7 @@
 
 .filter-toggle span:last-child {
     font-size: var(--font-size-sm);
-    color: var(--text-secondary);
+    color: #cbd5e1;
 }
 
 .apply-filters-btn {
@@ -310,11 +344,11 @@
     align-items: center;
     gap: var(--space-2);
     padding: var(--space-2) var(--space-3);
-    background: var(--bg-glass);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: var(--radius-full);
+    background: rgba(124, 58, 237, 0.1);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 20px;
     font-size: var(--font-size-sm);
-    color: var(--primary-400);
+    color: var(--guardian-primary-light);
 }
 
 .active-filter button {
@@ -323,41 +357,26 @@
     justify-content: center;
     width: 18px;
     height: 18px;
-    background: rgba(139, 92, 246, 0.2);
+    background: rgba(124, 58, 237, 0.2);
     border: none;
     border-radius: 50%;
-    color: var(--primary-400);
+    color: var(--guardian-primary-light);
     font-size: var(--font-size-sm);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
 }
 
 .active-filter button:hover {
-    background: var(--primary-500);
+    background: var(--guardian-primary);
     color: white;
 }
 
 /* List View */
+/* List View styles moved to ProductCard.css */
 .listings-grid.list-view {
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
-}
-
-.listings-grid.list-view .product-card {
-    display: grid;
-    grid-template-columns: 200px 1fr;
-}
-
-.listings-grid.list-view .product-image {
-    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-    aspect-ratio: 4/3;
-}
-
-.listings-grid.list-view .product-info {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
 }
 
 /* No Results */
@@ -372,23 +391,26 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg-glass);
-    border-radius: var(--radius-full);
+    background: var(--glass-base);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
     margin: 0 auto var(--space-6);
 }
 
 .no-results-icon svg {
     width: 40px;
     height: 40px;
-    color: var(--text-muted);
+    color: #64748b;
 }
 
 .no-results h3 {
     margin-bottom: var(--space-2);
+    color: #f8fafc;
 }
 
 .no-results p {
     margin-bottom: var(--space-6);
+    color: #94a3b8;
 }
 
 /* Mobile Overlay */
@@ -398,6 +420,7 @@
     inset: 0;
     background: rgba(0, 0, 0, 0.7);
     z-index: 99;
+    backdrop-filter: blur(4px);
 }
 
 /* Responsive */
@@ -416,7 +439,7 @@
         border-radius: 0;
         z-index: 100;
         transform: translateX(-100%);
-        transition: transform var(--transition-base);
+        transition: transform 0.3s ease;
     }
 
     .browse-sidebar.open {
@@ -458,13 +481,21 @@
     .sort-select {
         flex: 1;
     }
+}
 
-    .listings-grid.list-view .product-card {
-        grid-template-columns: 1fr;
-    }
 
-    .listings-grid.list-view .product-image {
-        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-        aspect-ratio: 16/9;
-    }
+
+/* Section Titles */
+.section-title {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    margin-bottom: var(--space-4);
+    margin-top: var(--space-6);
+    color: #f8fafc;
+    text-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+}
+
+/* Browse Main Area */
+.browse-main {
+    flex: 1;
 }

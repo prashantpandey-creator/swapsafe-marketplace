@@ -1,19 +1,34 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import ProductCard from '../components/common/ProductCard'
-import { mockListings, categories } from '../data/mockData'
+import { listingsAPI } from '../services/api'
+import { categories } from '../data/mockData'
 import './Home.css'
 
 function Home() {
     const [searchQuery, setSearchQuery] = useState('')
     const [featuredListings, setFeaturedListings] = useState([])
     const [recentListings, setRecentListings] = useState([])
+    const [loading, setLoading] = useState(true)
     const navigate = useNavigate()
 
     useEffect(() => {
-        // Simulate fetching data
-        setFeaturedListings(mockListings.filter(l => l.featured).slice(0, 8))
-        setRecentListings(mockListings.slice(0, 8))
+        const fetchListings = async () => {
+            try {
+                const response = await listingsAPI.getAll({ sort: 'newest' })
+                const listings = response.listings || []
+                // Featured listings = verified ones or first few
+                setFeaturedListings(listings.filter(l => l.aiVerified || l.featured).slice(0, 8))
+                setRecentListings(listings.slice(0, 8))
+            } catch (err) {
+                console.error('Failed to fetch listings:', err)
+                setFeaturedListings([])
+                setRecentListings([])
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchListings()
     }, [])
 
     const handleSearch = (e) => {
@@ -240,7 +255,7 @@ function Home() {
 
                     <div className="listings-grid grid grid-4">
                         {featuredListings.map((listing) => (
-                            <ProductCard key={listing.id} product={listing} />
+                            <ProductCard key={listing._id || listing.id} product={listing} />
                         ))}
                     </div>
                 </div>
@@ -259,7 +274,7 @@ function Home() {
 
                     <div className="listings-grid grid grid-4">
                         {recentListings.map((listing) => (
-                            <ProductCard key={listing.id} product={listing} />
+                            <ProductCard key={listing._id || listing.id} product={listing} />
                         ))}
                     </div>
                 </div>

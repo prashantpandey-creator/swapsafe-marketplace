@@ -395,6 +395,173 @@
     justify-content: center;
 }
 
+/* AI Pricing Section */
+.ai-pricing-section {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    margin-bottom: var(--space-6);
+}
+
+.ai-pricing-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.ai-pricing-header .ai-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gradient-primary);
+    border-radius: var(--radius-lg);
+    flex-shrink: 0;
+}
+
+.ai-pricing-header .ai-icon svg {
+    width: 24px;
+    height: 24px;
+    color: white;
+}
+
+.ai-pricing-header h3 {
+    font-size: var(--font-size-base);
+    margin: 0 0 var(--space-1) 0;
+}
+
+.ai-pricing-header p {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.ai-pricing-header .btn {
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+.ai-estimate-result {
+    margin-top: var(--space-5);
+    padding-top: var(--space-5);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.estimate-main {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.estimate-main>div {
+    text-align: center;
+    padding: var(--space-4);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-lg);
+}
+
+.estimate-main .label {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    margin-bottom: var(--space-2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.estimate-main .value {
+    display: block;
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.estimate-main .estimate-price .value {
+    color: var(--success);
+    font-size: var(--font-size-2xl);
+}
+
+.estimate-main .confidence {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--primary-400);
+    margin-top: var(--space-1);
+}
+
+.estimate-main .savings {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--success);
+    margin-top: var(--space-1);
+}
+
+.estimate-reasoning {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-bottom: var(--space-4);
+    padding: var(--space-3);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-md);
+}
+
+.savings-preview {
+    margin-bottom: var(--space-6);
+}
+
+.savings-badge {
+    display: inline-block;
+    padding: var(--space-2) var(--space-4);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(52, 211, 153, 0.2));
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--success);
+}
+
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: var(--space-2);
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.submit-error {
+    margin-top: var(--space-4);
+    padding: var(--space-3);
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+
+/* Responsive */
 @media (max-width: 600px) {
     .photo-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -414,5 +581,18 @@
 
     .create-listing-success .success-actions {
         flex-direction: column;
+    }
+
+    .estimate-main {
+        grid-template-columns: 1fr;
+    }
+
+    .ai-pricing-header {
+        flex-wrap: wrap;
+    }
+
+    .ai-pricing-header .btn {
+        width: 100%;
+        margin-top: var(--space-3);
     }
 }

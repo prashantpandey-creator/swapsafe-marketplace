@@ -1,12 +1,18 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import ProductCard from '../components/common/ProductCard'
-import { mockListings, categories, conditions, formatPrice } from '../data/mockData'
+import VirtualProductGrid from '../components/common/VirtualProductGrid'
+import { listingsAPI } from '../services/api'
+import { categories, conditions, formatPrice } from '../data/mockData'
 import './Browse.css'
 
 function Browse() {
     const { category } = useParams()
     const [searchParams, setSearchParams] = useSearchParams()
+
+    const [listings, setListings] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
 
     const [filters, setFilters] = useState({
         category: category || searchParams.get('category') || '',
@@ -19,9 +25,35 @@ function Browse() {
         verifiedOnly: searchParams.get('verified') === 'true'
     })
 
-    const [viewMode, setViewMode] = useState('grid')
+    const [viewMode, setViewMode] = useState('list')
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
     const searchQuery = searchParams.get('search') || ''
+
+    // Fetch listings from API
+    useEffect(() => {
+        const fetchListings = async () => {
+            setLoading(true)
+            setError(null)
+            try {
+                const response = await listingsAPI.getAll({
+                    category: filters.category || undefined,
+                    condition: filters.condition || undefined,
+                    minPrice: filters.minPrice || undefined,
+                    maxPrice: filters.maxPrice || undefined,
+                    search: searchQuery || undefined,
+                    sort: filters.sortBy
+                })
+                setListings(response.listings || [])
+            } catch (err) {
+                console.error('Failed to fetch listings:', err)
+                setError('Failed to load listings. Please try again.')
+                setListings([])
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchListings()
+    }, [filters.category, filters.condition, filters.minPrice, filters.maxPrice, filters.sortBy, searchQuery])
 
     // Update category from URL params
     useEffect(() => {
@@ -30,78 +62,18 @@ function Browse() {
         }
     }, [category])
 
-    // Filter and sort listings
-    const filteredListings = useMemo(() => {
-        let result = [...mockListings]
-
-        // Search filter
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase()
-            result = result.filter(listing =>
-                listing.title.toLowerCase().includes(query) ||
-                listing.description.toLowerCase().includes(query)
-            )
-        }
-
-        // Category filter
-        if (filters.category) {
-            result = result.filter(listing => listing.category === filters.category)
-        }
-
-        // Condition filter
-        if (filters.condition) {
-            result = result.filter(listing => listing.condition === filters.condition)
-        }
-
-        // Price range filter
-        if (filters.minPrice) {
-            result = result.filter(listing => listing.price >= parseInt(filters.minPrice))
-        }
-        if (filters.maxPrice) {
-            result = result.filter(listing => listing.price <= parseInt(filters.maxPrice))
-        }
-
-        // Location filter
+    // Apply client-side filters for location, delivery, verified
+    const filteredListings = listings.filter(listing => {
         if (filters.location) {
-            result = result.filter(listing =>
-                listing.location.city.toLowerCase().includes(filters.location.toLowerCase()) ||
-                listing.location.state.toLowerCase().includes(filters.location.toLowerCase())
-            )
+            const loc = filters.location.toLowerCase()
+            const city = listing.location?.city?.toLowerCase() || ''
+            const state = listing.location?.state?.toLowerCase() || ''
+            if (!city.includes(loc) && !state.includes(loc)) return false
         }
-
-        // Delivery available filter
-        if (filters.deliveryOnly) {
-            result = result.filter(listing => listing.deliveryAvailable)
-        }
-
-        // Verified only filter
-        if (filters.verifiedOnly) {
-            result = result.filter(listing => listing.aiVerified)
-        }
-
-        // Sort
-        switch (filters.sortBy) {
-            case 'newest':
-                result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                break
-            case 'oldest':
-                result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-                break
-            case 'price-low':
-                result.sort((a, b) => a.price - b.price)
-                break
-            case 'price-high':
-                result.sort((a, b) => b.price - a.price)
-                break
-            case 'popular':
-                result.sort((a, b) => b.views - a.views)
-                break
-            default:
-                break
-        }
-
-        return result
-    }, [filters, searchQuery])
+        if (filters.deliveryOnly && !(listing.deliveryAvailable || listing.deliveryOptions?.shipping)) return false
+        if (filters.verifiedOnly && !listing.aiVerified) return false
+        return true // CRITICAL: Must return true to include listings that pass filters
+    })
 
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }))
@@ -245,7 +217,7 @@ function Browse() {
                                         onChange={() => handleFilterChange('category', cat.slug)}
                                     />
                                     <span>
-                                        {cat.icon} {cat.name}
+                                        {cat.name}
                                     </span>
                                 </label>
                             ))}
@@ -369,6 +341,29 @@ function Browse() {
 
                 {/* Listings Grid */}
                 <main className="browse-main">
+                    {/* Featured Section - Show only when no filters active */}
+                    {!searchQuery && !activeFilterCount && filteredListings.some(l => l.featured || l.aiVerified) && (
+                        <section className="featured-section">
+                            <div className="featured-section-header">
+                                <h2>
+                                    <svg className="icon" viewBox="0 0 24 24" fill="currentColor">
+                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                    </svg>
+                                    Featured Items
+                                </h2>
+                            </div>
+                            <div className="featured-scroll">
+                                {filteredListings
+                                    .filter(l => l.featured || l.aiVerified)
+                                    .slice(0, 6)
+                                    .map(listing => (
+                                        <ProductCard key={`featured-${listing._id || listing.id}`} product={{ ...listing, featured: true }} />
+                                    ))
+                                }
+                            </div>
+                        </section>
+                    )}
+
                     {/* Active Filters */}
                     {activeFilterCount > 0 && (
                         <div className="active-filters">
@@ -411,12 +406,39 @@ function Browse() {
                         </div>
                     )}
 
-                    {filteredListings.length > 0 ? (
-                        <div className={`listings-grid ${viewMode === 'list' ? 'list-view' : 'grid grid-4'}`}>
-                            {filteredListings.map(listing => (
-                                <ProductCard key={listing.id} product={listing} />
-                            ))}
+                    {loading ? (
+                        <div className="no-results">
+                            <div className="no-results-icon" style={{ animation: 'spin 1s linear infinite' }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="10" strokeDasharray="40" strokeDashoffset="10" />
+                                </svg>
+                            </div>
+                            <h3>Loading listings...</h3>
                         </div>
+                    ) : error ? (
+                        <div className="no-results">
+                            <div className="no-results-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                            </div>
+                            <h3>Error loading listings</h3>
+                            <p>{error}</p>
+                            <button className="btn btn-primary" onClick={() => window.location.reload()}>
+                                Try Again
+                            </button>
+                        </div>
+                    ) : filteredListings.length > 0 ? (
+                        <>
+                            <h2 className="section-title">All Items</h2>
+                            <div className={`listings-grid ${viewMode === 'list' ? 'list-view' : ''}`}>
+                                {filteredListings.map(listing => (
+                                    <ProductCard key={listing._id || listing.id} product={listing} />
+                                ))}
+                            </div>
+                        </>
                     ) : (
                         <div className="no-results">
                             <div className="no-results-icon">
