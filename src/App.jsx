@@ -18,6 +18,7 @@ import Dashboard from './pages/Dashboard'
 import TrackOrder from './pages/TrackOrder'
 
 import BackgroundManager from './components/layout/BackgroundManager'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 // ... imports ...
 
 function App() {
@@ -48,6 +49,7 @@ function App() {
                         </main>
                         <Footer />
                     </div>
+                    <SpeedInsights />
                 </Router>
             </CartProvider>
         </AuthProvider>
