@@ -25,83 +25,99 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         const ctx = canvas.getContext('2d');
         let animationFrameId;
 
+        // Start mouse in center
         mouseRef.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 
         let tick = 0;
         const particles = [];
-        const PARTICLE_COUNT = 100; // Optimal count for smooth FPS
+        const PARTICLE_COUNT = 150; // Increased density for full coverage
 
         class Particle {
-            constructor(cx, cy) {
-                this.reset(cx, cy);
+            constructor(w, h) {
+                this.reset(w, h, true);
             }
 
-            reset(cx, cy) {
-                this.x = cx + (Math.random() - 0.5) * 200;
-                this.y = cy + (Math.random() - 0.5) * 200;
+            reset(w, h, initial = false) {
+                // Spawn source: Mix of center and random spots near center
+                const cx = w / 2;
+                const cy = h / 2;
 
-                // Smoother, faster movement
-                this.angle = Math.random() * Math.PI * 2;
-                this.speed = 0.5 + Math.random() * 0.8; // Increased speed (was 0.2)
-
-                this.vx = Math.cos(this.angle) * this.speed;
-                this.vy = Math.sin(this.angle) * this.speed;
-
-                this.life = 0;
-                this.maxLife = 200 + Math.random() * 100;
-
-                // Neon Colors (Pre-calculated strings for performance)
-                const rand = Math.random();
-                if (rand > 0.6) {
-                    this.color = '#a855f7'; // Purple-500
-                } else if (rand > 0.3) {
-                    this.color = '#22d3ee'; // Cyan-400
+                // Determine start position (emanating source)
+                if (initial) {
+                    this.x = Math.random() * w;
+                    this.y = Math.random() * h;
                 } else {
-                    this.color = '#e879f9'; // Fuchsia-400
+                    this.x = cx + (Math.random() - 0.5) * 50;
+                    this.y = cy + (Math.random() - 0.5) * 50;
                 }
 
-                this.history = [];
+                // Emanating Direction (Outwards)
+                const angle = Math.atan2(this.y - cy, this.x - cx) + (Math.random() - 0.5);
+                this.speed = 0.5 + Math.random() * 1.5; // Varied speed
+
+                this.vx = Math.cos(angle) * this.speed;
+                this.vy = Math.sin(angle) * this.speed;
+
+                this.life = 0;
+                this.maxLife = 400 + Math.random() * 400; // Long life to reach edges
+
+                // Color Palette: Deep Neon
+                const palette = ['#a855f7', '#06b6d4', '#ec4899', '#8b5cf6'];
+                this.color = palette[Math.floor(Math.random() * palette.length)];
+
+                this.history = []; // Trail
             }
 
             update(width, height, mouse) {
                 this.life++;
 
-                // Gentle Mouse Attraction
-                const dx = mouse.x - this.x;
-                const dy = mouse.y - this.y;
-                const dist = Math.hypot(dx, dy);
-
-                // Swirling attraction
-                if (dist > 50 && dist < 400) {
-                    this.vx += (dx / dist) * 0.005;
-                    this.vy += (dy / dist) * 0.005;
-                }
-
-                this.vx *= 0.98; // Less drag for more flow
-                this.vy *= 0.98;
-
+                // 1. Base Emanating Movement
                 this.x += this.vx;
                 this.y += this.vy;
 
-                if (this.life > this.maxLife || this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
-                    this.reset(width / 2, height / 2);
+                // 2. Mouse Interaction: "Stretch" and "Steer"
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                const force = Math.max(0, (600 - dist) / 600); // Effect range
+
+                if (dist > 20) {
+                    // Pull velocity towards mouse slightly (Steering)
+                    this.vx += (dx / dist) * force * 0.02;
+                    this.vy += (dy / dist) * force * 0.02;
                 }
 
-                // Shorter trails for cleaner look
+                // 3. Friction to keep things controlled
+                this.vx *= 0.995;
+                this.vy *= 0.995;
+
+                // 4. Reset if completely off screen OR too old
+                // Allow going slightly off screen before reset to ensure full coverage
+                const margin = 100;
+                if (this.life > this.maxLife ||
+                    this.x < -margin || this.x > width + margin ||
+                    this.y < -margin || this.y > height + margin) {
+                    this.reset(width, height);
+                }
+
+                // 5. Trail history
                 if (this.life % 2 === 0) {
                     this.history.push({ x: this.x, y: this.y });
-                    if (this.history.length > 8) this.history.shift();
+                    if (this.history.length > 20) this.history.shift(); // Longer trails for "stretching" look
                 }
             }
 
             draw(ctx) {
-                // Draw lines only (High Performance: No ShadowBlur here)
                 if (this.history.length > 1) {
                     ctx.beginPath();
                     ctx.strokeStyle = this.color;
-                    ctx.lineWidth = 1.5;
+                    ctx.lineWidth = 1; // Fine lines
+
+                    // Draw flowing curve
                     ctx.moveTo(this.history[0].x, this.history[0].y);
-                    for (let p of this.history) ctx.lineTo(p.x, p.y);
+                    for (let p of this.history) {
+                        ctx.lineTo(p.x, p.y);
+                    }
                     ctx.stroke();
                 }
             }
@@ -112,7 +128,7 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             canvas.height = window.innerHeight;
             particles.length = 0;
             for (let i = 0; i < PARTICLE_COUNT; i++) {
-                particles.push(new Particle(canvas.width / 2, canvas.height / 2));
+                particles.push(new Particle(canvas.width, canvas.height));
             }
         };
         init();
@@ -120,8 +136,8 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         const drawMandala = () => {
             tick++;
 
-            // Fast clear with fade
-            ctx.fillStyle = 'rgba(10, 10, 25, 0.2)';
+            // Slow fade for persistent trails (Light painting effect)
+            ctx.fillStyle = 'rgba(2, 2, 10, 0.05)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const cx = canvas.width / 2;
@@ -129,8 +145,6 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             const mx = mouseRef.current.x;
             const my = mouseRef.current.y;
 
-            // PERFORMANCE OPTIMIZATION:
-            // Use lighter composite operation for "Neon" look without expensive shadows
             ctx.globalCompositeOperation = 'lighter';
 
             particles.forEach(p => {
@@ -139,7 +153,7 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                 // Draw Original
                 p.draw(ctx);
 
-                // 6-way Symmetry (Mandala)
+                // Rotational Symmetry - Spreads the pattern everywhere
                 const segments = 6;
                 for (let i = 1; i < segments; i++) {
                     ctx.save();
@@ -157,7 +171,10 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         };
 
         const handleResize = () => init();
-        const handleMouseMove = (e) => { mouseRef.current = { x: e.clientX, y: e.clientY }; };
+        const handleMouseMove = (e) => {
+            // Smooth mouse interpolation could reside here
+            mouseRef.current = { x: e.clientX, y: e.clientY };
+        };
 
         window.addEventListener('resize', handleResize);
         window.addEventListener('mousemove', handleMouseMove);
@@ -190,7 +207,7 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                     transform: 'translate(-50%, -50%)',
                     width: '100%',
                     height: '100%',
-                    background: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 60%)',
+                    background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)',
                 }} />
             </div>
         );
