@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext'
 import { listingsAPI } from '../services/api'
 import { formatPrice, getTimeAgo, getConditionColor, conditions } from '../data/mockData'
 import GuardianBadge from '../components/trust/GuardianBadge'
+import TrustIndicators from '../components/trust/TrustIndicators'
 import './ProductDetail.css'
 
 function ProductDetail() {
@@ -277,23 +278,7 @@ function ProductDetail() {
                         </div>
 
                         {/* Guardian Trust Indicators */}
-                        <div className="trust-card glass-panel p-5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
-                            <h3 className="text-sm font-bold text-emerald-400 mb-3 flex items-center gap-2">
-                                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" /></svg>
-                                Guardian Protected
-                            </h3>
-                            <ul className="text-xs text-slate-300 space-y-2">
-                                <li className="flex items-start gap-2">
-                                    <span className="text-emerald-500">✓</span> Payment held in escrow
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-emerald-500">✓</span> Verified seller identity
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-emerald-500">✓</span> 24/7 Support mediation
-                                </li>
-                            </ul>
-                        </div>
+                        <TrustIndicators />
                     </aside>
                 </div>
             </div>

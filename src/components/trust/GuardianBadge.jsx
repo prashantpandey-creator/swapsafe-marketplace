@@ -26,6 +26,27 @@ const GuardianBadge = ({ level = 'verified', showLabel = true, animated = false 
                     background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(124, 58, 237, 0.1))',
                     boxShadow: '0 0 15px var(--guardian-gold-glow)'
                 };
+            case 'gold':
+                return {
+                    borderColor: '#fbbf24', // Amber-400
+                    color: '#fbbf24',
+                    background: 'rgba(251, 191, 36, 0.1)',
+                    boxShadow: '0 0 10px rgba(251, 191, 36, 0.2)'
+                };
+            case 'silver':
+                return {
+                    borderColor: '#94a3b8', // Slate-400
+                    color: '#e2e8f0',
+                    background: 'rgba(148, 163, 184, 0.1)',
+                    boxShadow: '0 0 10px rgba(148, 163, 184, 0.1)'
+                };
+            case 'bronze':
+                return {
+                    borderColor: '#d97706', // Amber-600
+                    color: '#fcd34d',
+                    background: 'rgba(217, 119, 6, 0.1)',
+                    boxShadow: 'none'
+                };
             case 'premium':
                 return {
                     borderColor: 'var(--guardian-primary-light)',
