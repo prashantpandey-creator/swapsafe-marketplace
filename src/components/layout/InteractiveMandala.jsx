@@ -25,12 +25,11 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         const ctx = canvas.getContext('2d');
         let animationFrameId;
 
-        // Initialize mouse in center
         mouseRef.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 
         let tick = 0;
         const particles = [];
-        const PARTICLE_COUNT = 120; // Good balance
+        const PARTICLE_COUNT = 100; // Optimal count for smooth FPS
 
         class Particle {
             constructor(cx, cy) {
@@ -38,29 +37,27 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             }
 
             reset(cx, cy) {
-                this.x = cx + (Math.random() - 0.5) * 100;
-                this.y = cy + (Math.random() - 0.5) * 100;
+                this.x = cx + (Math.random() - 0.5) * 200;
+                this.y = cy + (Math.random() - 0.5) * 200;
 
-                // Slow Movement
+                // Smoother, faster movement
                 this.angle = Math.random() * Math.PI * 2;
-                this.speed = 0.2 + Math.random() * 0.5; // Slower
+                this.speed = 0.5 + Math.random() * 0.8; // Increased speed (was 0.2)
+
                 this.vx = Math.cos(this.angle) * this.speed;
                 this.vy = Math.sin(this.angle) * this.speed;
 
                 this.life = 0;
-                this.maxLife = 300 + Math.random() * 200;
+                this.maxLife = 200 + Math.random() * 100;
 
-                // Deep Neon Colors
+                // Neon Colors (Pre-calculated strings for performance)
                 const rand = Math.random();
                 if (rand > 0.6) {
-                    this.color = `hsla(280, 100%, 60%, 1)`; // Neon Purple
-                    this.shadow = '#d8b4fe';
+                    this.color = '#a855f7'; // Purple-500
                 } else if (rand > 0.3) {
-                    this.color = `hsla(180, 100%, 70%, 1)`; // Cyan/Silver Glow
-                    this.shadow = '#bae6fd';
+                    this.color = '#22d3ee'; // Cyan-400
                 } else {
-                    this.color = `hsla(320, 100%, 60%, 1)`; // Deep Pink/Magenta
-                    this.shadow = '#fbcfe8';
+                    this.color = '#e879f9'; // Fuchsia-400
                 }
 
                 this.history = [];
@@ -69,58 +66,47 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             update(width, height, mouse) {
                 this.life++;
 
-                // Mouse Attraction (Gravity Well)
+                // Gentle Mouse Attraction
                 const dx = mouse.x - this.x;
                 const dy = mouse.y - this.y;
                 const dist = Math.hypot(dx, dy);
 
-                // Gentle pull towards mouse if far away
-                if (dist > 100) {
-                    this.vx += (dx / dist) * 0.002;
-                    this.vy += (dy / dist) * 0.002;
+                // Swirling attraction
+                if (dist > 50 && dist < 400) {
+                    this.vx += (dx / dist) * 0.005;
+                    this.vy += (dy / dist) * 0.005;
                 }
 
-                // Drag/Friction to prevent wild orbiting
-                this.vx *= 0.99;
-                this.vy *= 0.99;
+                this.vx *= 0.98; // Less drag for more flow
+                this.vy *= 0.98;
 
                 this.x += this.vx;
                 this.y += this.vy;
 
-                // Reset if dead or out of bounds (wrapped logic)
-                if (this.life > this.maxLife) {
+                if (this.life > this.maxLife || this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
                     this.reset(width / 2, height / 2);
                 }
 
-                // Trail history for lines
-                if (this.life % 3 === 0) {
+                // Shorter trails for cleaner look
+                if (this.life % 2 === 0) {
                     this.history.push({ x: this.x, y: this.y });
-                    if (this.history.length > 10) this.history.shift(); // Longer trails
+                    if (this.history.length > 8) this.history.shift();
                 }
             }
 
             draw(ctx) {
-                // Draw ONLY lines, no dots
+                // Draw lines only (High Performance: No ShadowBlur here)
                 if (this.history.length > 1) {
                     ctx.beginPath();
                     ctx.strokeStyle = this.color;
                     ctx.lineWidth = 1.5;
-                    ctx.lineCap = 'round';
-                    ctx.lineJoin = 'round';
-                    // Glow effect
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = this.color;
-
                     ctx.moveTo(this.history[0].x, this.history[0].y);
                     for (let p of this.history) ctx.lineTo(p.x, p.y);
                     ctx.stroke();
-
-                    ctx.shadowBlur = 0; // Reset
                 }
             }
         }
 
-        // Init Particles
         const init = () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -134,8 +120,8 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         const drawMandala = () => {
             tick++;
 
-            // Fade trails deeply for "deep" look
-            ctx.fillStyle = 'rgba(10, 10, 20, 0.1)';
+            // Fast clear with fade
+            ctx.fillStyle = 'rgba(10, 10, 25, 0.2)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const cx = canvas.width / 2;
@@ -143,7 +129,9 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             const mx = mouseRef.current.x;
             const my = mouseRef.current.y;
 
-            ctx.globalCompositeOperation = 'lighter'; // Neon blending
+            // PERFORMANCE OPTIMIZATION:
+            // Use lighter composite operation for "Neon" look without expensive shadows
+            ctx.globalCompositeOperation = 'lighter';
 
             particles.forEach(p => {
                 p.update(canvas.width, canvas.height, { x: mx, y: my });
@@ -151,8 +139,7 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                 // Draw Original
                 p.draw(ctx);
 
-                // SYMMETRY: Rotational clones (Mandala effect)
-                // 6-way symmetry for that "Mandala" feel
+                // 6-way Symmetry (Mandala)
                 const segments = 6;
                 for (let i = 1; i < segments; i++) {
                     ctx.save();
@@ -164,25 +151,13 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                 }
             });
 
-            ctx.globalCompositeOperation = 'source-over'; // Reset blend mode
-
-            // Central Core - Deep Glowing
-            ctx.beginPath();
-            ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-            ctx.fillStyle = '#fff';
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = '#d8b4fe'; // Purple glow
-            ctx.fill();
-            ctx.shadowBlur = 0;
+            ctx.globalCompositeOperation = 'source-over';
 
             animationFrameId = requestAnimationFrame(drawMandala);
         };
 
         const handleResize = () => init();
-
-        const handleMouseMove = (e) => {
-            mouseRef.current = { x: e.clientX, y: e.clientY };
-        };
+        const handleMouseMove = (e) => { mouseRef.current = { x: e.clientX, y: e.clientY }; };
 
         window.addEventListener('resize', handleResize);
         window.addEventListener('mousemove', handleMouseMove);
@@ -195,7 +170,7 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         };
     }, [variant, isMobile]);
 
-    // MOBILE RENDER - Deep animated gradients
+    // MOBILE RENDER
     if (isMobile) {
         return (
             <div style={{
@@ -206,8 +181,7 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                 height: '100%',
                 zIndex: 0,
                 background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)',
-                pointerEvents: 'none',
-                overflow: 'hidden'
+                pointerEvents: 'none'
             }}>
                 <div style={{
                     position: 'absolute',
@@ -216,21 +190,12 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                     transform: 'translate(-50%, -50%)',
                     width: '100%',
                     height: '100%',
-                    background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)',
-                    animation: 'pulse 5s infinite ease-in-out'
+                    background: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 60%)',
                 }} />
-                <style>{`
-                    @keyframes pulse {
-                        0% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
-                        50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
-                        100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
-                    }
-                `}</style>
             </div>
         );
     }
 
-    // DESKTOP RENDER
     return (
         <canvas
             ref={canvasRef}
@@ -242,7 +207,7 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                 height: '100%',
                 zIndex: 0,
                 pointerEvents: 'none',
-                background: '#020205' // Very dark base
+                background: '#020205'
             }}
         />
     );
