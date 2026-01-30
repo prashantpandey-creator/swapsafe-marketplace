@@ -9,11 +9,11 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         const ctx = canvas.getContext('2d');
         let animationFrameId;
 
-        // Two time scales
-        let time = 0; // Slow, for geometry evolution
-        let tick = 0; // Fast, for flickering/electricity
+        let time = 0; // Geometry evolution
+        let tick = 0; // Fast flicker
 
-        let bloom = 0;
+        // Start from 0 to allow "generation from nothing" visual on load
+        let startTime = Date.now();
 
         const handleResize = () => {
             canvas.width = window.innerWidth;
@@ -33,12 +33,9 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         const GOLDEN_ANGLE = PI * (3 - Math.sqrt(5));
 
         const drawMandala = () => {
-            // TIME SCALES
-            time += 0.002; // Medium generation speed (was 0.005)
-            tick += 0.1;   // Fast flicker speed
-
-            if (bloom < 1) bloom += 0.005;
-            const activeBloom = bloom * (2 - bloom);
+            // CONSTANT FORWARD FLOW
+            time += 0.003;
+            tick += 0.1;
 
             const { width, height } = canvas;
             const cx = width / 2;
@@ -46,69 +43,56 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             const mx = mouseRef.current.x;
             const my = mouseRef.current.y;
 
-            // CLEARING: Increased opacity to clean up the "mess"
-            // 0.25 allows some trails but keeps it readable
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.25)';
+            const maxRadius = Math.max(width, height) * 0.6; // Go off screen
+
+            // Dreamy trails (low opacity clear)
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
             ctx.fillRect(0, 0, width, height);
 
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1.5;
 
             const nx = (mx / width) - 0.5;
             const ny = (my / height) - 0.5;
             const mouseDist = Math.hypot(nx, ny);
 
-            // --- LAYER 1: STABLE PHYLLOTAXIS (The Base) ---
-            const dots = 300 * activeBloom;
-            const spread = 6;
+            // --- GENERATION LOOP ---
+            // Create "Wavefronts" that travel from center -> out
+            const waveCount = 12;
 
-            for (let i = 0; i < dots; i++) {
-                const r = spread * Math.sqrt(i) * (1 + mouseDist * 0.5);
-                const theta = i * GOLDEN_ANGLE + time * 0.2; // Slow rotation
+            for (let i = 0; i < waveCount; i++) {
+                // Calculate radius based on time loop
+                // The (i / waveCount) offsets them so they are spaced out
+                const loopProgress = (time * 0.1 + (i / waveCount)) % 1;
+                const currentRadius = loopProgress * maxRadius;
 
-                const x = cx + r * Math.cos(theta);
-                const y = cy + r * Math.sin(theta);
-
-                // Color flickers fast (using 'tick')
-                const hue = (tick * 10 + i * 0.5) % 360;
-                ctx.fillStyle = `hsla(${hue}, 100%, 60%, 0.6)`;
+                // If radius is tiny, it's just being born
+                if (currentRadius < 5) continue;
 
                 ctx.beginPath();
-                ctx.arc(x, y, 1.5, 0, TAU);
-                ctx.fill();
-            }
 
-            // --- LAYER 2: MORPHING GEOMETRY (The "Generation") ---
-            // We want to see the pattern "generating" => k changing smoothly
-            const roseLayers = 3;
-            const maxRadius = 350;
+                // Opacity fades in at center, out at edge
+                const alpha = Math.sin(loopProgress * PI); // Bell curve opacity
 
-            for (let j = 0; j < roseLayers; j++) {
-                ctx.beginPath();
-                const layerIndex = j + 1;
-                const radius = (maxRadius / roseLayers) * layerIndex * activeBloom;
+                // Color Cycles with the radius/time
+                const hue = (tick * 5 + i * 30 + currentRadius * 0.5) % 360;
+                ctx.strokeStyle = `hsla(${hue}, 100%, 65%, ${alpha * 0.8})`;
 
-                const rotation = time * (0.5 / layerIndex);
-
-                // The "Generation" logic: k evolves over time
-                // Patters shift from 4 petals -> 8 -> 6 etc.
-                const kBase = 4 + Math.sin(time * 0.5) * 3;
-
-                // Fast flicker color
-                const layerHue = (tick * 5 + j * 90) % 360;
-                ctx.strokeStyle = `hsla(${layerHue}, 100%, 65%, 0.5)`;
-
-                // Electric Jitter (Fast tick)
-                const jitter = Math.sin(tick * 2 + j) * 2;
-                ctx.shadowBlur = 10 + jitter;
-                ctx.shadowColor = `hsla(${layerHue}, 100%, 50%, 0.8)`;
+                // Rose Curve Logic
+                // k (petals) morphs as it expands? 
+                // Let's make inner simple, outer complex
+                const kBase = 3 + (currentRadius * 0.02) + Math.sin(time) * 2;
 
                 const resolution = 0.05;
-                for (let theta = 0; theta < TAU * Math.ceil(kBase + 2); theta += resolution) {
-                    // Rose Equation: r = cos(k * theta)
-                    // The "k" is the gene of the flower
-                    const k = kBase + (mouseDist * 2);
+                // Rotate the whole layer
+                const rotation = time * (i % 2 === 0 ? 1 : -1) * 0.5;
 
-                    const r = radius * Math.cos(k * theta);
+                for (let theta = 0; theta < TAU * Math.ceil(kBase + 2); theta += resolution) {
+                    const k = kBase + (mouseDist * 5); // Mouse warps complexity
+
+                    // r = radius * cos(k * theta)
+                    // We add a little 'jitter' for the electronic feel
+                    const jitter = Math.sin(tick + theta * 10) * (currentRadius * 0.02);
+                    const r = (currentRadius * Math.cos(k * theta)) + jitter;
 
                     const x = cx + r * Math.cos(theta + rotation);
                     const y = cy + r * Math.sin(theta + rotation);
@@ -117,34 +101,36 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                     else ctx.lineTo(x, y);
                 }
                 ctx.stroke();
-                ctx.shadowBlur = 0;
             }
 
-            // --- LAYER 3: HIGH SPEED DATA STREAMS (The "Fast" part) ---
-            // Orbiting electrons that move VERY fast
-            const particles = 12;
-            const orbitR = 400 * activeBloom;
+            // --- CENTER SOURCE (The Singularity) ---
+            // A glowing orb where things come from
+            const centerPulse = 10 + Math.sin(tick) * 5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, centerPulse, 0, TAU);
+            ctx.fillStyle = `hsla(${tick * 2}, 100%, 80%, 0.8)`;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = 'white';
+            ctx.fill();
+            ctx.shadowBlur = 0;
 
-            for (let p = 0; p < particles; p++) {
-                // Moving fast around the ring
-                const angle = (p / particles) * TAU + (tick * 0.05);
-                const x = cx + orbitR * Math.cos(angle);
-                const y = cy + orbitR * Math.sin(angle);
+            // --- OUTWARD PARTICLES ---
+            const particleCount = 20;
+            for (let p = 0; p < particleCount; p++) {
+                const pProgress = ((time * 0.2) + (p / particleCount)) % 1;
+                const pR = pProgress * maxRadius;
+                const pAngle = p * GOLDEN_ANGLE + time;
+
+                const px = cx + pR * Math.cos(pAngle);
+                const py = cy + pR * Math.sin(pAngle);
 
                 ctx.fillStyle = '#fff';
+                ctx.globalAlpha = 1 - pProgress; // Fade out
                 ctx.beginPath();
-                ctx.arc(x, y, 3, 0, TAU);
+                ctx.arc(px, py, 2, 0, TAU);
                 ctx.fill();
-
-                // Connect to center briefly to show "beams"
-                if (Math.random() > 0.95) {
-                    ctx.beginPath();
-                    ctx.moveTo(cx, cy);
-                    ctx.lineTo(x, y);
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${Math.random() * 0.5})`;
-                    ctx.stroke();
-                }
             }
+            ctx.globalAlpha = 1;
 
             animationFrameId = requestAnimationFrame(drawMandala);
         };
