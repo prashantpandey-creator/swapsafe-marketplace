@@ -30,42 +30,83 @@ const InteractiveMandala = ({ variant = 'home' }) => {
 
         let tick = 0;
         const particles = [];
-        const PARTICLE_COUNT = 80; // Reduced count for performance
+        const PARTICLE_COUNT = 150; // Increased for density
 
         class Particle {
             constructor(cx, cy) {
-                this.cx = cx;
-                this.cy = cy;
-                this.angle = Math.random() * Math.PI * 2;
-                this.radius = Math.random() * 200;
-                this.speed = 0.002 + Math.random() * 0.003;
-                this.size = 1 + Math.random() * 2;
-                this.hue = Math.random() * 30 + 30; // Golds/Oranges
+                this.reset(cx, cy);
             }
 
-            update() {
-                this.angle += this.speed;
-                // Gentle pulse
-                this.currRadius = this.radius + Math.sin(tick * 0.05) * 10;
+            reset(cx, cy) {
+                this.x = cx + (Math.random() - 0.5) * 50; // Start dense in center
+                this.y = cy + (Math.random() - 0.5) * 50;
+
+                // ORTHOGONAL MOVEMENT (Maze-like)
+                const dir = Math.floor(Math.random() * 4); // 0: right, 1: down, 2: left, 3: up
+                const speed = 0.5 + Math.random() * 1.5;
+
+                this.vx = (dir === 0 ? 1 : dir === 2 ? -1 : 0) * speed;
+                this.vy = (dir === 1 ? 1 : dir === 3 ? -1 : 0) * speed;
+
+                this.life = 0;
+                this.maxLife = 200 + Math.random() * 200;
+
+                // Palette: Gold, Purple, Silver
+                const rand = Math.random();
+                if (rand > 0.6) {
+                    this.color = `hsla(35, 100%, 70%, 0.8)`; // Gold
+                } else if (rand > 0.3) {
+                    this.color = `hsla(270, 70%, 65%, 0.8)`; // Purple
+                } else {
+                    this.color = `hsla(210, 20%, 90%, 0.8)`; // Silver
+                }
+
+                this.size = 1 + Math.random() * 2;
+                this.history = []; // For trail lines
+            }
+
+            update(width, height) {
+                this.life++;
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Change direction randomly (90 deg turns)
+                if (this.life % 40 === 0 && Math.random() > 0.5) {
+                    if (this.vx !== 0) {
+                        this.vx = 0;
+                        this.vy = (Math.random() > 0.5 ? 1 : -1) * (0.5 + Math.random());
+                    } else {
+                        this.vy = 0;
+                        this.vx = (Math.random() > 0.5 ? 1 : -1) * (0.5 + Math.random());
+                    }
+                }
+
+                // Wrap around or bounce? Let's spread.
+                if (this.x < 0 || this.x > width || this.y < 0 || this.y > height || this.life > this.maxLife) {
+                    this.reset(width / 2, height / 2); // Regenerate at center
+                }
+
+                // Trail history
+                if (this.life % 5 === 0) {
+                    this.history.push({ x: this.x, y: this.y });
+                    if (this.history.length > 5) this.history.shift();
+                }
             }
 
             draw(ctx) {
-                const x = this.cx + Math.cos(this.angle) * this.currRadius;
-                const y = this.cy + Math.sin(this.angle) * this.currRadius;
-
-                ctx.fillStyle = `hsla(${this.hue}, 80%, 60%, 0.6)`;
+                ctx.fillStyle = this.color;
                 ctx.beginPath();
-                ctx.arc(x, y, this.size, 0, Math.PI * 2);
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Symmetry - Draw 6 clones
-                for (let i = 1; i < 6; i++) {
-                    const rotAngle = this.angle + (Math.PI * 2 / 6) * i;
-                    const rx = this.cx + Math.cos(rotAngle) * this.currRadius;
-                    const ry = this.cy + Math.sin(rotAngle) * this.currRadius;
+                // Draw maze trails
+                if (this.history.length > 1) {
                     ctx.beginPath();
-                    ctx.arc(rx, ry, this.size, 0, Math.PI * 2);
-                    ctx.fill();
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 0.5;
+                    ctx.moveTo(this.history[0].x, this.history[0].y);
+                    for (let p of this.history) ctx.lineTo(p.x, p.y);
+                    ctx.stroke();
                 }
             }
         }
@@ -74,6 +115,7 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         const init = () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            particles.length = 0;
             for (let i = 0; i < PARTICLE_COUNT; i++) {
                 particles.push(new Particle(canvas.width / 2, canvas.height / 2));
             }
@@ -83,46 +125,53 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         const drawMandala = () => {
             tick++;
 
-            // Fade effect for trails
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.1)';
+            // Nice trails effect without full clear
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.15)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Mouse interaction - slightly shift center
-            const cx = canvas.width / 2 + (mouseRef.current.x - canvas.width / 2) * 0.05;
-            const cy = canvas.height / 2 + (mouseRef.current.y - canvas.height / 2) * 0.05;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
 
             particles.forEach(p => {
-                p.cx = cx;
-                p.cy = cy;
-                p.update();
+                p.update(canvas.width, canvas.height);
                 p.draw(ctx);
+
+                // SYMMETRY: Rotational clones to create Mandala
+                // We draw the same particle at rotated positions
+                const segments = 8;
+                for (let i = 1; i < segments; i++) {
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.rotate((Math.PI * 2 / segments) * i);
+                    ctx.translate(-cx, -cy);
+                    p.draw(ctx);
+                    ctx.restore();
+                }
             });
 
-            // Center Glow
+            // Active Central Core (Regenerative Source)
             ctx.beginPath();
-            ctx.arc(cx, cy, 20 + Math.sin(tick * 0.1) * 5, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 165, 0, 0.2)';
-            ctx.filter = 'blur(10px)';
+            ctx.arc(cx, cy, 5 + Math.sin(tick * 0.05) * 3, 0, Math.PI * 2);
+            ctx.fillStyle = `hsla(${270 + Math.sin(tick * 0.02) * 30}, 80%, 70%, 1)`; // Pulsing Purple
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#8b5cf6';
             ctx.fill();
-            ctx.filter = 'none';
+            ctx.shadowBlur = 0;
 
             animationFrameId = requestAnimationFrame(drawMandala);
         };
 
-        const handleMouseMove = (e) => {
-            mouseRef.current = { x: e.clientX, y: e.clientY };
-        };
-
-        window.addEventListener('mousemove', handleMouseMove);
+        const handleResize = () => init();
+        window.addEventListener('resize', handleResize);
         drawMandala();
 
         return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('resize', handleResize);
             cancelAnimationFrame(animationFrameId);
         };
     }, [variant, isMobile]);
 
-    // MOBILE RENDER (CSS Only, Lightweight)
+    // MOBILE RENDER
     if (isMobile) {
         return (
             <div style={{
@@ -133,24 +182,41 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                 height: '100%',
                 zIndex: 0,
                 background: 'radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)',
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                overflow: 'hidden'
             }}>
-                <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    width: '200px',
-                    height: '200px',
-                    background: 'radial-gradient(circle, rgba(234, 179, 8, 0.1) 0%, transparent 70%)',
-                    borderRadius: '50%',
-                    animation: 'pulse 4s infinite ease-in-out'
-                }} />
+                {/* Purple/Gold/Silver Orbs */}
+                <div className="orb orb-1" />
+                <div className="orb orb-2" />
+                <div className="orb orb-3" />
+
                 <style>{`
-                    @keyframes pulse {
-                        0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-                        50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
-                        100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+                    .orb {
+                        position: absolute;
+                        border-radius: 50%;
+                        filter: blur(40px);
+                        opacity: 0.4;
+                        animation: float 10s infinite ease-in-out;
+                    }
+                    .orb-1 {
+                        top: 20%; left: 20%; width: 200px; height: 200px;
+                        background: #fbbf24; /* Gold */
+                    }
+                    .orb-2 {
+                        bottom: 20%; right: 20%; width: 250px; height: 250px;
+                        background: #8b5cf6; /* Purple */
+                        animation-delay: -2s;
+                    }
+                    .orb-3 {
+                        top: 50%; left: 50%; width: 150px; height: 150px;
+                        background: #e2e8f0; /* Silver */
+                        transform: translate(-50%, -50%);
+                        animation-delay: -5s;
+                    }
+                    @keyframes float {
+                        0%, 100% { transform: translate(0, 0) scale(1); }
+                        33% { transform: translate(30px, -50px) scale(1.1); }
+                        66% { transform: translate(-20px, 20px) scale(0.9); }
                     }
                 `}</style>
             </div>
