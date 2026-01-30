@@ -9,13 +9,8 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         const ctx = canvas.getContext('2d');
         let animationFrameId;
 
-        let time = 0; // Geometry evolution
-        let tick = 0; // Fast flicker
-
-        let bloom = 0;
-
-        // Start from 0 to allow "generation from nothing" visual on load
-        let startTime = Date.now();
+        let particles = [];
+        let tick = 0;
 
         const handleResize = () => {
             canvas.width = window.innerWidth;
@@ -30,18 +25,46 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         window.addEventListener('mousemove', handleMouseMove);
         handleResize();
 
-        const PI = Math.PI;
-        const TAU = PI * 2;
-        const GOLDEN_ANGLE = PI * (3 - Math.sqrt(5));
+        // PARTICLE SYSTEM
+        class Particle {
+            constructor(x, y, angle, speed) {
+                this.x = x;
+                this.y = y;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.age = 0;
+                this.life = 400 + Math.random() * 200; // Lives long enough to reach edge
+            }
+
+            update(mouse) {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.age++;
+
+                // Slight "attraction" to mouse? 
+                // Or "steering" towards mouse
+                // Let's make it subtle: gravity well
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist > 50) {
+                    this.vx += (dx / dist) * 0.005;
+                    this.vy += (dy / dist) * 0.005;
+                }
+            }
+
+            draw(ctx) {
+                const alpha = Math.max(0, 1 - (this.age / this.life));
+                ctx.fillStyle = `rgba(255, 200, 100, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
 
         const drawMandala = () => {
-            // SLOW & CONTROLLED
-            time += 0.0005; // Very slow evolution
-            tick += 0.02;   // Gentle pulsing, not crazy flickering
-
-            // Slow Bloom: Takes about 15-20 seconds to reach full majesty
-            if (bloom < 1) bloom += 0.001;
-            const activeBloom = bloom; // Linear is fine for slow growth
+            tick++;
 
             const { width, height } = canvas;
             const cx = width / 2;
@@ -49,70 +72,81 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             const mx = mouseRef.current.x;
             const my = mouseRef.current.y;
 
-            const maxRadius = Math.max(width, height) * 0.6;
-
-            // Clear with slightly more opacity for cleaner trails
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.3)';
+            // Clear trails
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
             ctx.fillRect(0, 0, width, height);
 
-            ctx.lineWidth = 1.5;
+            // --- SPAWN NEW PARTICLES ---
+            // Slowly and deliberately
+            if (tick % 5 === 0) { // Every 5 frames
+                const spawnCount = 4;
+                for (let i = 0; i < spawnCount; i++) {
+                    // Bias angle towards mouse?
+                    const angleToMouse = Math.atan2(my - cy, mx - cx);
+                    // Random angle but weighted? No, let's do full spread
+                    // But maybe faster towards mouse
 
-            const nx = (mx / width) - 0.5;
-            const ny = (my / height) - 0.5;
-            const mouseDist = Math.hypot(nx, ny);
+                    const angle = (Math.random() * Math.PI * 2);
+                    const speed = 0.5 + Math.random() * 0.5;
 
-            // --- GENERATION LOOP ---
-            const waveCount = 12;
+                    // If angle is close to mouse angle, boost speed?
+                    const angleDiff = Math.abs(angle - angleToMouse);
+                    let finalSpeed = speed;
+                    if (angleDiff < 1) finalSpeed += 1; // Faster towards mouse
 
-            for (let i = 0; i < waveCount; i++) {
-                // Slower wave travel
-                const loopProgress = (time * 0.2 + (i / waveCount)) % 1;
-
-                // The radius is constrained by the Bloom factor
-                // This makes it literally "grow" from center to edge over time
-                const currentRadius = loopProgress * maxRadius * activeBloom;
-
-                // Birth threshold
-                if (currentRadius < 2) continue;
-
-                ctx.beginPath();
-
-                const alpha = Math.sin(loopProgress * PI);
-
-                // Gentle Ethereal Colors
-                const hue = (tick * 2 + i * 30 + currentRadius * 0.2) % 360;
-                ctx.strokeStyle = `hsla(${hue}, 80%, 60%, ${alpha * 0.8})`;
-
-                // Rose Curve Logic
-                // k morphs extremely slowly
-                const kBase = 3 + (currentRadius * 0.01) + Math.sin(time * 0.5) * 2;
-
-                const resolution = 0.05;
-                const rotation = time * (i % 2 === 0 ? 1 : -1) * 0.2;
-
-                for (let theta = 0; theta < TAU * Math.ceil(kBase + 2); theta += resolution) {
-                    const k = kBase + (mouseDist * 2);
-
-                    // Subtle Vibration (Not "Crazy")
-                    const jitter = Math.sin(tick + theta * 10) * (currentRadius * 0.005);
-                    const r = (currentRadius * Math.cos(k * theta)) + jitter;
-
-                    const x = cx + r * Math.cos(theta + rotation);
-                    const y = cy + r * Math.sin(theta + rotation);
-
-                    if (theta === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
+                    particles.push(new Particle(cx, cy, angle, finalSpeed));
                 }
-                ctx.stroke();
             }
 
-            // --- CENTER SOURCE ---
-            const centerPulse = 5 + Math.sin(tick) * 2; // Subtle pulse
+            // --- UPDATE & DRAW & CONNECT ---
+            ctx.strokeStyle = 'rgba(255, 165, 0, 0.15)';
+            ctx.lineWidth = 1;
+
+            // Spatial Partitioning (Grid) for performance? 
+            // Naive N^2 is fine for < 300 particles
+            if (particles.length > 500) particles.shift(); // Cap count
+
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                p.update({ x: mx, y: my });
+
+                // Draw Connections (The "Connected" part)
+                // Connect to neighbors close by
+                for (let j = i + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const dx = p.x - p2.x;
+                    const dy = p.y - p2.y;
+                    const distSq = dx * dx + dy * dy;
+
+                    if (distSq < 6000) { // ~80px max dist
+                        const alpha = 1 - (distSq / 6000);
+
+                        // Color based on distance to center (Rainbow Web)
+                        const distToCenter = Math.hypot(p.x - cx, p.y - cy);
+                        const hue = (tick * 0.5 + distToCenter * 0.5) % 360;
+
+                        ctx.strokeStyle = `hsla(${hue}, 80%, 60%, ${alpha * 0.3})`;
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                }
+
+                if (p.age > p.life) {
+                    particles.splice(i, 1);
+                    i--;
+                } else {
+                    p.draw(ctx);
+                }
+            }
+
+            // --- CENTER GLOW ---
             ctx.beginPath();
-            ctx.arc(cx, cy, centerPulse, 0, TAU);
-            ctx.fillStyle = `hsla(${tick * 5}, 100%, 80%, 0.8)`;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = 'white';
+            ctx.arc(cx, cy, 10 + Math.sin(tick * 0.1) * 5, 0, Math.PI * 2);
+            ctx.fillStyle = `hsla(35, 100%, 70%, 0.8)`;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = 'orange';
             ctx.fill();
             ctx.shadowBlur = 0;
 
