@@ -5,7 +5,7 @@ const InteractiveMandala = ({ variant = 'home' }) => {
     const mouseRef = useRef({ x: 0, y: 0 });
     const [isMobile, setIsMobile] = useState(false);
 
-    // 1. Mobile Detection (Run once on mount)
+    // 1. Mobile Detection
     useEffect(() => {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
@@ -15,7 +15,7 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // 2. Canvas Animation (Only run if NOT mobile)
+    // 2. Canvas Animation
     useEffect(() => {
         if (isMobile) return;
 
@@ -30,7 +30,7 @@ const InteractiveMandala = ({ variant = 'home' }) => {
 
         let tick = 0;
         const particles = [];
-        const PARTICLE_COUNT = 150; // Increased for density
+        const PARTICLE_COUNT = 120; // Good balance
 
         class Particle {
             constructor(cx, cy) {
@@ -38,75 +38,84 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             }
 
             reset(cx, cy) {
-                this.x = cx + (Math.random() - 0.5) * 50; // Start dense in center
-                this.y = cy + (Math.random() - 0.5) * 50;
+                this.x = cx + (Math.random() - 0.5) * 100;
+                this.y = cy + (Math.random() - 0.5) * 100;
 
-                // ORTHOGONAL MOVEMENT (Maze-like)
-                const dir = Math.floor(Math.random() * 4); // 0: right, 1: down, 2: left, 3: up
-                const speed = 0.5 + Math.random() * 1.5;
-
-                this.vx = (dir === 0 ? 1 : dir === 2 ? -1 : 0) * speed;
-                this.vy = (dir === 1 ? 1 : dir === 3 ? -1 : 0) * speed;
+                // Slow Movement
+                this.angle = Math.random() * Math.PI * 2;
+                this.speed = 0.2 + Math.random() * 0.5; // Slower
+                this.vx = Math.cos(this.angle) * this.speed;
+                this.vy = Math.sin(this.angle) * this.speed;
 
                 this.life = 0;
-                this.maxLife = 200 + Math.random() * 200;
+                this.maxLife = 300 + Math.random() * 200;
 
-                // Palette: Gold, Purple, Silver
+                // Deep Neon Colors
                 const rand = Math.random();
                 if (rand > 0.6) {
-                    this.color = `hsla(35, 100%, 70%, 0.8)`; // Gold
+                    this.color = `hsla(280, 100%, 60%, 1)`; // Neon Purple
+                    this.shadow = '#d8b4fe';
                 } else if (rand > 0.3) {
-                    this.color = `hsla(270, 70%, 65%, 0.8)`; // Purple
+                    this.color = `hsla(180, 100%, 70%, 1)`; // Cyan/Silver Glow
+                    this.shadow = '#bae6fd';
                 } else {
-                    this.color = `hsla(210, 20%, 90%, 0.8)`; // Silver
+                    this.color = `hsla(320, 100%, 60%, 1)`; // Deep Pink/Magenta
+                    this.shadow = '#fbcfe8';
                 }
 
-                this.size = 1 + Math.random() * 2;
-                this.history = []; // For trail lines
+                this.history = [];
             }
 
-            update(width, height) {
+            update(width, height, mouse) {
                 this.life++;
+
+                // Mouse Attraction (Gravity Well)
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const dist = Math.hypot(dx, dy);
+
+                // Gentle pull towards mouse if far away
+                if (dist > 100) {
+                    this.vx += (dx / dist) * 0.002;
+                    this.vy += (dy / dist) * 0.002;
+                }
+
+                // Drag/Friction to prevent wild orbiting
+                this.vx *= 0.99;
+                this.vy *= 0.99;
+
                 this.x += this.vx;
                 this.y += this.vy;
 
-                // Change direction randomly (90 deg turns)
-                if (this.life % 40 === 0 && Math.random() > 0.5) {
-                    if (this.vx !== 0) {
-                        this.vx = 0;
-                        this.vy = (Math.random() > 0.5 ? 1 : -1) * (0.5 + Math.random());
-                    } else {
-                        this.vy = 0;
-                        this.vx = (Math.random() > 0.5 ? 1 : -1) * (0.5 + Math.random());
-                    }
+                // Reset if dead or out of bounds (wrapped logic)
+                if (this.life > this.maxLife) {
+                    this.reset(width / 2, height / 2);
                 }
 
-                // Wrap around or bounce? Let's spread.
-                if (this.x < 0 || this.x > width || this.y < 0 || this.y > height || this.life > this.maxLife) {
-                    this.reset(width / 2, height / 2); // Regenerate at center
-                }
-
-                // Trail history
-                if (this.life % 5 === 0) {
+                // Trail history for lines
+                if (this.life % 3 === 0) {
                     this.history.push({ x: this.x, y: this.y });
-                    if (this.history.length > 5) this.history.shift();
+                    if (this.history.length > 10) this.history.shift(); // Longer trails
                 }
             }
 
             draw(ctx) {
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Draw maze trails
+                // Draw ONLY lines, no dots
                 if (this.history.length > 1) {
                     ctx.beginPath();
                     ctx.strokeStyle = this.color;
-                    ctx.lineWidth = 0.5;
+                    ctx.lineWidth = 1.5;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    // Glow effect
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = this.color;
+
                     ctx.moveTo(this.history[0].x, this.history[0].y);
                     for (let p of this.history) ctx.lineTo(p.x, p.y);
                     ctx.stroke();
+
+                    ctx.shadowBlur = 0; // Reset
                 }
             }
         }
@@ -125,20 +134,26 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         const drawMandala = () => {
             tick++;
 
-            // Nice trails effect without full clear
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.15)';
+            // Fade trails deeply for "deep" look
+            ctx.fillStyle = 'rgba(10, 10, 20, 0.1)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
+            const mx = mouseRef.current.x;
+            const my = mouseRef.current.y;
+
+            ctx.globalCompositeOperation = 'lighter'; // Neon blending
 
             particles.forEach(p => {
-                p.update(canvas.width, canvas.height);
+                p.update(canvas.width, canvas.height, { x: mx, y: my });
+
+                // Draw Original
                 p.draw(ctx);
 
-                // SYMMETRY: Rotational clones to create Mandala
-                // We draw the same particle at rotated positions
-                const segments = 8;
+                // SYMMETRY: Rotational clones (Mandala effect)
+                // 6-way symmetry for that "Mandala" feel
+                const segments = 6;
                 for (let i = 1; i < segments; i++) {
                     ctx.save();
                     ctx.translate(cx, cy);
@@ -149,12 +164,14 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                 }
             });
 
-            // Active Central Core (Regenerative Source)
+            ctx.globalCompositeOperation = 'source-over'; // Reset blend mode
+
+            // Central Core - Deep Glowing
             ctx.beginPath();
-            ctx.arc(cx, cy, 5 + Math.sin(tick * 0.05) * 3, 0, Math.PI * 2);
-            ctx.fillStyle = `hsla(${270 + Math.sin(tick * 0.02) * 30}, 80%, 70%, 1)`; // Pulsing Purple
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = '#8b5cf6';
+            ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#d8b4fe'; // Purple glow
             ctx.fill();
             ctx.shadowBlur = 0;
 
@@ -162,16 +179,23 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         };
 
         const handleResize = () => init();
+
+        const handleMouseMove = (e) => {
+            mouseRef.current = { x: e.clientX, y: e.clientY };
+        };
+
         window.addEventListener('resize', handleResize);
+        window.addEventListener('mousemove', handleMouseMove);
         drawMandala();
 
         return () => {
             window.removeEventListener('resize', handleResize);
+            window.removeEventListener('mousemove', handleMouseMove);
             cancelAnimationFrame(animationFrameId);
         };
     }, [variant, isMobile]);
 
-    // MOBILE RENDER
+    // MOBILE RENDER - Deep animated gradients
     if (isMobile) {
         return (
             <div style={{
@@ -181,42 +205,25 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                 width: '100%',
                 height: '100%',
                 zIndex: 0,
-                background: 'radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)',
+                background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)',
                 pointerEvents: 'none',
                 overflow: 'hidden'
             }}>
-                {/* Purple/Gold/Silver Orbs */}
-                <div className="orb orb-1" />
-                <div className="orb orb-2" />
-                <div className="orb orb-3" />
-
+                <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '100%',
+                    height: '100%',
+                    background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)',
+                    animation: 'pulse 5s infinite ease-in-out'
+                }} />
                 <style>{`
-                    .orb {
-                        position: absolute;
-                        border-radius: 50%;
-                        filter: blur(40px);
-                        opacity: 0.4;
-                        animation: float 10s infinite ease-in-out;
-                    }
-                    .orb-1 {
-                        top: 20%; left: 20%; width: 200px; height: 200px;
-                        background: #fbbf24; /* Gold */
-                    }
-                    .orb-2 {
-                        bottom: 20%; right: 20%; width: 250px; height: 250px;
-                        background: #8b5cf6; /* Purple */
-                        animation-delay: -2s;
-                    }
-                    .orb-3 {
-                        top: 50%; left: 50%; width: 150px; height: 150px;
-                        background: #e2e8f0; /* Silver */
-                        transform: translate(-50%, -50%);
-                        animation-delay: -5s;
-                    }
-                    @keyframes float {
-                        0%, 100% { transform: translate(0, 0) scale(1); }
-                        33% { transform: translate(30px, -50px) scale(1.1); }
-                        66% { transform: translate(-20px, 20px) scale(0.9); }
+                    @keyframes pulse {
+                        0% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+                        50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
+                        100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
                     }
                 `}</style>
             </div>
@@ -235,7 +242,7 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                 height: '100%',
                 zIndex: 0,
                 pointerEvents: 'none',
-                background: '#0f172a'
+                background: '#020205' // Very dark base
             }}
         />
     );
