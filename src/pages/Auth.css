@@ -1,4 +1,4 @@
-/* Auth Pages Styles */
+/* Buyers Legion Auth Theme */
 
 .auth-page {
     min-height: 100vh;
@@ -6,96 +6,205 @@
     align-items: center;
     justify-content: center;
     padding: var(--space-8);
-    background:
-        radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.2) 0%, transparent 50%),
-        radial-gradient(circle at 80% 70%, rgba(20, 184, 166, 0.15) 0%, transparent 50%);
+    background-color: #0f172a;
+    /* Slate 900 */
+    background-image:
+        radial-gradient(circle at 15% 50%, rgba(251, 191, 36, 0.08) 0%, transparent 50%),
+        /* Gold subtle */
+        radial-gradient(circle at 85% 30%, rgba(245, 158, 11, 0.05) 0%, transparent 50%);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Background Texture */
+.auth-page::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23fbbf24' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
 }
 
 .auth-container {
     width: 100%;
-    max-width: 440px;
+    max-width: 420px;
+    z-index: 10;
 }
 
 .auth-card {
-    background: var(--bg-card);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: var(--radius-2xl);
-    padding: var(--space-10);
+    background: rgba(30, 41, 59, 0.6);
+    /* Slate 800 Glass */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    padding: 2.5rem;
+    box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(0, 0, 0, 0.2);
 }
 
 .auth-header {
     text-align: center;
-    margin-bottom: var(--space-8);
+    margin-bottom: 2.5rem;
 }
 
 .auth-logo {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-3);
-    margin-bottom: var(--space-6);
-    color: var(--text-primary);
+    gap: 12px;
+    margin-bottom: 1.5rem;
+    color: white;
     text-decoration: none;
-    font-size: var(--font-size-xl);
-    font-weight: 700;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
 }
 
 .auth-logo .logo-icon {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--gradient-primary);
-    border-radius: var(--radius-lg);
-    color: white;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    /* Legion Gold */
+    border-radius: 14px;
+    color: #fff;
+    box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
 }
 
 .auth-logo .logo-icon svg {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
 }
 
 .auth-header h1 {
-    font-size: var(--font-size-2xl);
-    margin-bottom: var(--space-2);
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(to right, #fff, #cbd5e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .auth-header p {
-    color: var(--text-muted);
+    color: #94a3b8;
+    /* Slate 400 */
     margin: 0;
+    font-size: 0.95rem;
 }
 
 .auth-form {
     display: flex;
     flex-direction: column;
-    gap: var(--space-5);
+    gap: 1.25rem;
 }
 
-.form-error-banner {
-    padding: var(--space-3) var(--space-4);
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: var(--radius-lg);
-    color: var(--error);
-    font-size: var(--font-size-sm);
+/* Modern Input Fields */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
+.form-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #cbd5e1;
+    /* Slate 300 */
+    margin-left: 2px;
+}
+
+.form-input {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.875rem 1rem;
+    color: white;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+    background: rgba(15, 23, 42, 0.8);
+}
+
+.form-input::placeholder {
+    color: rgba(255, 255, 255, 0.2);
+}
+
+/* Checkbox & Links */
 .form-row-between {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    font-size: 0.875rem;
+}
+
+.form-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: #94a3b8;
+}
+
+.form-checkbox input {
+    accent-color: #f59e0b;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
 }
 
 .form-link {
-    font-size: var(--font-size-sm);
-    color: var(--primary-400);
+    color: #f59e0b;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.15s;
 }
 
+.form-link:hover {
+    color: #fbbf24;
+    text-decoration: underline;
+}
+
+/* Primary Button */
+.btn-primary {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 0.875rem;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.25);
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.3);
+    filter: brightness(1.1);
+}
+
+.btn-primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Divider */
 .auth-divider {
     display: flex;
     align-items: center;
-    gap: var(--space-4);
-    margin: var(--space-6) 0;
+    gap: 1rem;
+    margin: 1.5rem 0;
 }
 
 .auth-divider::before,
@@ -103,61 +212,77 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: rgba(255, 255, 255, 0.1);
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), transparent);
 }
 
 .auth-divider span {
-    font-size: var(--font-size-sm);
-    color: var(--text-muted);
+    font-size: 0.8rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
+/* Social Buttons */
 .social-buttons {
-    display: flex;
-    gap: var(--space-3);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
 }
 
 .social-btn {
-    flex: 1;
-    gap: var(--space-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    padding: 0.75rem;
+    border-radius: 12px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-.social-btn svg {
-    width: 20px;
-    height: 20px;
+.social-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
 }
 
+/* Footer */
 .auth-footer {
     text-align: center;
-    margin-top: var(--space-6);
-    font-size: var(--font-size-sm);
-    color: var(--text-muted);
+    margin-top: 2rem;
+    font-size: 0.9rem;
+    color: #94a3b8;
 }
 
 .auth-footer a {
-    color: var(--primary-400);
-    font-weight: 500;
+    color: #f59e0b;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
 }
 
 .demo-credentials {
     text-align: center;
-    margin-top: var(--space-4);
-    padding: var(--space-3);
-    background: var(--bg-glass);
-    border-radius: var(--radius-lg);
-    font-size: var(--font-size-sm);
-    color: var(--text-muted);
-}
-
-.form-checkbox span a {
-    color: var(--primary-400);
+    margin-top: 1.5rem;
+    padding: 0.75rem;
+    background: rgba(245, 158, 11, 0.05);
+    /* Gold tint */
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #fbbf24;
+    border: 1px dashed rgba(245, 158, 11, 0.3);
 }
 
 @media (max-width: 480px) {
     .auth-card {
-        padding: var(--space-6);
-    }
-
-    .social-buttons {
-        flex-direction: column;
+        padding: 1.5rem;
     }
 }

@@ -1,37 +1,7 @@
-import { useState } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import './Auth.css'
+import logo from '../assets/buyers_legion_logo.png'
 
 function Login() {
-    const navigate = useNavigate()
-    const location = useLocation()
-    const { login, isLoading, error } = useAuth()
-
-    const [formData, setFormData] = useState({
-        email: '',
-        password: ''
-    })
-    const [formError, setFormError] = useState('')
-
-    const from = location.state?.from || '/'
-
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        setFormError('')
-
-        if (!formData.email || !formData.password) {
-            setFormError('Please fill in all fields')
-            return
-        }
-
-        const result = await login(formData.email, formData.password)
-        if (result.success) {
-            navigate(from, { replace: true })
-        } else {
-            setFormError(result.error)
-        }
-    }
+    // ... hooks ...
 
     return (
         <div className="auth-page">
@@ -39,14 +9,12 @@ function Login() {
                 <div className="auth-card">
                     <div className="auth-header">
                         <Link to="/" className="auth-logo">
-                            <div className="logo-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                                    <path d="M2 17l10 5 10-5" />
-                                    <path d="M2 12l10 5 10-5" />
-                                </svg>
-                            </div>
-                            <span>SwapSafe</span>
+                            <img
+                                src={logo}
+                                alt="Buyers Legion"
+                                className="w-12 h-12 object-contain drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]"
+                            />
+                            <span>BUYERS<span className="text-legion-gold">LEGION</span></span>
                         </Link>
                         <h1>Welcome Back</h1>
                         <p>Log in to continue buying and selling</p>
