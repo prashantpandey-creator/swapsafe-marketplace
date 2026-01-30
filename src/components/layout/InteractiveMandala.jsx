@@ -12,6 +12,8 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         let time = 0; // Geometry evolution
         let tick = 0; // Fast flicker
 
+        let bloom = 0;
+
         // Start from 0 to allow "generation from nothing" visual on load
         let startTime = Date.now();
 
@@ -33,9 +35,13 @@ const InteractiveMandala = ({ variant = 'home' }) => {
         const GOLDEN_ANGLE = PI * (3 - Math.sqrt(5));
 
         const drawMandala = () => {
-            // CONSTANT FORWARD FLOW
-            time += 0.003;
-            tick += 0.1;
+            // SLOW & CONTROLLED
+            time += 0.0005; // Very slow evolution
+            tick += 0.02;   // Gentle pulsing, not crazy flickering
+
+            // Slow Bloom: Takes about 15-20 seconds to reach full majesty
+            if (bloom < 1) bloom += 0.001;
+            const activeBloom = bloom; // Linear is fine for slow growth
 
             const { width, height } = canvas;
             const cx = width / 2;
@@ -43,10 +49,10 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             const mx = mouseRef.current.x;
             const my = mouseRef.current.y;
 
-            const maxRadius = Math.max(width, height) * 0.6; // Go off screen
+            const maxRadius = Math.max(width, height) * 0.6;
 
-            // Dreamy trails (low opacity clear)
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
+            // Clear with slightly more opacity for cleaner trails
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.3)';
             ctx.fillRect(0, 0, width, height);
 
             ctx.lineWidth = 1.5;
@@ -56,42 +62,39 @@ const InteractiveMandala = ({ variant = 'home' }) => {
             const mouseDist = Math.hypot(nx, ny);
 
             // --- GENERATION LOOP ---
-            // Create "Wavefronts" that travel from center -> out
             const waveCount = 12;
 
             for (let i = 0; i < waveCount; i++) {
-                // Calculate radius based on time loop
-                // The (i / waveCount) offsets them so they are spaced out
-                const loopProgress = (time * 0.1 + (i / waveCount)) % 1;
-                const currentRadius = loopProgress * maxRadius;
+                // Slower wave travel
+                const loopProgress = (time * 0.2 + (i / waveCount)) % 1;
 
-                // If radius is tiny, it's just being born
-                if (currentRadius < 5) continue;
+                // The radius is constrained by the Bloom factor
+                // This makes it literally "grow" from center to edge over time
+                const currentRadius = loopProgress * maxRadius * activeBloom;
+
+                // Birth threshold
+                if (currentRadius < 2) continue;
 
                 ctx.beginPath();
 
-                // Opacity fades in at center, out at edge
-                const alpha = Math.sin(loopProgress * PI); // Bell curve opacity
+                const alpha = Math.sin(loopProgress * PI);
 
-                // Color Cycles with the radius/time
-                const hue = (tick * 5 + i * 30 + currentRadius * 0.5) % 360;
-                ctx.strokeStyle = `hsla(${hue}, 100%, 65%, ${alpha * 0.8})`;
+                // Gentle Ethereal Colors
+                const hue = (tick * 2 + i * 30 + currentRadius * 0.2) % 360;
+                ctx.strokeStyle = `hsla(${hue}, 80%, 60%, ${alpha * 0.8})`;
 
                 // Rose Curve Logic
-                // k (petals) morphs as it expands? 
-                // Let's make inner simple, outer complex
-                const kBase = 3 + (currentRadius * 0.02) + Math.sin(time) * 2;
+                // k morphs extremely slowly
+                const kBase = 3 + (currentRadius * 0.01) + Math.sin(time * 0.5) * 2;
 
                 const resolution = 0.05;
-                // Rotate the whole layer
-                const rotation = time * (i % 2 === 0 ? 1 : -1) * 0.5;
+                const rotation = time * (i % 2 === 0 ? 1 : -1) * 0.2;
 
                 for (let theta = 0; theta < TAU * Math.ceil(kBase + 2); theta += resolution) {
-                    const k = kBase + (mouseDist * 5); // Mouse warps complexity
+                    const k = kBase + (mouseDist * 2);
 
-                    // r = radius * cos(k * theta)
-                    // We add a little 'jitter' for the electronic feel
-                    const jitter = Math.sin(tick + theta * 10) * (currentRadius * 0.02);
+                    // Subtle Vibration (Not "Crazy")
+                    const jitter = Math.sin(tick + theta * 10) * (currentRadius * 0.005);
                     const r = (currentRadius * Math.cos(k * theta)) + jitter;
 
                     const x = cx + r * Math.cos(theta + rotation);
@@ -103,34 +106,15 @@ const InteractiveMandala = ({ variant = 'home' }) => {
                 ctx.stroke();
             }
 
-            // --- CENTER SOURCE (The Singularity) ---
-            // A glowing orb where things come from
-            const centerPulse = 10 + Math.sin(tick) * 5;
+            // --- CENTER SOURCE ---
+            const centerPulse = 5 + Math.sin(tick) * 2; // Subtle pulse
             ctx.beginPath();
             ctx.arc(cx, cy, centerPulse, 0, TAU);
-            ctx.fillStyle = `hsla(${tick * 2}, 100%, 80%, 0.8)`;
-            ctx.shadowBlur = 20;
+            ctx.fillStyle = `hsla(${tick * 5}, 100%, 80%, 0.8)`;
+            ctx.shadowBlur = 15;
             ctx.shadowColor = 'white';
             ctx.fill();
             ctx.shadowBlur = 0;
-
-            // --- OUTWARD PARTICLES ---
-            const particleCount = 20;
-            for (let p = 0; p < particleCount; p++) {
-                const pProgress = ((time * 0.2) + (p / particleCount)) % 1;
-                const pR = pProgress * maxRadius;
-                const pAngle = p * GOLDEN_ANGLE + time;
-
-                const px = cx + pR * Math.cos(pAngle);
-                const py = cy + pR * Math.sin(pAngle);
-
-                ctx.fillStyle = '#fff';
-                ctx.globalAlpha = 1 - pProgress; // Fade out
-                ctx.beginPath();
-                ctx.arc(px, py, 2, 0, TAU);
-                ctx.fill();
-            }
-            ctx.globalAlpha = 1;
 
             animationFrameId = requestAnimationFrame(drawMandala);
         };
