@@ -6,27 +6,22 @@
     isolation: isolate;
 }
 
-/* Guruji / Shadow Warrior Background */
 /* Guruji Protector Background */
 .browse-page::after {
     content: '';
     position: fixed;
     bottom: 0;
     right: 0;
-    width: 50vh;
-    /* Adjust width relative to height */
-    height: 85vh;
-    background-image: url('/src/assets/guruji_protector_standing.png');
+    width: 60vh;
+    height: 90vh;
+    background-image: url('/src/assets/guruji_standing_final.png');
     background-size: contain;
     background-position: bottom right;
     background-repeat: no-repeat;
-    opacity: 0.8;
+    opacity: 0.95;
     z-index: -1;
-    /* Behind content */
     pointer-events: none;
-    /* Blend slightly to look like a spirit/protector */
-    mix-blend-mode: normal;
-    filter: drop-shadow(-10px 0 20px rgba(0, 0, 0, 0.5));
+    filter: drop-shadow(-20px 0 30px rgba(0, 0, 0, 0.6));
 }
 
 /* Base background */
