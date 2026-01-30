@@ -263,7 +263,10 @@ function ProductDetail() {
                                     <div className="font-bold flex items-center gap-1">
                                         {seller.name}
                                         {(seller.verified || seller.isVerified) && (
-                                            <GuardianBadge level="verified" showLabel={false} />
+                                            <GuardianBadge
+                                                level={seller.rating >= 4.8 ? 'gold' : seller.rating >= 4.5 ? 'silver' : 'verified'}
+                                                showLabel={false}
+                                            />
                                         )}
                                     </div>
                                     <div className="text-sm text-slate-400 flex items-center gap-1">

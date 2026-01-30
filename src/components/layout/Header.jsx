@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Menu, X, Search, User, MessageSquare, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+import GuardianBadge from '../trust/GuardianBadge';
 
 import logo from '../../assets/buyers_legion_logo.png';
 
@@ -64,6 +65,11 @@ const Header = () => {
                     <Link to="/search" className="p-2 text-gray-300 hover:text-legion-gold transition-colors">
                         <Search className="w-5 h-5" />
                     </Link>
+
+                    {/* Protection Indicator */}
+                    <div className="hidden lg:flex items-center">
+                        <GuardianBadge level="divine" showLabel={true} animated={true} />
+                    </div>
 
                     {user ? (
                         <>
