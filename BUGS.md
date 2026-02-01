@@ -19,7 +19,7 @@
 
 | ID | Description | Component | Status |
 |----|-------------|-----------|--------|
-| BUG-001 | Nothing happens after signing in (production) | Auth/Login | 🔍 Investigating |
+| BUG-001 | Nothing happens after signing in (production) | Auth/Login | ✅ Fixed |
 | BUG-002 | AI Engine URL changes on tunnel restart | DevOps | ⏳ Workaround in place |
 
 ### 🟠 High
