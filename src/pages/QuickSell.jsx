@@ -80,7 +80,9 @@ const QuickSell = () => {
                 console.log(`🎯 Enhancing with context: ${productName}`);
             }
 
-            const response = await fetch('http://localhost:8000/api/v1/studio/enhance', {
+            // Use env variable for AI engine URL (local dev or Cloudflare Tunnel in production)
+            const AI_ENGINE_URL = import.meta.env.VITE_AI_ENGINE_URL || 'http://localhost:8000';
+            const response = await fetch(`${AI_ENGINE_URL}/api/v1/studio/enhance`, {
                 method: 'POST',
                 body: formDataPayload
             });
