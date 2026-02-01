@@ -7,7 +7,7 @@ import logo from '../assets/buyers_legion_logo.png'
 function Login() {
     const navigate = useNavigate()
     const location = useLocation()
-    const { login, isLoading, error } = useAuth()
+    const { login, loginAsGuest, isLoading, error } = useAuth()
 
     const [formData, setFormData] = useState({
         email: '',
@@ -144,6 +144,32 @@ function Login() {
                             GitHub
                         </button>
                     </div>
+
+                    {/* Guest Login Button */}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            loginAsGuest()
+                            navigate(from, { replace: true })
+                        }}
+                        className="btn btn-lg w-full"
+                        style={{
+                            background: 'linear-gradient(135deg, #374151 0%, #1f2937 100%)',
+                            color: 'white',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            marginTop: '1rem'
+                        }}
+                    >
+                        🎭 Continue as Guest
+                    </button>
+                    <p style={{
+                        textAlign: 'center',
+                        color: '#6b7280',
+                        fontSize: '0.75rem',
+                        marginTop: '0.5rem'
+                    }}>
+                        Full access to all features • No account needed
+                    </p>
 
                     <p className="auth-footer">
                         Don't have an account? <Link to="/register">Sign up</Link>

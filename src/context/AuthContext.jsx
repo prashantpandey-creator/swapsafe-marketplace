@@ -115,6 +115,24 @@ export function AuthProvider({ children }) {
         dispatch({ type: 'LOGOUT' })
     }
 
+    // Guest login - gives full access without backend authentication
+    const loginAsGuest = () => {
+        const guestUser = {
+            _id: 'guest_' + Date.now(),
+            name: 'Guest User',
+            email: 'guest@buyerslegion.com',
+            isGuest: true,
+            createdAt: new Date().toISOString(),
+            // Give guest all permissions for demo purposes
+            canSell: true,
+            canBuy: true,
+            avatar: null
+        }
+        localStorage.setItem('swapsafe_user', JSON.stringify(guestUser))
+        dispatch({ type: 'AUTH_SUCCESS', payload: guestUser })
+        return { success: true }
+    }
+
     const updateProfile = async (updates) => {
         try {
             const data = await authAPI.updateProfile(updates)
@@ -138,6 +156,7 @@ export function AuthProvider({ children }) {
         <AuthContext.Provider value={{
             ...state,
             login,
+            loginAsGuest,
             register,
             logout,
             updateProfile,
