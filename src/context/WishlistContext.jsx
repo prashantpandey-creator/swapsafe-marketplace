@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { toast } from 'react-hot-toast' // We'll use simple alerts if toast not available, or just console
+// import { toast } from 'react-hot-toast'
 
 const WishlistContext = createContext()
 
@@ -9,8 +9,13 @@ export function useWishlist() {
 
 export function WishlistProvider({ children }) {
     const [wishlist, setWishlist] = useState(() => {
-        const saved = localStorage.getItem('swapsafe_wishlist')
-        return saved ? JSON.parse(saved) : []
+        try {
+            const saved = localStorage.getItem('swapsafe_wishlist')
+            return saved ? JSON.parse(saved) : []
+        } catch (error) {
+            console.error('Failed to parse wishlist from storage:', error)
+            return []
+        }
     })
 
     useEffect(() => {

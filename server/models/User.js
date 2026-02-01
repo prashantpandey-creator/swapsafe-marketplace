@@ -51,6 +51,11 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    // E-Wallet Balance
+    credits: {
+        type: Number,
+        default: 50000 // Default high balance for testing as requested
+    },
     // Legion Shield Trust System
     trustScore: {
         type: Number,

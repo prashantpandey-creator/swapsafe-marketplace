@@ -1,0 +1,13 @@
+fastapi==0.109.0
+uvicorn==0.27.0
+python-multipart==0.0.6
+torch; sys_platform != 'darwin'
+torch --index-url https://download.pytorch.org/whl/nightly/cpu; sys_platform == 'darwin'
+numpy
+pillow
+hf_transfer
+huggingface_hub
+python-dotenv
+aiofiles
+requests
+psutil

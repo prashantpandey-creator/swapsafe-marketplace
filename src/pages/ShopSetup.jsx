@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { uploadImage } from '../services/api'
 import './Auth.css' // Reusing auth styles for consistency
 
 function ShopSetup() {
@@ -25,15 +26,28 @@ function ShopSetup() {
         e.preventDefault()
         setIsLoading(true)
 
-        // Simulate API call to update user profile with shop details
         try {
+            let avatarUrl = user?.avatar
+
+            // Upload new avatar if selected
+            if (avatar) {
+                try {
+                    avatarUrl = await uploadImage(avatar)
+                } catch (uploadError) {
+                    console.error("Avatar upload failed:", uploadError)
+                    alert("Failed to upload image. Please try again.")
+                    setIsLoading(false)
+                    return
+                }
+            }
+
             await updateProfile({
                 shopName,
                 upiId,
                 bio,
                 isSeller: true,
                 onboardingCompleted: true,
-                avatar: avatarPreview || user?.avatar // In real app, upload file first
+                avatar: avatarUrl
             })
 
             // Success animation or delay?
@@ -42,6 +56,7 @@ function ShopSetup() {
             }, 1000)
         } catch (error) {
             console.error(error)
+            alert("Failed to setup shop. Please try again.")
         } finally {
             setIsLoading(false)
         }

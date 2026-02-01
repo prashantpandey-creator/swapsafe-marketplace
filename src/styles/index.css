@@ -1,38 +1,217 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Outfit:wght@300;400;500;700&display=swap');
-@import './glass-theme.css';
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* --- LEGION OS PALETTE --- */
+    --void-deep: #050505;
+    /* The Abyss */
+    --void-surface: #0A0A0F;
+    /* UI Cards */
+    --void-border: #1F1F25;
+    /* Subtle Edges */
+
+    --legion-gold: #D4AF37;
+    /* Primary Accent */
+    --legion-gold-dim: rgba(212, 175, 55, 0.15);
+    --legion-gold-glow: rgba(212, 175, 55, 0.5);
+
+    --signal-green: #10B981;
+    /* Verified / Safe */
+    --signal-red: #EF4444;
+    /* Danger / Alert */
+
+    --glass-surface: rgba(10, 10, 15, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
+  }
+
   html {
-    background: var(--bg-void);
+    background-color: var(--void-deep);
   }
 
   body {
-    @apply text-legion-text font-sans antialiased;
-    background:
-      radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.15), transparent 40%),
-      radial-gradient(circle at 90% 80%, rgba(37, 99, 235, 0.15), transparent 40%);
-    background-color: transparent;
-    /* Allow fixed bg to show */
+    @apply text-gray-200 font-sans antialiased;
+    background-color: var(--void-deep);
+    background-image:
+      radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.03), transparent 40%),
+      linear-gradient(to bottom, transparent, var(--void-deep));
     min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.02em;
   }
 }
 
-.glass-panel {
-  @apply bg-legion-card/60 backdrop-blur-md border border-white/10 shadow-xl rounded-xl;
+@layer components {
+
+  /* --- HOLOPANELS --- */
+  .glass-panel {
+    @apply bg-[var(--glass-surface)] backdrop-blur-xl border border-[var(--glass-border)] rounded-2xl shadow-2xl;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Top lighting edge for realism */
+  .glass-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    z-index: 10;
+  }
+
+  /* --- TACTICAL BUTTONS --- */
+  .btn-primary {
+    @apply relative overflow-hidden px-8 py-4 bg-[var(--legion-gold)] text-black font-bold uppercase tracking-wide rounded-lg hover:shadow-[0_0_20px_var(--legion-gold-glow)] transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed font-mono text-sm;
+  }
+
+  .btn-secondary {
+    @apply px-8 py-4 bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-all rounded-lg font-mono text-sm uppercase tracking-wide;
+  }
+
+  /* --- UTILITIES --- */
+  .text-glow {
+    text-shadow: 0 0 10px var(--legion-gold-glow);
+  }
+
+  .font-mono-tactical {
+    font-family: 'JetBrains Mono', monospace;
+  }
 }
 
-.text-gradient-gold {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-legion-gold to-yellow-200;
+/* --- ANIMATIONS --- */
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
 }
 
-.btn-primary {
-  @apply px-6 py-3 bg-gradient-to-r from-legion-gold to-yellow-500 text-slate-900 font-bold rounded-lg hover:shadow-lg hover:shadow-yellow-500/20 transition-all transform hover:-translate-y-1;
+.animate-scan {
+  animation: scanline 3s linear infinite;
+  background: linear-gradient(to bottom, transparent, var(--legion-gold), transparent);
+  height: 2px;
+  width: 100%;
+  position: absolute;
+  pointer-events: none;
 }
 
-.btn-secondary {
-  @apply px-6 py-3 bg-white/10 border border-white/20 text-white font-semibold rounded-lg hover:bg-white/20 transition-all backdrop-blur-sm;
+/* ============================================
+   THEME VARIATIONS
+   ============================================ */
+
+/* Classic Theme - Sacred Geometry (Gold) */
+body.theme-classic {
+  --legion-gold: #D4AF37;
+  --legion-gold-dim: rgba(212, 175, 55, 0.15);
+  --legion-gold-glow: rgba(212, 175, 55, 0.5);
+  --void-deep: #050505;
+  --void-surface: #0A0A0F;
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.03), transparent 40%);
+}
+
+/* Esoteric Theme - Mystical Purple */
+body.theme-esoteric {
+  --legion-gold: #A855F7;
+  --legion-gold-dim: rgba(168, 85, 247, 0.15);
+  --legion-gold-glow: rgba(168, 85, 247, 0.5);
+  --void-deep: #0a0510;
+  --void-surface: #120A20;
+  --signal-green: #22D3EE;
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(168, 85, 247, 0.08), transparent 40%),
+    radial-gradient(circle at 70% 80%, rgba(139, 92, 246, 0.05), transparent 40%);
+}
+
+/* Mystical Theme - Ethereal Cyan */
+body.theme-mystical {
+  --legion-gold: #22D3EE;
+  --legion-gold-dim: rgba(34, 211, 238, 0.15);
+  --legion-gold-glow: rgba(34, 211, 238, 0.5);
+  --void-deep: #051015;
+  --void-surface: #0A1A25;
+  --signal-green: #34D399;
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.06), transparent 50%),
+    linear-gradient(180deg, rgba(6, 182, 212, 0.02), transparent 50%);
+}
+
+/* Void Theme - Deep Black with Electric */
+body.theme-void {
+  --legion-gold: #EF4444;
+  --legion-gold-dim: rgba(239, 68, 68, 0.15);
+  --legion-gold-glow: rgba(239, 68, 68, 0.5);
+  --void-deep: #000000;
+  --void-surface: #0A0A0A;
+  --signal-green: #10B981;
+  background-image: 
+    radial-gradient(circle at 50% 100%, rgba(239, 68, 68, 0.03), transparent 30%);
+}
+
+/* Minimal Theme - Clean & Simple */
+body.theme-minimal {
+  --legion-gold: #6366F1;
+  --legion-gold-dim: rgba(99, 102, 241, 0.10);
+  --legion-gold-glow: rgba(99, 102, 241, 0.3);
+  --void-deep: #111827;
+  --void-surface: #1F2937;
+  --glass-surface: rgba(31, 41, 55, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  background-image: none;
+  background-color: #111827;
+}
+
+/* Theme transition smoothing */
+body {
+  transition: background-color 0.5s ease, background-image 0.5s ease;
+}
+
+/* Override button colors per theme */
+body.theme-esoteric .btn-primary {
+  background: linear-gradient(135deg, #A855F7, #7C3AED);
+}
+
+body.theme-mystical .btn-primary {
+  background: linear-gradient(135deg, #22D3EE, #0891B2);
+}
+
+body.theme-void .btn-primary {
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+}
+
+body.theme-minimal .btn-primary {
+  background: #6366F1;
+}
+
+/* Glass panel theme adjustments */
+body.theme-minimal .glass-panel {
+  @apply bg-gray-800/80 border-gray-700;
+}
+
+body.theme-minimal .glass-panel::before {
+  display: none;
 }

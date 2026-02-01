@@ -13,6 +13,8 @@ import aiRoutes from './routes/ai.js';
 import shieldRoutes from './routes/shield.js';
 import paymentRoutes from './routes/payment.js';
 import uploadRoutes from './routes/upload.js';
+import jobRoutes from './routes/jobs.js';
+import priceRoutes from './routes/price.js';
 
 const app = express();
 
@@ -47,6 +49,8 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/shield', shieldRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/jobs', jobRoutes);
+app.use('/api/price', priceRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

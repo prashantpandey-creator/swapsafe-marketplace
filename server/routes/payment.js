@@ -118,6 +118,95 @@ router.post('/create-order', protect, async (req, res) => {
     }
 });
 
+/**
+ * @route   POST /api/payment/create-credit-order
+ * @desc    Process payment using user's Credit Balance (AI Escrow)
+ * @access  Private
+ */
+router.post('/create-credit-order', protect, async (req, res) => {
+    try {
+        const { listingId, deliveryMethod, deliveryAddress } = req.body;
+        const buyer = await User.findById(req.user._id);
+
+        // 1. Validate listing
+        const listing = await Listing.findById(listingId).populate('seller');
+        if (!listing) return res.status(404).json({ error: 'Listing not found' });
+        if (listing.status !== 'active') return res.status(400).json({ error: 'Item no longer available' });
+        if (listing.seller._id.toString() === buyer._id.toString()) return res.status(400).json({ error: 'Cannot buy your own item' });
+
+        // 2. Calculate Costs
+        const deliveryFee = deliveryMethod === 'meetup' ? 0 : 50;
+        const commission = calculateCommission(listing.price, deliveryFee);
+        const totalAmount = commission.total;
+
+        // 3. Check Balance
+        if (buyer.credits < totalAmount) {
+            return res.status(400).json({ error: `nsufficient credits. Required: ${totalAmount}, Available: ${buyer.credits}` });
+        }
+
+        // 4. Process "Transaction" (Deduct from Buyer, Hold in Escrow)
+        // We do NOT add to seller yet. That happens on delivery confirmation.
+        buyer.credits -= totalAmount;
+        buyer.totalPurchases += 1;
+        await buyer.save();
+
+        // 5. Create Order
+        const order = new Order({
+            listing: listing._id,
+            buyer: buyer._id,
+            seller: listing.seller._id,
+            amount: {
+                itemPrice: listing.price,
+                deliveryFee,
+                platformFee: commission.platformFee,
+                total: totalAmount
+            },
+            commission: {
+                platformPercent: commission.platformPercent,
+                platformAmount: commission.platformFee,
+                sellerAmount: commission.sellerAmount
+            },
+            payment: {
+                method: 'credits',
+                status: 'held', // <--- ESCROW LOGIC
+                paidAt: new Date()
+            },
+            escrow: {
+                isHeld: true,
+                heldAt: new Date(),
+                releaseReason: 'Waiting for AI/Buyer Verification'
+            },
+            delivery: {
+                method: deliveryMethod || 'meetup',
+                address: deliveryAddress || {}
+            },
+            status: 'paid' // Payment is secure, so order is "paid" but funds are held
+        });
+
+        await order.save();
+
+        // 6. Update Listing
+        listing.status = 'pending';
+        await listing.save();
+
+        res.json({
+            success: true,
+            message: 'Payment successful! Funds held in AI Escrow.',
+            order: {
+                id: order._id,
+                orderId: order.orderId,
+                amount: totalAmount,
+                status: 'paid'
+            },
+            remainingCredits: buyer.credits
+        });
+
+    } catch (error) {
+        console.error('Credit payment error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ============ PAYMENT VERIFICATION ============
 
 /**

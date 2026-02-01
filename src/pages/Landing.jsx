@@ -1,13 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Shield, Users, Zap, ArrowRight, Award } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Search, Shield, Users, Zap, ArrowRight, Award, Box } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { listingsAPI } from '../services/api';
+import ProductCard from '../components/common/ProductCard';
 
 const Landing = () => {
+    const navigate = useNavigate();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [suggestedProducts, setSuggestedProducts] = useState([]);
+    const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+
+    useEffect(() => {
+        const fetchSuggestions = async () => {
+            try {
+                // Fetch random or featured listings
+                const data = await listingsAPI.getAll({ limit: 4 });
+                setSuggestedProducts(data.listings || []);
+            } catch (err) {
+                console.error("Failed to fetch suggestions", err);
+            } finally {
+                setLoadingSuggestions(false);
+            }
+        };
+        fetchSuggestions();
+    }, []);
+
+    const handleSearch = () => {
+        if (searchTerm.trim()) {
+            navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+        }
+    };
+
     return (
         <div className="min-h-screen overflow-x-hidden">
             {/* Hero Section */}
-            <section className="relative min-h-screen flex items-center justify-center pt-20">
+            <section className="relative min-h-[90vh] flex items-center justify-center pt-20">
                 {/* Background Blobs */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
                     <motion.div
@@ -49,12 +77,28 @@ const Landing = () => {
                             <input
                                 type="text"
                                 placeholder="What are you looking for today?"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                                 className="w-full h-16 pl-6 pr-32 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-legion-gold/50 focus:bg-white/10 transition-all backdrop-blur-md shadow-2xl"
                             />
-                            <button className="absolute right-2 top-2 h-12 px-8 bg-legion-gold text-legion-bg font-bold rounded-xl hover:bg-yellow-400 transition-colors flex items-center gap-2">
+                            <button
+                                onClick={handleSearch}
+                                className="absolute right-2 top-2 h-12 px-8 bg-legion-gold text-legion-bg font-bold rounded-xl hover:bg-yellow-400 transition-colors flex items-center gap-2"
+                            >
                                 <Search className="w-5 h-5" />
                                 <span>Search</span>
                             </button>
+                        </div>
+
+                        {/* CTA Buttons */}
+                        <div className="flex flex-wrap justify-center gap-4 mb-16">
+                            <Link to="/studio" className="btn btn-outline flex items-center gap-2">
+                                <Box className="w-5 h-5" /> Try AI 3D Studio
+                            </Link>
+                            <Link to="/sell" className="btn btn-primary flex items-center gap-2">
+                                Start Selling
+                            </Link>
                         </div>
 
                         {/* Stats / Trust Indicators */}
@@ -73,6 +117,41 @@ const Landing = () => {
                             </div>
                         </div>
                     </motion.div>
+                </div>
+            </section>
+
+            {/* Suggested Products Section */}
+            <section className="py-12 bg-black/20">
+                <div className="container mx-auto px-4">
+                    <div className="flex justify-between items-end mb-8">
+                        <div>
+                            <h2 className="text-2xl font-bold text-white mb-2">Suggested For You</h2>
+                            <p className="text-gray-400 text-sm">Hand-picked gear from top sellers</p>
+                        </div>
+                        <Link to="/browse" className="text-legion-gold hover:text-white transition-colors text-sm font-medium">
+                            View More
+                        </Link>
+                    </div>
+
+                    {loadingSuggestions ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {[1, 2, 3, 4].map(i => (
+                                <div key={i} className="bg-white/5 rounded-2xl h-[350px] animate-pulse" />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {suggestedProducts.length > 0 ? (
+                                suggestedProducts.map((product) => (
+                                    <ProductCard key={product.id || product._id} product={product} />
+                                ))
+                            ) : (
+                                <p className="text-gray-400 col-span-full text-center py-10">
+                                    No suggestions available right now. Check back later!
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -98,6 +177,7 @@ const Landing = () => {
                                 transition={{ delay: index * 0.1 }}
                                 whileHover={{ y: -10 }}
                                 className="group relative overflow-hidden rounded-2xl aspect-[4/5] cursor-pointer"
+                                onClick={() => navigate(`/browse/${cat.name.toLowerCase()}`)}
                             >
                                 <img
                                     src={cat.image}

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Menu, X, Search, User, MessageSquare, ShoppingBag, Settings, LogOut } from 'lucide-react';
+import { Shield, Menu, X, Search, User, MessageSquare, ShoppingBag, Settings, LogOut, Eye, EyeOff, Sparkles, MinusCircle, Moon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import GuardianBadge from '../trust/GuardianBadge';
 
 import logo from '../../assets/buyers_legion_logo.png';
 
-const Header = () => {
+const Header = ({ currentTheme, toggleTheme }) => {
     const { user, logout } = useAuth();
     const { items: cartItems } = useCart();
     const [isScrolled, setIsScrolled] = useState(false);
@@ -73,6 +73,35 @@ const Header = () => {
                         <GuardianBadge level="divine" showLabel={true} animated={true} />
                     </div>
 
+                    {/* Theme Toggle */}
+                    <button
+                        onClick={toggleTheme}
+                        className="p-2 text-gray-300 hover:text-legion-gold transition-colors relative group"
+                        title={
+                            currentTheme === 'classic' ? 'Prophecy: Sacred Geometry' :
+                                currentTheme === 'esoteric' ? 'Enter The Mystical Flow' :
+                                    currentTheme === 'mystical' ? 'Enter The Deep Void' :
+                                        currentTheme === 'void' ? 'Disable All Effects (Minimal)' :
+                                            'Return to Classic Reality'
+                        }
+                    >
+                        {currentTheme === 'classic' && (
+                            <EyeOff className="w-5 h-5" />
+                        )}
+                        {currentTheme === 'esoteric' && (
+                            <Eye className="w-5 h-5 text-legion-gold drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]" />
+                        )}
+                        {currentTheme === 'mystical' && (
+                            <Sparkles className="w-5 h-5 text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)] animate-pulse" />
+                        )}
+                        {currentTheme === 'void' && (
+                            <Moon className="w-5 h-5 text-indigo-400 drop-shadow-[0_0_5px_rgba(129,140,248,0.5)]" />
+                        )}
+                        {currentTheme === 'minimal' && (
+                            <MinusCircle className="w-5 h-5 text-gray-500" />
+                        )}
+                    </button>
+
                     {user ? (
                         <>
                             <Link to="/messages" className="p-2 text-gray-300 hover:text-legion-gold transition-colors relative">
@@ -121,8 +150,8 @@ const Header = () => {
                                                     <p className="text-xs text-slate-400 truncate">{user.email}</p>
                                                 </div>
 
-                                                <Link to="/dashboard" className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors">
-                                                    <User size={16} /> Dashboard
+                                                <Link to="/my-listings" className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors">
+                                                    <ShoppingBag size={16} /> My Listings
                                                 </Link>
 
                                                 <Link to="/settings" className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors">
@@ -180,7 +209,7 @@ const Header = () => {
                             <hr className="border-white/10" />
                             {user ? (
                                 <>
-                                    <Link to="/dashboard" className="text-gray-300 hover:text-white py-2">Dashboard</Link>
+                                    <Link to="/my-listings" className="text-gray-300 hover:text-white py-2">My Listings</Link>
                                     <button onClick={logout} className="text-red-400 text-left py-2">Logout</button>
                                 </>
                             ) : (

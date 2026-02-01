@@ -55,12 +55,69 @@ function Browse() {
         fetchListings()
     }, [filters.category, filters.condition, filters.minPrice, filters.maxPrice, filters.sortBy, searchQuery])
 
-    // Update category from URL params
+    // Sync filters to URL params
     useEffect(() => {
-        if (category) {
+        const params = new URLSearchParams()
+        if (filters.category) params.set('category', filters.category)
+        if (filters.condition) params.set('condition', filters.condition)
+        if (filters.minPrice) params.set('minPrice', filters.minPrice)
+        if (filters.maxPrice) params.set('maxPrice', filters.maxPrice)
+        if (filters.location) params.set('location', filters.location)
+        if (filters.sortBy && filters.sortBy !== 'newest') params.set('sort', filters.sortBy)
+        if (filters.deliveryOnly) params.set('delivery', 'true')
+        if (filters.verifiedOnly) params.set('verified', 'true')
+        if (searchQuery) params.set('search', searchQuery)
+
+        setSearchParams(params, { replace: true })
+    }, [filters, searchQuery, setSearchParams])
+
+    // Update category from URL params (handle navigation)
+    useEffect(() => {
+        if (category && category !== filters.category) {
             setFilters(prev => ({ ...prev, category }))
         }
     }, [category])
+
+    // Fetch listings
+    const fetchListings = async () => {
+        setLoading(true)
+        setError(null)
+        try {
+            const response = await listingsAPI.getAll({
+                category: filters.category || undefined,
+                condition: filters.condition || undefined,
+                minPrice: filters.minPrice || undefined,
+                maxPrice: filters.maxPrice || undefined,
+                search: searchQuery || undefined,
+                sort: filters.sortBy
+            })
+            setListings(prevListings => {
+                const newListings = response.listings || []
+                // Deduplicate items based on ID
+                const uniqueListings = new Map()
+
+                // If checking for duplicates against *existing* state is desired, uncomment the next line:
+                // prevListings.forEach(item => uniqueListings.set(item._id || item.id, item))
+
+                // For now, we assume a fresh fetch replaces the list (filtering is backend-side),
+                // but we still safeguard against duplicates *within* the response.
+                newListings.forEach(item => uniqueListings.set(item._id || item.id, item))
+
+                return Array.from(uniqueListings.values())
+            })
+        } catch (err) {
+            console.error('Failed to fetch listings:', err)
+            setError('Failed to load listings. The server might be waking up.')
+            setListings([])
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Initial fetch and fetch on filter change
+    useEffect(() => {
+        fetchListings()
+    }, [filters.category, filters.condition, filters.minPrice, filters.maxPrice, filters.sortBy, searchQuery])
 
     // Apply client-side filters for location, delivery, verified
     const filteredListings = listings.filter(listing => {
@@ -72,7 +129,7 @@ function Browse() {
         }
         if (filters.deliveryOnly && !(listing.deliveryAvailable || listing.deliveryOptions?.shipping)) return false
         if (filters.verifiedOnly && !listing.aiVerified) return false
-        return true // CRITICAL: Must return true to include listings that pass filters
+        return true
     })
 
     const handleFilterChange = (key, value) => {
@@ -417,16 +474,16 @@ function Browse() {
                         </div>
                     ) : error ? (
                         <div className="no-results">
-                            <div className="no-results-icon">
+                            <div className="no-results-icon text-red-500">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <circle cx="12" cy="12" r="10" />
                                     <line x1="12" y1="8" x2="12" y2="12" />
                                     <line x1="12" y1="16" x2="12.01" y2="16" />
                                 </svg>
                             </div>
-                            <h3>Error loading listings</h3>
-                            <p>{error}</p>
-                            <button className="btn btn-primary" onClick={() => window.location.reload()}>
+                            <h3>Unable to load items</h3>
+                            <p className="text-gray-400 mb-4">{error}</p>
+                            <button className="btn btn-primary" onClick={() => fetchListings()}>
                                 Try Again
                             </button>
                         </div>

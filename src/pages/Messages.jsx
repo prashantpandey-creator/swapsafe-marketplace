@@ -1,12 +1,14 @@
-import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useParams, useLocation } from 'react-router-dom'
 import './Messages.css'
 
 function Messages() {
     const { conversationId } = useParams()
+    const location = useLocation()
     const [message, setMessage] = useState('')
 
-    const conversations = [
+    // Initial mock conversations
+    const [conversations, setConversations] = useState([
         {
             id: '1',
             user: { name: 'Rahul Sharma', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul' },
@@ -23,22 +25,82 @@ function Messages() {
             timestamp: '1 day ago',
             unread: false
         }
-    ]
+    ])
 
-    const selectedConversation = conversations.find(c => c.id === conversationId) || conversations[0]
+    // Handle incoming "Contact Seller" request
+    useEffect(() => {
+        if (location.state?.seller && location.state?.product) {
+            const { seller, product } = location.state
 
-    const messages = [
+            // Check if conversation already exists (mock check by name for now, normally by ID)
+            const exists = conversations.find(c => c.user.name === seller.name && c.product.title === product.title)
+
+            if (!exists) {
+                const newConv = {
+                    id: 'new', // Temporary ID
+                    user: {
+                        name: seller.name,
+                        avatar: seller.avatar || `https://ui-avatars.com/api/?name=${seller.name}`
+                    },
+                    product: {
+                        title: product.title,
+                        image: product.images?.[0] || 'https://via.placeholder.com/100'
+                    },
+                    lastMessage: 'Start a conversation...',
+                    timestamp: 'Just now',
+                    unread: false,
+                    isNew: true
+                }
+                setConversations([newConv, ...conversations])
+            }
+        }
+    }, [location.state])
+
+    const selectedConversation = conversations.find(c => c.id === (conversationId || 'new')) || conversations[0]
+
+    const [messages, setMessages] = useState([
         { id: 1, sender: 'other', text: 'Hi, is this item still available?', time: '10:30 AM' },
         { id: 2, sender: 'me', text: 'Yes, it is! Are you interested?', time: '10:32 AM' },
         { id: 3, sender: 'other', text: 'Yes! Can we meet tomorrow at Inorbit Mall?', time: '10:35 AM' },
         { id: 4, sender: 'me', text: 'Sure, let\'s meet at 3 PM. See you there!', time: '10:36 AM' },
-    ]
+    ])
+
+    // Reset messages for "New" conversation
+    useEffect(() => {
+        if (selectedConversation?.isNew) {
+            setMessages([])
+        } else {
+            // Restore default mock messages for demo
+            setMessages([
+                { id: 1, sender: 'other', text: 'Hi, is this item still available?', time: '10:30 AM' },
+                { id: 2, sender: 'me', text: 'Yes, it is!', time: '10:32 AM' },
+            ])
+        }
+    }, [selectedConversation?.id])
 
     const handleSend = (e) => {
         e.preventDefault()
         if (message.trim()) {
-            // Handle send message
+            const newMsg = {
+                id: Date.now(),
+                sender: 'me',
+                text: message,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+            setMessages([...messages, newMsg])
             setMessage('')
+
+            // Allow "Mock Reply" for better demo feel
+            if (messages.length === 0) {
+                setTimeout(() => {
+                    setMessages(prev => [...prev, {
+                        id: Date.now() + 1,
+                        sender: 'other',
+                        text: "Thanks for connecting! Yes, it is available.",
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    }])
+                }, 1500)
+            }
         }
     }
 
@@ -54,7 +116,13 @@ function Messages() {
                         {conversations.map(conv => (
                             <div
                                 key={conv.id}
-                                className={`conversation-item ${conv.id === selectedConversation?.id ? 'active' : ''} ${conv.unread ? 'unread' : ''}`}
+                                className={`conversation-item ${conv === selectedConversation ? 'active' : ''} ${conv.unread ? 'unread' : ''}`}
+                                onClick={() => {
+                                    // In real app, navigate to /messages/:id
+                                    // Here we just force re-render/select for demo
+                                    // Ideally we should use state for selectedId instead of purely URL if we want smooth switching without route change
+                                    // But for now, let's keep it simple.
+                                }}
                             >
                                 <img src={conv.user.avatar} alt={conv.user.name} className="avatar" />
                                 <div className="conv-info">
@@ -76,22 +144,30 @@ function Messages() {
                 {/* Chat Area */}
                 <main className="chat-area">
                     <div className="chat-header">
-                        <img src={selectedConversation?.user.avatar} alt="" className="avatar" />
-                        <div className="chat-user-info">
-                            <strong>{selectedConversation?.user.name}</strong>
-                            <p>{selectedConversation?.product.title}</p>
+                        <div className="flex items-center gap-3">
+                            <img src={selectedConversation?.user.avatar} alt="" className="avatar" />
+                            <div className="chat-user-info">
+                                <strong>{selectedConversation?.user.name}</strong>
+                                <p className="text-sm opacity-75">{selectedConversation?.product.title}</p>
+                            </div>
                         </div>
                     </div>
 
                     <div className="chat-messages">
-                        {messages.map(msg => (
-                            <div key={msg.id} className={`message ${msg.sender}`}>
-                                <div className="message-bubble">
-                                    <p>{msg.text}</p>
-                                    <span className="message-time">{msg.time}</span>
-                                </div>
+                        {messages.length === 0 ? (
+                            <div className="text-center text-gray-500 mt-10">
+                                <p>Start asking about the <strong>{selectedConversation?.product.title}</strong>...</p>
                             </div>
-                        ))}
+                        ) : (
+                            messages.map(msg => (
+                                <div key={msg.id} className={`message ${msg.sender}`}>
+                                    <div className="message-bubble">
+                                        <p>{msg.text}</p>
+                                        <span className="message-time">{msg.time}</span>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
 
                     <form className="chat-input" onSubmit={handleSend}>

@@ -1,420 +1,518 @@
-import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { categories, conditions } from '../data/mockData'
-import { listingsAPI, aiAPI, uploadImages } from '../services/api'
-import './CreateListing.css'
+import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Camera, Upload, Sparkles, X, DollarSign, Tag, MapPin, Loader, CheckCircle, ChevronRight, Zap, TrendingUp, Package } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { AIEngineStatusBadge } from '../components/ai/AIEngineStatus';
+import { useAuth } from '../context/AuthContext';
+import { listingsAPI, aiAPI, uploadImage } from '../services/api';
 
-function CreateListing() {
-    const navigate = useNavigate()
-    const { isAuthenticated, user } = useAuth()
-    const fileInputRef = useRef(null)
+// Simplified Categories for Guardian Marketplace
+const CATEGORIES = [
+    { id: 'electronics', name: 'Electronics', icon: '📱' },
+    { id: 'fashion', name: 'Fashion', icon: '👕' },
+    { id: 'home', name: 'Home & Living', icon: '🏠' },
+    { id: 'sports', name: 'Sports & Outdoors', icon: '⚽' },
+    { id: 'books', name: 'Books & Media', icon: '📚' },
+    { id: 'other', name: 'Other', icon: '📦' }
+];
 
-    // Step 0: Magic Upload, 1: Details, 2: Photos (Review), 3: Pricing
-    const [step, setStep] = useState(0)
-    const [isSubmitting, setIsSubmitting] = useState(false)
-    const [isEstimating, setIsEstimating] = useState(false)
-    const [isAnalyzing, setIsAnalyzing] = useState(false)
+const CONDITIONS = [
+    { id: 'new', label: 'Brand New', desc: 'Unused, in original packaging' },
+    { id: 'like-new', label: 'Like New', desc: 'Minimal use, no visible wear' },
+    { id: 'good', label: 'Good', desc: 'Some signs of use, fully functional' },
+    { id: 'fair', label: 'Fair', desc: 'Visible wear, works perfectly' }
+];
 
-    // AI Data
-    const [aiEstimate, setAiEstimate] = useState(null)
-    const [analysisData, setAnalysisData] = useState(null)
+const CreateListing = () => {
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    const fileInputRef = useRef(null);
+    const cameraInputRef = useRef(null);
 
+    // Image State
+    const [productImage, setProductImage] = useState(null);
+    const [imageFile, setImageFile] = useState(null);
+
+    // AI State
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [aiSuggestions, setAiSuggestions] = useState(null);
+    const [priceEstimate, setPriceEstimate] = useState(null);
+
+    // Form State
     const [formData, setFormData] = useState({
         title: '',
         description: '',
         category: '',
-        condition: '', // Default to Good?
+        condition: 'good',
         price: '',
-        originalPrice: '',
-        images: [],
-        imageFiles: [],
-        location: {
-            city: '',
-            state: ''
-        },
-        deliveryAvailable: true,
-        meetupAvailable: true
-    })
-    const [errors, setErrors] = useState({})
+        location: { city: '', state: '' }
+    });
 
-    useEffect(() => {
-        if (!isAuthenticated) {
-            navigate('/login', { state: { from: '/sell' } })
-        }
-    }, [isAuthenticated, navigate])
+    // UI State
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState({});
 
-    // --- Actions ---
+    // Handle Image Upload
+    const handleImageUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-    const handleMagicUpload = async (e) => {
-        const file = e.target.files[0]
-        if (!file) return
+        const objectUrl = URL.createObjectURL(file);
+        setProductImage(objectUrl);
+        setImageFile(file);
 
-        // 1. Show Analysis Interaction
-        setIsAnalyzing(true)
-        const imageUrl = URL.createObjectURL(file)
+        // Trigger AI Analysis
+        analyzeProductImage(file);
+    };
 
-        // Add to state immediately for preview
-        setFormData(prev => ({
-            ...prev,
-            images: [imageUrl],
-            imageFiles: [file]
-        }))
+    // AI Analysis - Get suggestions and price estimate
+    const analyzeProductImage = async (file) => {
+        setIsAnalyzing(true);
+        setAiSuggestions(null);
+        setPriceEstimate(null);
 
         try {
-            // 2. Call AI (Mocked for now)
-            const analysis = await aiAPI.analyzeImage(file)
+            // Call AI to analyze the image
+            const analysis = await aiAPI.analyzeImage(file);
 
-            // 3. Process Result
-            setAnalysisData(analysis)
-            setAiEstimate({
-                value: analysis.estimatedPrice,
-                retailPrice: analysis.originalPrice,
-                confidence: analysis.confidence,
-                reasoning: analysis.reasoning,
-                priceRange: { low: analysis.estimatedPrice * 0.9, high: analysis.estimatedPrice * 1.1 }
-            })
+            setAiSuggestions(analysis);
 
-            // 4. Smooth Transition (Simulate delay if API is too fast)
-            setTimeout(() => {
+            // Auto-fill form with AI suggestions
+            setFormData(prev => ({
+                ...prev,
+                title: analysis.title || prev.title,
+                category: analysis.category || prev.category,
+                condition: analysis.condition || prev.condition
+            }));
+
+            // Set price estimate
+            if (analysis.estimatedPrice) {
+                setPriceEstimate({
+                    suggested: analysis.estimatedPrice,
+                    retail: analysis.originalPrice,
+                    confidence: analysis.confidence,
+                    reasoning: analysis.reasoning
+                });
+
+                // Auto-fill suggested price
                 setFormData(prev => ({
                     ...prev,
-                    title: analysis.title,
-                    category: analysis.category,
-                    condition: analysis.condition,
-                    description: prev.description || `${analysis.title}. ${analysis.features.join('. ')}.`,
-                    price: analysis.estimatedPrice.toString(),
-                    originalPrice: analysis.originalPrice.toString()
-                }))
-                setIsAnalyzing(false)
-                setStep(1) // Go to Details Review
-            }, 2000)
-
+                    price: analysis.estimatedPrice.toString()
+                }));
+            }
         } catch (error) {
-            console.error(error)
-            setErrors({ main: 'AI could not identify the item. Please fill details manually.' })
-            setIsAnalyzing(false)
-            setStep(1)
+            console.error('AI Analysis failed:', error);
+            // Continue without AI - user can fill manually
+        } finally {
+            setIsAnalyzing(false);
         }
-    }
+    };
 
-    const handleSkipMagic = () => {
-        setStep(1)
-    }
+    // Re-estimate price when category/condition changes
+    const getNewPriceEstimate = async () => {
+        if (!formData.title || !formData.category || !formData.condition) return;
 
-    const handleImageUpload = (e) => {
-        const files = Array.from(e.target.files)
-        const imageUrls = files.map(file => URL.createObjectURL(file))
-        setFormData(prev => ({
-            ...prev,
-            images: [...prev.images, ...imageUrls].slice(0, 6),
-            imageFiles: [...prev.imageFiles, ...files].slice(0, 6)
-        }))
-    }
-
-    const removeImage = (index) => {
-        setFormData(prev => ({
-            ...prev,
-            images: prev.images.filter((_, i) => i !== index),
-            imageFiles: prev.imageFiles.filter((_, i) => i !== index)
-        }))
-    }
-
-    // --- Validation & Nav ---
-
-    const validateStep = (stepNum) => {
-        const newErrors = {}
-        if (stepNum === 1) {
-            if (!formData.title.trim()) newErrors.title = 'Title is required'
-            if (!formData.category) newErrors.category = 'Category required'
-            if (!formData.condition) newErrors.condition = 'Condition required'
-        }
-        if (stepNum === 3) {
-            if (!formData.price) newErrors.price = 'Price is required'
-            if (!formData.location.city) newErrors.city = 'City required'
-        }
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
-    }
-
-    const handleNext = () => {
-        if (validateStep(step)) setStep(step + 1)
-    }
-
-    const handleSubmit = async () => {
-        if (!validateStep(3)) return
-        setIsSubmitting(true)
         try {
-            // Upload Strategy: In real app, upload to Cloudinary here
-            // For MVP, we send base64 or assuming backend handles it
-            let imageUrls = formData.images
-            if (formData.imageFiles.length > 0) {
-                imageUrls = await uploadImages(formData.imageFiles)
+            const result = await aiAPI.estimatePrice({
+                title: formData.title,
+                description: formData.description,
+                category: formData.category,
+                condition: formData.condition
+            });
+
+            if (result.success && result.estimate) {
+                setPriceEstimate({
+                    suggested: result.estimate.value,
+                    retail: result.estimate.retailPrice,
+                    confidence: result.estimate.confidence,
+                    reasoning: result.estimate.reasoning
+                });
+            }
+        } catch (error) {
+            console.error('Price estimation failed:', error);
+        }
+    };
+
+    // Form Validation
+    const validateForm = () => {
+        const newErrors = {};
+        if (!productImage) newErrors.image = 'Please add a photo of your item';
+        if (!formData.title.trim()) newErrors.title = 'Title is required';
+        if (!formData.category) newErrors.category = 'Select a category';
+        if (!formData.price || parseFloat(formData.price) <= 0) newErrors.price = 'Enter a valid price';
+        if (!formData.location.city.trim()) newErrors.city = 'City is required';
+        if (!formData.location.state.trim()) newErrors.state = 'State is required';
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    // Submit Listing
+    const handleSubmit = async () => {
+        if (!validateForm()) return;
+
+        setIsSubmitting(true);
+
+        try {
+            // Upload image to Cloudinary
+            let imageUrl = productImage;
+            if (imageFile) {
+                try {
+                    imageUrl = await uploadImage(imageFile);
+                } catch (uploadError) {
+                    console.warn('Image upload failed, using local URL:', uploadError);
+                }
             }
 
-            await listingsAPI.create({
-                ...formData,
-                price: Number(formData.price),
-                originalPrice: Number(formData.originalPrice),
-                images: imageUrls,
-                location: formData.location, // Simplified
-                deliveryOptions: {
-                    meetup: formData.meetupAvailable,
-                    shipping: formData.deliveryAvailable
-                },
-                // Add AI metadata
-                aiMetadata: analysisData ? {
-                    detected: analysisData.title,
-                    confidence: analysisData.confidence
-                } : null
-            })
-            setStep(4) // Success
+            const listingData = {
+                title: formData.title.trim(),
+                description: formData.description.trim() || `${formData.title} in ${formData.condition} condition.`,
+                category: formData.category,
+                condition: formData.condition,
+                price: parseFloat(formData.price),
+                originalPrice: priceEstimate?.retail || 0,
+                images: [imageUrl],
+                location: formData.location
+            };
+
+            await listingsAPI.create(listingData);
+            navigate('/my-listings', { state: { success: true } });
+
         } catch (error) {
-            setErrors({ submit: error.message || 'Failed to create listing' })
+            console.error('Create listing error:', error);
+            setErrors({ submit: error.message || 'Failed to create listing. Please try again.' });
         } finally {
-            setIsSubmitting(false)
+            setIsSubmitting(false);
         }
-    }
-
-    // --- RENDERERS ---
-
-    // 1. AI Scanning Overlay
-    if (isAnalyzing) {
-        return (
-            <div className="ai-scanning-overlay">
-                <div className="scanner-container">
-                    <div className="scanner-glow"></div>
-                    <div className="scanner-circle">
-                        <img src={formData.images[0]} alt="Scanning" className="scanning-image" />
-                        <div className="scan-line"></div>
-                    </div>
-                    <h2>Identifying Item...</h2>
-                    <div className="scan-text">
-                        <span className="typewriter">Analyzing Shape...</span>
-                        <span className="typewriter delay-1">Checking Market Prices...</span>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    // 2. Success Screen
-    if (step === 4) {
-        return (
-            <div className="create-listing-success container">
-                <div className="success-content glass-panel">
-                    <div className="success-icon animate-bounce">
-                        <span className="shield-check">🛡️</span>
-                    </div>
-                    <h1>Listing Protected & Live!</h1>
-                    <p>Your item is now visible to the Buyers Legion.</p>
-                    <div className="success-actions">
-                        <button onClick={() => navigate('/dashboard')} className="btn btn-primary">Go to Dashboard</button>
-                    </div>
-                </div>
-            </div>
-        )
-    }
+    };
 
     return (
-        <div className="create-listing-page">
-            <div className="container">
+        <div className="min-h-screen pt-16 pb-24 bg-[var(--void-deep)]">
+            {/* Header */}
+            <div className="sticky top-16 z-40 bg-[var(--void-deep)]/90 backdrop-blur-xl border-b border-white/5">
+                <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
+                    <h1 className="text-xl font-bold text-white">Sell Your Item</h1>
+                    <AIEngineStatusBadge size="sm" showLabel={false} />
+                </div>
+            </div>
 
-                {/* Header / Progress - Hidden on Step 0 for immersion */}
-                {step > 0 && (
-                    <div className="listing-progress-compact">
-                        <button className="back-btn" onClick={() => setStep(step - 1)}>← Back</button>
-                        <div className="steps-dots">
-                            {[1, 2, 3].map(s => <div key={s} className={`dot ${step >= s ? 'active' : ''}`} />)}
+            <div className="max-w-lg mx-auto px-4 pt-6 space-y-6">
+
+                {/* === SECTION 1: PHOTO === */}
+                <section className="glass-panel p-5">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-[var(--legion-gold)]/20 flex items-center justify-center">
+                            <Camera className="text-[var(--legion-gold)]" size={20} />
                         </div>
+                        <div>
+                            <h2 className="text-white font-semibold">Add Photo</h2>
+                            <p className="text-gray-500 text-xs">Snap a clear photo of your item</p>
+                        </div>
+                    </div>
+
+                    {/* Image Preview / Upload */}
+                    <div
+                        className={`relative aspect-square rounded-xl border-2 border-dashed overflow-hidden transition-all
+                            ${productImage
+                                ? 'border-[var(--legion-gold)]/30 bg-black/20'
+                                : 'border-white/20 bg-white/5 hover:border-[var(--legion-gold)] hover:bg-white/10 cursor-pointer'
+                            }
+                            ${errors.image ? 'border-red-500/50' : ''}
+                        `}
+                        onClick={() => !productImage && cameraInputRef.current?.click()}
+                    >
+                        {productImage ? (
+                            <>
+                                <img
+                                    src={productImage}
+                                    alt="Product"
+                                    className="w-full h-full object-contain p-4"
+                                />
+                                {/* Remove Button */}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setProductImage(null); setImageFile(null); setAiSuggestions(null); setPriceEstimate(null); }}
+                                    className="absolute top-3 right-3 w-8 h-8 bg-black/60 hover:bg-red-500/80 rounded-full flex items-center justify-center transition-colors"
+                                >
+                                    <X size={16} className="text-white" />
+                                </button>
+
+                                {/* AI Analyzing Overlay */}
+                                <AnimatePresence>
+                                    {isAnalyzing && (
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center"
+                                        >
+                                            <Sparkles className="text-[var(--legion-gold)] animate-pulse mb-3" size={32} />
+                                            <p className="text-white text-sm font-medium">AI Analyzing...</p>
+                                            <p className="text-gray-400 text-xs mt-1">Detecting item & estimating price</p>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </>
+                        ) : (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+                                <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-4">
+                                    <Camera size={28} className="text-gray-400" />
+                                </div>
+                                <p className="text-white font-medium mb-1">Tap to take photo</p>
+                                <p className="text-gray-500 text-xs">or upload from gallery</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Upload Buttons */}
+                    {!productImage && (
+                        <div className="grid grid-cols-2 gap-3 mt-4">
+                            <button
+                                onClick={() => cameraInputRef.current?.click()}
+                                className="flex items-center justify-center gap-2 py-3 bg-[var(--legion-gold)] text-black font-semibold rounded-lg hover:bg-[var(--legion-gold)]/90 transition-colors"
+                            >
+                                <Camera size={18} />
+                                Camera
+                            </button>
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="flex items-center justify-center gap-2 py-3 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-colors"
+                            >
+                                <Upload size={18} />
+                                Gallery
+                            </button>
+                        </div>
+                    )}
+
+                    {errors.image && <p className="text-red-400 text-xs mt-2">{errors.image}</p>}
+
+                    {/* Hidden Inputs */}
+                    <input type="file" ref={cameraInputRef} onChange={handleImageUpload} accept="image/*" capture="environment" className="hidden" />
+                    <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
+                </section>
+
+                {/* === SECTION 2: PRICE ESTIMATION (AI) === */}
+                <AnimatePresence>
+                    {priceEstimate && (
+                        <motion.section
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="glass-panel p-5 border-[var(--legion-gold)]/30"
+                        >
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                                    <TrendingUp className="text-green-400" size={20} />
+                                </div>
+                                <div className="flex-1">
+                                    <h2 className="text-white font-semibold">AI Price Oracle</h2>
+                                    <p className="text-gray-500 text-xs">{priceEstimate.confidence}% confidence</p>
+                                </div>
+                                <Sparkles className="text-[var(--legion-gold)]" size={20} />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-green-500/10 rounded-lg p-4 text-center">
+                                    <p className="text-gray-400 text-xs mb-1">Suggested Price</p>
+                                    <p className="text-2xl font-bold text-green-400">₹{priceEstimate.suggested?.toLocaleString()}</p>
+                                </div>
+                                <div className="bg-white/5 rounded-lg p-4 text-center">
+                                    <p className="text-gray-400 text-xs mb-1">Retail Value</p>
+                                    <p className="text-2xl font-bold text-white">₹{priceEstimate.retail?.toLocaleString()}</p>
+                                </div>
+                            </div>
+
+                            {priceEstimate.reasoning && (
+                                <p className="text-gray-400 text-xs mt-4 leading-relaxed">
+                                    💡 {priceEstimate.reasoning}
+                                </p>
+                            )}
+                        </motion.section>
+                    )}
+                </AnimatePresence>
+
+                {/* === SECTION 3: ITEM DETAILS === */}
+                <section className="glass-panel p-5">
+                    <div className="flex items-center gap-3 mb-5">
+                        <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                            <Package className="text-purple-400" size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-white font-semibold">Item Details</h2>
+                            <p className="text-gray-500 text-xs">Describe what you're selling</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        {/* Title */}
+                        <div>
+                            <label className="block text-gray-400 text-xs font-medium mb-2">TITLE *</label>
+                            <input
+                                type="text"
+                                value={formData.title}
+                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                placeholder="What are you selling?"
+                                className={`w-full bg-white/5 border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--legion-gold)] transition-colors
+                                    ${errors.title ? 'border-red-500/50' : 'border-white/10'}
+                                `}
+                            />
+                            {errors.title && <p className="text-red-400 text-xs mt-1">{errors.title}</p>}
+                        </div>
+
+                        {/* Category */}
+                        <div>
+                            <label className="block text-gray-400 text-xs font-medium mb-2">CATEGORY *</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {CATEGORIES.map(cat => (
+                                    <button
+                                        key={cat.id}
+                                        type="button"
+                                        onClick={() => { setFormData({ ...formData, category: cat.id }); setTimeout(getNewPriceEstimate, 100); }}
+                                        className={`py-3 px-2 rounded-lg text-center transition-all text-sm
+                                            ${formData.category === cat.id
+                                                ? 'bg-[var(--legion-gold)] text-black font-semibold'
+                                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                            }
+                                        `}
+                                    >
+                                        <span className="text-lg block mb-1">{cat.icon}</span>
+                                        <span className="text-[10px]">{cat.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                            {errors.category && <p className="text-red-400 text-xs mt-1">{errors.category}</p>}
+                        </div>
+
+                        {/* Condition */}
+                        <div>
+                            <label className="block text-gray-400 text-xs font-medium mb-2">CONDITION</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {CONDITIONS.map(cond => (
+                                    <button
+                                        key={cond.id}
+                                        type="button"
+                                        onClick={() => { setFormData({ ...formData, condition: cond.id }); setTimeout(getNewPriceEstimate, 100); }}
+                                        className={`py-3 px-3 rounded-lg text-left transition-all
+                                            ${formData.condition === cond.id
+                                                ? 'bg-[var(--legion-gold)]/20 border-[var(--legion-gold)] border text-white'
+                                                : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
+                                            }
+                                        `}
+                                    >
+                                        <span className="font-medium text-sm block">{cond.label}</span>
+                                        <span className="text-[10px] text-gray-500">{cond.desc}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Price */}
+                        <div>
+                            <label className="block text-gray-400 text-xs font-medium mb-2">YOUR PRICE (₹) *</label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                                <input
+                                    type="number"
+                                    value={formData.price}
+                                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                                    placeholder="0"
+                                    className={`w-full bg-white/5 border rounded-lg pl-10 pr-4 py-3 text-white text-xl font-bold placeholder-gray-600 focus:outline-none focus:border-[var(--legion-gold)] transition-colors
+                                        ${errors.price ? 'border-red-500/50' : 'border-white/10'}
+                                    `}
+                                />
+                            </div>
+                            {priceEstimate && formData.price && (
+                                <p className={`text-xs mt-2 ${parseFloat(formData.price) < priceEstimate.suggested * 0.8 ? 'text-yellow-400' : 'text-green-400'}`}>
+                                    {parseFloat(formData.price) < priceEstimate.suggested * 0.8
+                                        ? '⚠️ Price is below recommended range'
+                                        : parseFloat(formData.price) > priceEstimate.suggested * 1.2
+                                            ? '📈 Price is above typical market value'
+                                            : '✓ Great price for quick sale'
+                                    }
+                                </p>
+                            )}
+                            {errors.price && <p className="text-red-400 text-xs mt-1">{errors.price}</p>}
+                        </div>
+
+                        {/* Description */}
+                        <div>
+                            <label className="block text-gray-400 text-xs font-medium mb-2">DESCRIPTION (Optional)</label>
+                            <textarea
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                placeholder="Add more details about your item..."
+                                rows={3}
+                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--legion-gold)] transition-colors resize-none"
+                            />
+                        </div>
+
+                        {/* Location */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-gray-400 text-xs font-medium mb-2">CITY *</label>
+                                <input
+                                    type="text"
+                                    value={formData.location.city}
+                                    onChange={(e) => setFormData({ ...formData, location: { ...formData.location, city: e.target.value } })}
+                                    placeholder="Mumbai"
+                                    className={`w-full bg-white/5 border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--legion-gold)] transition-colors
+                                        ${errors.city ? 'border-red-500/50' : 'border-white/10'}
+                                    `}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-gray-400 text-xs font-medium mb-2">STATE *</label>
+                                <input
+                                    type="text"
+                                    value={formData.location.state}
+                                    onChange={(e) => setFormData({ ...formData, location: { ...formData.location, state: e.target.value } })}
+                                    placeholder="Maharashtra"
+                                    className={`w-full bg-white/5 border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--legion-gold)] transition-colors
+                                        ${errors.state ? 'border-red-500/50' : 'border-white/10'}
+                                    `}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Error Display */}
+                {errors.submit && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                        <p className="text-red-400 text-sm">{errors.submit}</p>
                     </div>
                 )}
 
-                <div className="listing-form-container glass-panel">
+            </div>
 
-                    {/* STEP 0: MAGIC CAMERA (Entry) */}
-                    {step === 0 && (
-                        <div className="magic-upload-step">
-                            <div className="magic-header">
-                                <span className="magic-icon">✨</span>
-                                <h1>Snap & Sell</h1>
-                                <p>Upload one photo. Our AI will fill the details for you.</p>
-                            </div>
-
-                            <div
-                                className="upload-zone"
-                                onClick={() => fileInputRef.current?.click()}
-                            >
-                                <div className="upload-content">
-                                    <div className="camera-icon-large">📸</div>
-                                    <span className="upload-cta">Tap to Upload Photo</span>
-                                    <span className="upload-sub">We'll remove the background & estimate price.</span>
-                                </div>
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleMagicUpload}
-                                    accept="image/*"
-                                    hidden
-                                />
-                            </div>
-
-                            <button onClick={handleSkipMagic} className="btn-text">
-                                I'll enter details manually
-                            </button>
-                        </div>
-                    )}
-
-                    {/* STEP 1: REVIEW DETAILS (Auto-Filled) */}
-                    {step === 1 && (
-                        <div className="listing-step animate-fadeIn">
-                            <div className="step-header">
-                                <h2>Is this correct?</h2>
-                                {analysisData && <span className="ai-badge">✨ AI Filled</span>}
-                            </div>
-
-                            {/* Title */}
-                            <div className="form-group">
-                                <label>Title</label>
-                                <input
-                                    className="form-input"
-                                    value={formData.title}
-                                    onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                    placeholder="Item Title"
-                                />
-                            </div>
-
-                            {/* Tags / Category */}
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Category</label>
-                                    <select
-                                        className="form-select"
-                                        value={formData.category}
-                                        onChange={e => setFormData({ ...formData, category: e.target.value })}
-                                    >
-                                        <option value="">Select</option>
-                                        {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label>Condition</label>
-                                    <select
-                                        className="form-select"
-                                        value={formData.condition}
-                                        onChange={e => setFormData({ ...formData, condition: e.target.value })}
-                                    >
-                                        <option value="">Select</option>
-                                        {conditions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Description */}
-                            <div className="form-group">
-                                <label>Description</label>
-                                <textarea
-                                    className="form-textarea"
-                                    rows={4}
-                                    value={formData.description}
-                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                />
-                            </div>
-
-                            <button className="btn btn-primary full-width" onClick={handleNext}>
-                                Looks Good, Next →
-                            </button>
-                        </div>
-                    )}
-
-                    {/* STEP 2: PHOTOS (Add More) */}
-                    {step === 2 && (
-                        <div className="listing-step animate-fadeIn">
-                            <h2>Photos</h2>
-                            <p>Here is your cover photo. Add more angles if you like.</p>
-
-                            <div className="photo-grid">
-                                {formData.images.map((img, i) => (
-                                    <div key={i} className="photo-item">
-                                        <img src={img} alt="" />
-                                        <button className="remove-btn" onClick={() => removeImage(i)}>×</button>
-                                        {i === 0 && <span className="cover-badge">Cover</span>}
-                                    </div>
-                                ))}
-                                <label className="add-photo-btn">
-                                    +
-                                    <input type="file" multiple onChange={handleImageUpload} hidden />
-                                </label>
-                            </div>
-
-                            <button className="btn btn-primary full-width" onClick={handleNext}>
-                                Next: Pricing →
-                            </button>
-                        </div>
-                    )}
-
-                    {/* STEP 3: PRICING (AI Suggestion) */}
-                    {step === 3 && (
-                        <div className="listing-step animate-fadeIn">
-                            <h2>Set Price</h2>
-
-                            {aiEstimate && (
-                                <div className="price-oracle-card">
-                                    <div className="oracle-header">
-                                        <span className="oracle-icon">🔮</span>
-                                        <div>
-                                            <h4>Oracle Suggestion</h4>
-                                            <p>{aiEstimate.reasoning}</p>
-                                        </div>
-                                    </div>
-                                    <div className="oracle-price">
-                                        ₹{aiEstimate.value?.toLocaleString()}
-                                    </div>
-                                    <button
-                                        className="btn btn-sm btn-outline"
-                                        onClick={() => setFormData({ ...formData, price: aiEstimate.value })}
-                                    >
-                                        Apply Price
-                                    </button>
-                                </div>
-                            )}
-
-                            <div className="form-group">
-                                <label>Your Price (₹)</label>
-                                <input
-                                    type="number"
-                                    className="form-input price-input"
-                                    value={formData.price}
-                                    onChange={e => setFormData({ ...formData, price: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Location (City)</label>
-                                <input
-                                    className="form-input"
-                                    value={formData.location.city}
-                                    onChange={e => setFormData({ ...formData, location: { ...formData.location, city: e.target.value } })}
-                                    placeholder="e.g. Mumbai"
-                                />
-                            </div>
-
-                            {errors.submit && <p className="error-text">{errors.submit}</p>}
-
-                            <button
-                                className="btn btn-primary full-width btn-lg"
-                                onClick={handleSubmit}
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting ? 'Listing...' : 'Publish Listing'}
-                            </button>
-                        </div>
-                    )}
-
+            {/* Fixed Bottom Submit Button */}
+            <div className="fixed bottom-0 left-0 right-0 bg-[var(--void-deep)]/95 backdrop-blur-xl border-t border-white/10 p-4">
+                <div className="max-w-lg mx-auto">
+                    <button
+                        onClick={handleSubmit}
+                        disabled={isSubmitting || isAnalyzing}
+                        className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all
+                            ${isSubmitting || isAnalyzing
+                                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                : 'bg-[var(--legion-gold)] text-black hover:shadow-[0_0_30px_rgba(212,175,55,0.4)]'
+                            }
+                        `}
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <Loader className="animate-spin" size={20} />
+                                Creating Listing...
+                            </>
+                        ) : (
+                            <>
+                                <Zap size={20} />
+                                List for ₹{formData.price ? parseFloat(formData.price).toLocaleString() : '0'}
+                            </>
+                        )}
+                    </button>
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default CreateListing
+export default CreateListing;

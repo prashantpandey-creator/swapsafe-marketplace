@@ -187,6 +187,20 @@ export const aiAPI = {
             features: ["Noise Cancellation", "30hr Battery", "Black"],
             reasoning: "Image matches Sony XM4 design. Earcups show minimal wear. Accessories included."
         };
+    },
+
+    generate3D: async (imageUrl) => {
+        return await apiRequest('/ai/generate-3d', {
+            method: 'POST',
+            body: JSON.stringify({ imageUrl })
+        });
+    },
+
+    removeBackground: async (imageUrl) => {
+        return await apiRequest('/ai/remove-background', {
+            method: 'POST',
+            body: JSON.stringify({ imageUrl })
+        });
     }
 };
 
@@ -195,6 +209,13 @@ export const aiAPI = {
 export const paymentAPI = {
     createOrder: async (orderData) => {
         return await apiRequest('/payment/create-order', {
+            method: 'POST',
+            body: JSON.stringify(orderData)
+        });
+    },
+
+    createCreditOrder: async (orderData) => {
+        return await apiRequest('/payment/create-credit-order', {
             method: 'POST',
             body: JSON.stringify(orderData)
         });
@@ -213,6 +234,13 @@ export const paymentAPI = {
 
     getOrderById: async (id) => {
         return await apiRequest(`/payment/orders/${id}`);
+    },
+
+    confirmDelivery: async (orderId) => {
+        return await apiRequest('/payment/confirm-delivery', {
+            method: 'POST',
+            body: JSON.stringify({ orderId })
+        });
     }
 };
 

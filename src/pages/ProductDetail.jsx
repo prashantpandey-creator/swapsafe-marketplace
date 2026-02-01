@@ -7,7 +7,7 @@ import { useCart } from '../context/CartContext'
 import { listingsAPI, shieldAPI } from '../services/api'
 import { formatPrice, getTimeAgo, getConditionColor, conditions } from '../data/mockData'
 import GuardianBadge from '../components/trust/GuardianBadge'
-import './ProductDetail.css' // We can keep this for specific overrides, but mostly use Tailwind
+import './ProductDetail.css'
 
 function ProductDetail() {
     const { id } = useParams()
@@ -319,27 +319,46 @@ function ProductDetail() {
                                     →
                                 </div>
                             </Link>
-                        </div>
 
-                        {/* Delivery Options */}
-                        <div className="bg-legion-card border border-white/10 rounded-2xl p-6">
-                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Delivery Options</h3>
-                            <div className="space-y-3">
-                                <div className={`flex items-center gap-3 p-3 rounded-xl border ${deliveryAvailable ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/5 border-red-500/10 opacity-50'}`}>
-                                    <Package className={deliveryAvailable ? 'text-green-400' : 'text-red-400'} size={20} />
-                                    <div>
-                                        <span className="block text-sm font-bold text-white">Nationwide Shipping</span>
-                                        <span className="text-xs text-gray-400">{deliveryAvailable ? 'Available via Secure Courier' : 'Not available for this item'}</span>
+                            {/* Delivery Options */}
+                            <div className="bg-legion-card border border-white/10 rounded-2xl p-6 mt-6">
+                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Delivery Options</h3>
+                                <div className="space-y-3">
+                                    <div className={`flex items-center gap-3 p-3 rounded-xl border ${deliveryAvailable ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/5 border-red-500/10 opacity-50'}`}>
+                                        <Package className={deliveryAvailable ? 'text-green-400' : 'text-red-400'} size={20} />
+                                        <div>
+                                            <span className="block text-sm font-bold text-white">Nationwide Shipping</span>
+                                            <span className="text-xs text-gray-400">{deliveryAvailable ? 'Available via Secure Courier' : 'Not available for this item'}</span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-3 p-3 rounded-xl border bg-white/5 border-white/10">
-                                    <div className="relative">
-                                        <MapPin className="text-gray-300" size={20} />
+                                    <div className="flex items-center gap-3 p-3 rounded-xl border bg-white/5 border-white/10">
+                                        <div className="relative">
+                                            <MapPin className="text-gray-300" size={20} />
+                                        </div>
+                                        <div>
+                                            <span className="block text-sm font-bold text-white">Local Meetup</span>
+                                            <span className="text-xs text-gray-400">Meet in {location?.city} (Public Safe Zones Rec.)</span>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <span className="block text-sm font-bold text-white">Local Meetup</span>
-                                        <span className="text-xs text-gray-400">Meet in {location?.city} (Public Safe Zones Rec.)</span>
-                                    </div>
+
+                                    <Link
+                                        to={`/messages/${product.id || product._id}`}
+                                        state={{
+                                            seller: product.seller,
+                                            product: {
+                                                title: product.title,
+                                                images: product.images,
+                                                id: product.id || product._id
+                                            }
+                                        }}
+                                        className="flex items-center gap-3 p-3 rounded-xl border bg-legion-gold/10 border-legion-gold/20 hover:bg-legion-gold/20 transition-colors cursor-pointer"
+                                    >
+                                        <MessageSquare className="text-legion-gold" size={20} />
+                                        <div>
+                                            <span className="block text-sm font-bold text-white">Chat with Seller</span>
+                                            <span className="text-xs text-gray-400">Discuss details or negotiate</span>
+                                        </div>
+                                    </Link>
                                 </div>
                             </div>
                         </div>

@@ -78,6 +78,19 @@ const listingSchema = new mongoose.Schema({
         matchScore: { type: Number, default: 0 },
         differences: [String],
         verifiedAt: Date
+    },
+    // AI-Generated Assets
+    modelUrl: {
+        type: String,
+        default: null
+    },
+    generatedImages: [{
+        type: String
+    }],
+    aiTier: {
+        type: String,
+        enum: ['draft', 'standard', 'pro', null],
+        default: null
     }
 }, {
     timestamps: true

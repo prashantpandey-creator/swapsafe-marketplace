@@ -43,7 +43,7 @@ const orderSchema = new mongoose.Schema({
     },
     // Payment details
     payment: {
-        method: { type: String, enum: ['razorpay', 'cod', 'upi'], default: 'razorpay' },
+        method: { type: String, enum: ['razorpay', 'cod', 'upi', 'credits'], default: 'razorpay' },
         razorpayOrderId: { type: String },
         razorpayPaymentId: { type: String },
         razorpaySignature: { type: String },
