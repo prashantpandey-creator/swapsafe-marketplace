@@ -9,7 +9,7 @@ import GuardianBadge from '../trust/GuardianBadge';
 import logo from '../../assets/buyers_legion_logo.png';
 
 const Header = ({ currentTheme, toggleTheme }) => {
-    const { user, logout } = useAuth();
+    const { user, isAuthenticated, logout } = useAuth();
     const { items: cartItems } = useCart();
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -102,7 +102,7 @@ const Header = ({ currentTheme, toggleTheme }) => {
                         )}
                     </button>
 
-                    {user ? (
+                    {isAuthenticated && user ? (
                         <>
                             <Link to="/messages" className="p-2 text-gray-300 hover:text-legion-gold transition-colors relative">
                                 <MessageSquare className="w-5 h-5" />
@@ -146,8 +146,12 @@ const Header = ({ currentTheme, toggleTheme }) => {
                                                 className="absolute right-0 top-full mt-2 w-56 bg-legion-card border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 py-2"
                                             >
                                                 <div className="px-4 py-3 border-b border-white/10 mb-2">
-                                                    <p className="text-sm font-bold text-white truncate">{user.name}</p>
-                                                    <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                                                    <p className="text-sm font-bold text-white truncate">
+                                                        {user?.isGuest ? '🎭 Guest User' : user?.name}
+                                                    </p>
+                                                    <p className="text-xs text-slate-400 truncate">
+                                                        {user?.isGuest ? 'Browsing as guest' : user?.email}
+                                                    </p>
                                                 </div>
 
                                                 <Link to="/my-listings" className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors">
@@ -207,7 +211,7 @@ const Header = ({ currentTheme, toggleTheme }) => {
                             <Link to="/community" className="text-gray-300 hover:text-white py-2">Brotherhood</Link>
                             <Link to="/sell" className="text-gray-300 hover:text-white py-2">Sell Item</Link>
                             <hr className="border-white/10" />
-                            {user ? (
+                            {isAuthenticated && user ? (
                                 <>
                                     <Link to="/my-listings" className="text-gray-300 hover:text-white py-2">My Listings</Link>
                                     <button onClick={logout} className="text-red-400 text-left py-2">Logout</button>
