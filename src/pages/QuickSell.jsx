@@ -65,31 +65,40 @@ const QuickSell = () => {
     const [enhanceError, setEnhanceError] = useState(null);
 
     // AI Enhance photo - removes background, adds white background
-    // Optional productName helps AI understand what to extract
+    // Routes through backend which proxies to AI engine via Cloudflare tunnel
     const enhancePhoto = async (file, productName = '') => {
         setIsEnhancing(true);
         setEnhanceError(null);
 
         try {
-            const formDataPayload = new FormData();
-            formDataPayload.append('file', file);
+            // Convert file to base64 for sending to backend
+            const reader = new FileReader();
+            const base64Promise = new Promise((resolve, reject) => {
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+            });
+            reader.readAsDataURL(file);
+            const imageData = await base64Promise;
 
-            // Add product name if available for better segmentation
-            if (productName) {
-                formDataPayload.append('product_name', productName);
-                console.log(`🎯 Enhancing with context: ${productName}`);
-            }
+            console.log(`🎯 Enhancing with context: ${productName || 'No name provided'}`);
 
-            // Use env variable for AI engine URL (local dev or Cloudflare Tunnel in production)
-            const AI_ENGINE_URL = import.meta.env.VITE_AI_ENGINE_URL || 'http://localhost:8000';
-            const response = await fetch(`${AI_ENGINE_URL}/api/v1/studio/enhance`, {
+            // Call backend API which proxies to AI engine
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            const response = await fetch(`${API_URL}/ai/enhance-photo`, {
                 method: 'POST',
-                body: formDataPayload
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    imageData,
+                    productName,
+                    fileName: file.name
+                })
             });
 
             if (response.ok) {
                 const result = await response.json();
-                if (result.status === 'success' && result.image_data) {
+                if (result.success && result.image_data) {
                     setEnhancedImage(result.image_data);
                     console.log('✅ Photo enhanced with white background!');
                     return result.image_data;

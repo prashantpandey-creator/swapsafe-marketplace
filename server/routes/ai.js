@@ -325,7 +325,7 @@ router.post('/generate-3d', protect, async (req, res) => {
 });
 
 // @route   POST /api/ai/remove-background
-// @desc    Remove background from an image
+// @desc    Remove background from an image (legacy endpoint)
 // @access  Private
 router.post('/remove-background', protect, async (req, res) => {
     try {
@@ -338,12 +338,9 @@ router.post('/remove-background', protect, async (req, res) => {
         // Simulate Processing Time
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // In a real app, calls remove.bg or similar.
-        // Here we return the original image but with a success flag
-        // to allow the UI flow to complete.
         res.json({
             success: true,
-            processedUrl: imageUrl, // Logic would return new URL here
+            processedUrl: imageUrl,
             originalUrl: imageUrl,
             message: 'Background removal simulation successful'
         });
@@ -351,6 +348,86 @@ router.post('/remove-background', protect, async (req, res) => {
     } catch (error) {
         console.error('Background removal error:', error);
         res.status(500).json({ error: 'Failed to process image' });
+    }
+});
+
+// @route   POST /api/ai/enhance-photo
+// @desc    Proxy to Python AI Engine for photo enhancement (background removal + white BG)
+// @access  Public (no auth for quick sell flow)
+router.post('/enhance-photo', async (req, res) => {
+    console.log('🎨 AI Proxy: Received photo enhancement request');
+
+    const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8000';
+
+    try {
+        // Check if we have file data in base64 format from frontend
+        const { imageData, productName, fileName } = req.body;
+
+        if (!imageData) {
+            return res.status(400).json({
+                error: 'Image data is required',
+                hint: 'Send base64 image data in imageData field'
+            });
+        }
+
+        console.log(`📸 Processing image for: ${productName || 'Unknown Product'}`);
+
+        // Convert base64 to buffer
+        const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+
+        // Create FormData to send to Python engine
+        const FormData = (await import('form-data')).default;
+        const formData = new FormData();
+        formData.append('file', imageBuffer, {
+            filename: fileName || 'image.jpg',
+            contentType: 'image/jpeg'
+        });
+        if (productName) {
+            formData.append('product_name', productName);
+        }
+
+        // Proxy to Python AI Engine
+        const fetch = (await import('node-fetch')).default;
+        const response = await fetch(`${AI_ENGINE_URL}/api/v1/studio/enhance`, {
+            method: 'POST',
+            body: formData,
+            headers: formData.getHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error(`AI Engine returned ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        console.log('✅ Enhancement successful');
+
+        res.json({
+            success: true,
+            status: 'success',
+            image_data: result.image_data,
+            original_size: result.original_size,
+            enhanced: true
+        });
+
+    } catch (error) {
+        console.error('💥 Enhancement error:', error.message);
+
+        if (error.code === 'ECONNREFUSED' || error.message.includes('ECONNREFUSED')) {
+            return res.status(503).json({
+                error: 'AI Engine is not running',
+                code: 'AI_ENGINE_OFFLINE',
+                hint: 'Start the Python AI engine or check Cloudflare tunnel'
+            });
+        }
+
+        // Return graceful fallback
+        res.status(500).json({
+            error: 'Enhancement failed',
+            message: error.message,
+            fallback: 'Use original image'
+        });
     }
 });
 
