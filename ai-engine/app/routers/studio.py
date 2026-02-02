@@ -92,7 +92,8 @@ async def enhance_product(
     product_name: str = Form(""),  # Product name for better segmentation context
     reference_image_url: str = Form(""),  # NEW: Reference image from ProductDatabase
     has_exact_match: str = Form("false"),  # NEW: Whether exact product match found
-    category: str = Form("")  # NEW: Product category for styling hints
+    category: str = Form(""),  # NEW: Product category for styling hints
+    mode: str = Form("fast")  # 'fast' (Legacy/OpenCV) or 'pro' (SOTA/Vision)
 ):
     """
     Quick enhancement for product images.
@@ -107,11 +108,16 @@ async def enhance_product(
     for smarter composition and styling.
     """
     import time
+    from app.services.vision_service import vision_service
+    from PIL import Image
+    import io
+    import base64
+    
     start_time = time.time()
     
     print("")
     print("═" * 60)
-    print("🎨 PYTHON ENHANCE ENDPOINT CALLED")
+    print(f"🎨 PYTHON ENHANCE ENDPOINT CALLED (Mode: {mode})")
     print("═" * 60)
     print(f"📁 File: {file.filename}")
     print(f"📦 product_name: {product_name or '(none)'}")
@@ -125,20 +131,52 @@ async def enhance_product(
         content = await file.read()
         print(f"   ✅ Read {len(content)} bytes")
         
-        has_match = has_exact_match.lower() == 'true'
-        if has_match and reference_image_url:
-            print(f"📦 Using reference image for {product_name}")
+        # SOTA MODE (VisionService)
+        if mode == 'pro':
+            print("✨ Running SOTA Vision Pipeline (BiRefNet + IC-Light)...")
+            
+            # Load Image
+            input_image = Image.open(io.BytesIO(content)).convert("RGB")
+            
+            # 1. Segmentation
+            print("   ✂️ Segmenting with BiRefNet...")
+            segmented = vision_service.segment_image(input_image)
+            
+            # 2. Relighting
+            print("   💡 Relighting with IC-Light...")
+            # Use product name and category for context in relighting prompt
+            lighting_prompt = f"professional studio photography of {product_name}, soft lighting, 4k"
+            relit_image = vision_service.relight_product(segmented, prompt=lighting_prompt)
+            
+            # Convert back to Base64/Bytes
+            output_buffer = io.BytesIO()
+            relit_image.save(output_buffer, format="PNG")
+            img_str = base64.b64encode(output_buffer.getvalue()).decode("utf-8")
+            
+            result = {
+                "status": "success",
+                "image_data": f"data:image/png;base64,{img_str}",
+                "original_image_data": f"data:image/jpeg;base64,{base64.b64encode(content).decode('utf-8')}",
+                "dimensions": relit_image.size
+            }
+            
         else:
-            print(f"📦 No reference - enhancing with context only")
-        
-        print("")
-        print("🎯 Step 2: Calling AI pipeline...")
-        result = await pipeline_service.enhance_product_image(
-            image_bytes=content,
-            product_name=product_name,
-            reference_url=reference_image_url if has_match else None,
-            category=category
-        )
+            # LEGACY MODE (Fast OpenCV)
+            print("⚡ Running Fast Enhancement Pipeline (RemBG + OpenCV)...")
+            has_match = has_exact_match.lower() == 'true'
+            if has_match and reference_image_url:
+                print(f"📦 Using reference image for {product_name}")
+            else:
+                print(f"📦 No reference - enhancing with context only")
+            
+            print("")
+            print("🎯 Step 2: Calling AI pipeline...")
+            result = await pipeline_service.enhance_product_image(
+                image_bytes=content,
+                product_name=product_name,
+                reference_url=reference_image_url if has_match else None,
+                category=category
+            )
         
         elapsed = time.time() - start_time
         print("")

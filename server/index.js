@@ -31,15 +31,35 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Connect to MongoDB
-const connectDB = async () => {
+// Connect to MongoDB with Retry
+const connectDB = async (retries = 5) => {
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
+        await mongoose.connect(process.env.MONGODB_URI, {
+            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+            socketTimeoutMS: 45000,
+        });
         console.log('✅ MongoDB connected successfully');
     } catch (error) {
-        console.error('❌ MongoDB connection error:', error.message);
-        process.exit(1);
+        console.error(`❌ MongoDB connection error: ${error.message}`);
+        console.log(`⚠️ Retrying... (${retries} attempts left)`);
+
+        if (retries > 0) {
+            setTimeout(() => connectDB(retries - 1), 5000);
+        } else {
+            console.error('💥 MongoDB connection failed after retries');
+            process.exit(1);
+        }
     }
 };
+
+mongoose.connection.on('disconnected', () => {
+    console.warn('⚠️ MongoDB disconnected! Attempting reconnect...');
+    connectDB();
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('❌ MongoDB error:', err);
+});
 
 connectDB();
 

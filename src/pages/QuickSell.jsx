@@ -1,28 +1,27 @@
-// QuickSell.jsx - User-driven sell flow (no AI auto-detection)
+// QuickSell.jsx - User-driven sell flow with Stitch Premium Design
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, X, Sparkles, Loader, ChevronLeft, Zap, CheckCircle, AlertCircle, Package, MapPin, Image as ImageIcon, Search, Info, Maximize2, Plus } from 'lucide-react';
+import { Camera, X, Sparkles, Loader, ChevronLeft, Zap, CheckCircle, AlertCircle, Package, MapPin, Image as ImageIcon, Search, Info, Maximize2, Plus, Smartphone, Shirt, Home, Trophy, Book, Box } from 'lucide-react';
 import CameraViewfinder from '../components/sell/CameraViewfinder';
-import PriceOracle from '../components/sell/PriceOracle';
 import { useAuth } from '../context/AuthContext';
 import { listingsAPI, uploadImage } from '../services/api';
 
-// Categories
+// Categories with enhanced icons
 const CATEGORIES = [
-    { id: 'electronics', name: 'Electronics', icon: '📱', examples: 'Phones, Laptops, Headphones' },
-    { id: 'fashion', name: 'Fashion', icon: '👕', examples: 'Clothes, Shoes, Bags' },
-    { id: 'home', name: 'Home', icon: '🏠', examples: 'Furniture, Appliances' },
-    { id: 'sports', name: 'Sports', icon: '⚽', examples: 'Equipment, Gear' },
-    { id: 'books', name: 'Books', icon: '📚', examples: 'Textbooks, Novels' },
-    { id: 'other', name: 'Other', icon: '📦', examples: 'Everything else' }
+    { id: 'electronics', name: 'Electronics', icon: <Smartphone size={20} />, examples: 'Phones, Laptops' },
+    { id: 'fashion', name: 'Fashion', icon: <Shirt size={20} />, examples: 'Clothes, Shoes' },
+    { id: 'home', name: 'Home', icon: <Home size={20} />, examples: 'Furniture' },
+    { id: 'sports', name: 'Sports', icon: <Trophy size={20} />, examples: 'Gear, Equipment' },
+    { id: 'books', name: 'Books', icon: <Book size={20} />, examples: 'Textbooks' },
+    { id: 'other', name: 'Other', icon: <Box size={20} />, examples: 'Misc' }
 ];
 
 const CONDITIONS = [
     { id: 'new', label: 'Brand New', desc: 'Sealed/Unused', multiplier: 0.90 },
     { id: 'like-new', label: 'Like New', desc: 'Used 1-2 times', multiplier: 0.75 },
-    { id: 'good', label: 'Good', desc: 'Regular use, works great', multiplier: 0.55 },
-    { id: 'fair', label: 'Fair', desc: 'Visible wear, fully functional', multiplier: 0.35 }
+    { id: 'good', label: 'Good', desc: 'Regular use', multiplier: 0.55 },
+    { id: 'fair', label: 'Fair', desc: 'Visible wear', multiplier: 0.35 }
 ];
 
 const QuickSell = () => {
@@ -35,9 +34,8 @@ const QuickSell = () => {
     const [showCamera, setShowCamera] = useState(false);
 
     // Image Gallery State
-    // Format: { id: string, type: 'original'|'enhanced'|'stock', src: string, file: File|null, isMain: boolean, timestamp: number }
     const [gallery, setGallery] = useState([]);
-    const [lightboxIndex, setLightboxIndex] = useState(null); // Index of image open in lightbox
+    const [lightboxIndex, setLightboxIndex] = useState(null);
 
     // Helper: Add image to gallery
     const addToGallery = (src, type, file = null, isMain = false) => {
@@ -45,13 +43,11 @@ const QuickSell = () => {
             const newImage = {
                 id: Date.now().toString() + Math.random().toString().slice(2),
                 src,
-                type, // 'original', 'enhanced', 'stock'
+                type,
                 file,
-                isMain: isMain || prev.length === 0, // Default to main if first
+                isMain: isMain || prev.length === 0,
                 timestamp: Date.now()
             };
-
-            // If new one is main, unset others
             if (newImage.isMain) {
                 return [...prev.map(img => ({ ...img, isMain: false })), newImage];
             }
@@ -61,17 +57,13 @@ const QuickSell = () => {
 
     // Helper: Set main image
     const setMainImage = (id) => {
-        setGallery(prev => prev.map(img => ({
-            ...img,
-            isMain: img.id === id
-        })));
+        setGallery(prev => prev.map(img => ({ ...img, isMain: img.id === id })));
     };
 
     // Helper: Delete image
     const deleteImage = (id) => {
         setGallery(prev => {
             const newGallery = prev.filter(img => img.id !== id);
-            // If we deleted the main image, make the first available one main
             if (prev.find(img => img.id === id)?.isMain && newGallery.length > 0) {
                 newGallery[0].isMain = true;
             }
@@ -79,26 +71,13 @@ const QuickSell = () => {
         });
     };
 
-    // Form State - USER PROVIDES EVERYTHING
+    // Form State
     const [formData, setFormData] = useState({
-        title: '',
-        brand: '',
-        model: '',
-        category: '',
-        condition: '', // restored
-        originalPrice: '', // What user paid originally
-        askingPrice: '',   // What user wants to sell for
-        location: { city: '', state: '' }
+        title: '', brand: '', model: '', category: '', condition: '',
+        originalPrice: '', askingPrice: '', location: { city: '', state: '' }
     });
-
-    // Price lookup state
-    const [isPriceLooking, setIsPriceLooking] = useState(false);
-    const [priceData, setPriceData] = useState(null);
-    const [priceError, setPriceError] = useState(null);
-
-    // Submission State
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // AI Enhancement State
     const [isEnhancing, setIsEnhancing] = useState(false);
@@ -106,22 +85,9 @@ const QuickSell = () => {
     const [enhanceStatus, setEnhanceStatus] = useState('');
     const [enhanceStage, setEnhanceStage] = useState(0);
 
-    const ENHANCE_STAGES = [
-        'Preparing image...',
-        'Sending to AI...',
-        'Removing background...',
-        'Creating showcase...',
-        'Complete!'
-    ];
+    const ENHANCE_STAGES = ['Preparing image...', 'Sending to AI...', 'Removing background...', 'Creating showcase...', 'Complete!'];
 
-    // Check if we have enough product info to enhance intelligently
-    // NOTE: Now we auto-enhance immediately, this is for optional re-enhance with context
-    const canReEnhancePhoto = () => {
-        return productImage && imageFile && formData.brand && formData.model && formData.category;
-    };
-
-    // AI Enhance photo - removes background, adds white background
-    // Routes through backend which proxies to AI engine via Cloudflare tunnel
+    // AI Enhance photo
     const enhancePhoto = async (file, productName = '') => {
         setIsEnhancing(true);
         setEnhanceError(null);
@@ -129,44 +95,23 @@ const QuickSell = () => {
         setEnhanceStage(0);
 
         try {
-            // Stage 1: Convert file to base64
-            console.log('═══════════════════════════════════════');
-            console.log('🎨 ENHANCE PHOTO STARTED');
-            console.log('═══════════════════════════════════════');
-
-            setEnhanceStatus('Converting image to base64...');
-            setEnhanceStage(0);
-            console.log('📸 Stage 1: Converting file to base64...');
-
+            // Stage 1: Convert to base64
             const reader = new FileReader();
             const base64Promise = new Promise((resolve, reject) => {
                 reader.onload = () => resolve(reader.result);
-                reader.onerror = (e) => {
-                    console.error('❌ FileReader error:', e);
-                    reject(new Error('Failed to read image file'));
-                };
+                reader.onerror = reject;
             });
             reader.readAsDataURL(file);
             const imageData = await base64Promise;
 
-            console.log('✅ Base64 conversion complete');
-            console.log(`   - Data length: ${imageData.length} chars`);
-            console.log(`   - Product: ${formData.brand} ${formData.model}`);
-
             // Stage 2: Send to backend
             setEnhanceStatus('Sending to AI engine...');
             setEnhanceStage(1);
-            console.log('📤 Stage 2: Sending to backend...');
 
             const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-            console.log(`   - API URL: ${API_URL}/ai/enhance-photo`);
-
-            const startTime = Date.now();
             const response = await fetch(`${API_URL}/ai/enhance-photo`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     imageData,
                     productName,
@@ -177,92 +122,32 @@ const QuickSell = () => {
                 })
             });
 
-            const elapsedMs = Date.now() - startTime;
-            console.log(`📥 Response received in ${elapsedMs}ms`);
-            console.log(`   - Status: ${response.status} ${response.statusText}`);
-
             // Stage 3: Process response
             setEnhanceStatus('Processing response...');
             setEnhanceStage(2);
-            console.log('🔄 Stage 3: Processing response...');
 
             if (response.ok) {
                 const result = await response.json();
-                console.log('📊 Result:', {
-                    success: result.success,
-                    product_matched: result.product_matched,
-                    reference_used: result.reference_used,
-                    image_data_length: result.image_data?.length || 0
-                });
-
                 if (result.success && result.image_data) {
                     setEnhanceStatus('Complete!');
                     setEnhanceStage(4);
-
                     addToGallery(result.image_data, 'enhanced', null, true);
-
-                    console.log('✅ ENHANCE COMPLETE');
-                    console.log(`   Enhanced: ${result.image_data?.length || 0} chars`);
-                    console.log('═══════════════════════════════════════');
                     return result.image_data;
                 } else {
                     throw new Error('No image data in response');
                 }
             } else {
-                const errorData = await response.json().catch(() => ({ error: response.statusText }));
-                console.error('❌ Backend error:', errorData);
-                throw new Error(errorData.error || `HTTP ${response.status}`);
+                throw new Error(`HTTP ${response.status}`);
             }
         } catch (error) {
-            console.error('💥 ENHANCE FAILED:', error.message);
-            console.error(error);
-            console.log('═══════════════════════════════════════');
+            console.error('Enhance failed:', error);
             setEnhanceStatus(`Failed: ${error.message}`);
             setEnhanceError(error.message);
             return null;
-            return null;
         } finally {
             setIsEnhancing(false);
         }
     };
-
-    // NEW: Fetch Stock Photo
-    const fetchStockPhoto = async () => {
-        setIsEnhancing(true);
-        setEnhanceError(null);
-        setEnhanceStatus('Searching for stock photo...');
-        setEnhanceStage(1);
-
-        try {
-            const productName = `${formData.brand} ${formData.model} ${formData.title}`.trim();
-            console.log('🔍 FETCH STOCK:', productName);
-
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-            const response = await fetch(`${API_URL}/ai/fetch-stock`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ productName })
-            });
-
-            const result = await response.json();
-
-            if (result.image_data) {
-                addToGallery(result.image_data, 'stock', null, true);
-                setEnhanceStatus('Complete!');
-                setEnhanceStage(4);
-            } else {
-                throw new Error("No stock image found");
-            }
-
-        } catch (error) {
-            console.error('Stock fetch failed:', error);
-            setEnhanceError('Could not find stock photo. Try specific model name.');
-            setEnhanceStatus('');
-        } finally {
-            setIsEnhancing(false);
-        }
-    };
-
 
     // Handle camera capture
     const handleCameraCapture = async (imageUrl, file) => {
@@ -271,7 +156,6 @@ const QuickSell = () => {
         setStep('details');
     };
 
-    // Gallery upload
     const handleGalleryUpload = async (e) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -281,115 +165,16 @@ const QuickSell = () => {
         }
     };
 
-
-    // Construct search query from user inputs
-    const getSearchQuery = () => {
-        const parts = [formData.brand, formData.model, formData.title].filter(Boolean);
-        return parts.join(' ').trim();
-    };
-
-    // Lookup price using exact user inputs
-    const lookupPrice = async () => {
-        const query = getSearchQuery();
-        if (!query || query.length < 3) {
-            setPriceError('Enter brand and model to search prices');
-            return;
-        }
-
-        setIsPriceLooking(true);
-        setPriceError(null);
-
-        try {
-            const token = localStorage.getItem('swapsafe_token');
-            const params = new URLSearchParams({
-                q: query,
-                category: formData.category || '',
-                condition: formData.condition || 'good',
-                originalPrice: formData.originalPrice || ''
-            });
-
-            const response = await fetch(`${API_URL}/price/lookup?${params}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                setPriceData(data.data);
-
-                // Auto-suggest asking price based on condition
-                if (data.data.retailPrice && formData.condition) {
-                    const cond = CONDITIONS.find(c => c.id === formData.condition);
-                    const suggestedPrice = Math.round(data.data.retailPrice * (cond?.multiplier || 0.55));
-                    setFormData(prev => ({
-                        ...prev,
-                        askingPrice: prev.askingPrice || suggestedPrice.toString()
-                    }));
-                }
-            } else {
-                setPriceError(data.error || 'Could not find price');
-            }
-        } catch (error) {
-            console.error('Price lookup error:', error);
-            setPriceError('Price lookup failed. Try entering original price manually.');
-        } finally {
-            setIsPriceLooking(false);
-        }
-    };
-
-    // Check if we have enough info to search
-    const canSearchPrice = () => {
-        const query = getSearchQuery();
-        return query.length >= 3 && formData.category;
-    };
-
-    // Form validation
-    const validateDetails = () => {
-        const newErrors = {};
-        if (!formData.title.trim() && !formData.model.trim()) {
-            newErrors.title = 'Enter product name or model';
-        }
-        if (!formData.category) newErrors.category = 'Select a category';
-        if (!formData.condition) newErrors.condition = 'Select condition';
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const validatePrice = () => {
-        const newErrors = {};
-        if (!formData.askingPrice || parseFloat(formData.askingPrice) <= 0) {
-            newErrors.askingPrice = 'Enter your selling price';
-        }
-        if (!formData.location.city.trim()) newErrors.city = 'Enter your city';
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    // Move to price step
-    const goToPriceStep = () => {
-        if (validateDetails()) {
-            setStep('price');
-            // Auto-trigger price lookup
-            if (canSearchPrice()) {
-                lookupPrice();
-            }
-        }
-    };
-
-    // Submit listing - saves BOTH original and enhanced images
+    // Submit listing
     const handleSubmit = async () => {
-        if (!validatePrice()) return;
-
+        if (!formData.askingPrice) { setErrors({ askingPrice: 'Required' }); return; }
         setIsSubmitting(true);
 
         try {
-            // Collect images from gallery
-            // Main image should be first
             const sortedGallery = [...gallery].sort((a, b) => (b.isMain ? 1 : 0) - (a.isMain ? 1 : 0));
             const images = [];
 
             for (const img of sortedGallery) {
-                // If it's a file blob, upload it
                 if (img.type === 'original' && img.file) {
                     try {
                         const uploadedUrl = await uploadImage(img.file);
@@ -399,7 +184,6 @@ const QuickSell = () => {
                         images.push(img.src);
                     }
                 } else {
-                    // It's already a URL or Data URI (AI/Stock)
                     images.push(img.src);
                 }
             }
@@ -410,10 +194,7 @@ const QuickSell = () => {
                 return;
             }
 
-            const title = [formData.brand, formData.model, formData.title]
-                .filter(Boolean)
-                .join(' ')
-                .trim() || 'Product';
+            const title = [formData.brand, formData.model, formData.title].filter(Boolean).join(' ').trim() || 'Product';
 
             const listingData = {
                 title,
@@ -421,13 +202,10 @@ const QuickSell = () => {
                 category: formData.category,
                 condition: formData.condition,
                 price: parseFloat(formData.askingPrice),
-                images, // Now contains both enhanced and original
-                location: formData.location,
+                images,
+                location: formData.location || { city: 'Unknown', state: '' },
                 originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
-                retailPrice: priceData?.retailPrice || null
             };
-
-            console.log(`📸 Submitting listing with ${images.length} images`);
 
             await listingsAPI.create(listingData);
             navigate('/my-listings', { state: { success: true } });
@@ -441,724 +219,209 @@ const QuickSell = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[var(--void-deep)]">
-            {/* Camera */}
+        <div className="min-h-screen bg-[#0A0A0F] text-white font-sans selection:bg-legion-gold/30">
+            {/* Mesh Gradient Background */}
+            <div className="fixed inset-0 pointer-events-none">
+                <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-purple-900/20 rounded-full blur-[120px] mix-blend-screen opacity-40"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-legion-gold/10 rounded-full blur-[100px] mix-blend-screen opacity-30"></div>
+            </div>
+
             <AnimatePresence>
                 {showCamera && (
                     <CameraViewfinder
                         onCapture={handleCameraCapture}
                         onClose={() => setShowCamera(false)}
-                        guideText="Center your item in the frame"
+                        guideText="Center your item"
                     />
                 )}
             </AnimatePresence>
 
             {/* Header */}
-            <div className="sticky top-0 z-40 bg-[var(--void-deep)]/90 backdrop-blur-xl border-b border-white/5">
-                <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-4">
-                    <button onClick={() => navigate('/sell')} className="w-10 h-10 flex items-center justify-center text-gray-400">
-                        <ChevronLeft size={24} />
+            <div className="sticky top-0 z-40 bg-[#0A0A0F]/80 backdrop-blur-xl border-b border-white/5 pt-safe">
+                <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
+                    <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors">
+                        <ChevronLeft size={20} />
                     </button>
-                    <div className="flex-1">
-                        <h1 className="text-lg font-bold text-white">Quick Sell</h1>
-                        <p className="text-gray-500 text-xs">
-                            {step === 'capture' && 'Step 1: Take a photo'}
-                            {step === 'details' && 'Step 2: Enter product details'}
-                            {step === 'price' && 'Step 3: Set your price'}
-                        </p>
-                    </div>
-                    <Zap className="text-[var(--legion-gold)]" size={20} />
-                </div>
-
-                {/* Progress */}
-                <div className="max-w-lg mx-auto px-4 pb-4">
-                    <div className="flex gap-2">
-                        {['capture', 'details', 'price'].map((s, i) => (
-                            <div
-                                key={s}
-                                className={`h-1 flex-1 rounded-full transition-colors ${['capture', 'details', 'price'].indexOf(step) >= i
-                                    ? 'bg-[var(--legion-gold)]'
-                                    : 'bg-white/10'
-                                    }`}
-                            />
-                        ))}
-                    </div>
+                    <h1 className="text-base font-bold tracking-wide">SELL ITEM</h1>
+                    <div className="w-10"></div> {/* Spacer */}
                 </div>
             </div>
 
-            <div className="max-w-lg mx-auto px-4 pt-6 pb-24">
+            <main className="max-w-md mx-auto px-4 py-6 relative z-10 pb-32">
                 <AnimatePresence mode="wait">
-                    {/* STEP 1: CAPTURE */}
-                    {step === 'capture' && (
+                    {step === 'capture' ? (
                         <motion.div
                             key="capture"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="space-y-6"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="space-y-8"
                         >
-                            <div className="text-center py-8">
-                                <div className="w-24 h-24 mx-auto bg-[var(--legion-gold)]/20 rounded-full flex items-center justify-center mb-6">
-                                    <Camera size={40} className="text-[var(--legion-gold)]" />
-                                </div>
-                                <h2 className="text-2xl font-bold text-white mb-2">Take a Photo</h2>
-                                <p className="text-gray-400 max-w-xs mx-auto">
-                                    Snap a clear photo of your item
-                                </p>
+                            <div className="text-center space-y-2 mt-8">
+                                <h2 className="text-3xl font-extrabold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+                                    What are you selling?
+                                </h2>
+                                <p className="text-gray-400 text-sm">Snap a photo and we'll help you list it.</p>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <button
                                     onClick={() => setShowCamera(true)}
-                                    className="py-6 bg-[var(--legion-gold)] text-black font-bold rounded-xl flex flex-col items-center gap-2"
+                                    className="aspect-square rounded-3xl bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 flex flex-col items-center justify-center gap-4 group hover:border-legion-gold/50 transition-all shadow-xl hover:shadow-[0_0_30px_rgba(255,215,0,0.1)]"
                                 >
-                                    <Camera size={28} />
-                                    <span>Camera</span>
+                                    <div className="w-16 h-16 rounded-full bg-[#0A0A0F] flex items-center justify-center border border-white/10 group-hover:border-legion-gold/50 transition-colors">
+                                        <Camera size={32} className="text-white group-hover:text-legion-gold transition-colors" />
+                                    </div>
+                                    <span className="font-bold text-lg">Camera</span>
                                 </button>
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="py-6 bg-white/10 text-white font-medium rounded-xl flex flex-col items-center gap-2"
+                                    className="aspect-square rounded-3xl bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-4 group hover:bg-white/10 transition-all"
                                 >
-                                    <ImageIcon size={28} />
-                                    <span>Gallery</span>
+                                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
+                                        <ImageIcon size={32} className="text-gray-400 group-hover:text-white transition-colors" />
+                                    </div>
+                                    <span className="font-medium text-gray-300">Gallery</span>
                                 </button>
                             </div>
 
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                onChange={handleGalleryUpload}
-                                className="hidden"
-                            />
+                            {/* Recent Categories / Quick Select could go here */}
                         </motion.div>
-                    )}
-
-                    {/* STEP 2: DETAILS - User provides everything */}
-                    {step === 'details' && (
+                    ) : (
                         <motion.div
                             key="details"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="space-y-6"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="space-y-8"
                         >
-                            {/* Gallery UI */}
-                            <div className="space-y-4">
-                                {/* Main Image Preview */}
-                                <div className="rounded-xl overflow-hidden relative aspect-video bg-gray-900 group">
-                                    {gallery.length > 0 ? (
-                                        <>
-                                            <img
-                                                src={gallery.find(img => img.isMain)?.src || gallery[0].src}
-                                                alt="Main product"
-                                                className="w-full h-full object-contain cursor-pointer"
-                                                onClick={() => setLightboxIndex(gallery.findIndex(img => img.isMain))}
-                                            />
+                            {/* Image Preview Area */}
+                            <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-black border border-white/10 shadow-2xl">
+                                {gallery.length > 0 ? (
+                                    <img
+                                        src={gallery.find(img => img.isMain)?.src || gallery[0]?.src}
+                                        alt="Main"
+                                        className="w-full h-full object-contain"
+                                    />
+                                ) : (
+                                    <div className="flex items-center justify-center h-full text-gray-500">No Image</div>
+                                )}
 
-                                            {/* Badges */}
-                                            <div className="absolute top-3 left-3 flex gap-2">
-                                                {gallery.find(img => img.isMain)?.type === 'enhanced' && (
-                                                    <div className="bg-[var(--legion-gold)] text-black text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1">
-                                                        <Sparkles size={12} /> AI Studio
-                                                    </div>
-                                                )}
-                                                {gallery.find(img => img.isMain)?.type === 'stock' && (
-                                                    <div className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1">
-                                                        <Search size={12} /> Stock
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Expand Button */}
-                                            <button
-                                                onClick={() => setLightboxIndex(gallery.findIndex(img => img.isMain))}
-                                                className="absolute top-3 right-3 bg-black/50 p-2 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                                <Maximize2 size={16} />
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
-                                            <ImageIcon size={48} className="mb-2 opacity-50" />
-                                            <p className="text-sm">No images selected</p>
-                                        </div>
-                                    )}
-
-                                    {/* Enhancement Status Overlay */}
-                                    {isEnhancing && (
-                                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-10">
-                                            <Loader className="animate-spin text-[var(--legion-gold)] mb-3" size={32} />
-                                            <p className="text-white text-sm font-medium">{enhanceStatus || 'Enhancing...'}</p>
-                                            <p className="text-gray-400 text-xs mt-1">Creating pro photo with clean background</p>
-
-                                            {/* Progress bar */}
-                                            <div className="w-48 mt-4 flex gap-1">
-                                                {ENHANCE_STAGES.map((_, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        className={`h-1.5 flex-1 rounded-full transition-all ${idx <= enhanceStage ? 'bg-[var(--legion-gold)]' : 'bg-white/20'
-                                                            }`}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Enhanced Badge */}
-                                    {gallery.find(img => img.isMain)?.type === 'enhanced' && !isEnhancing && (
-                                        <div className="absolute top-3 left-3 bg-[var(--legion-gold)] text-black text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-lg">
-                                            <Sparkles size={12} />
-                                            Pro Photo Ready
-                                        </div>
-                                    )}
+                                {/* Add precise overlay controls if needed */}
+                                <div className="absolute bottom-4 right-4 flex gap-2">
+                                    <button onClick={() => fileInputRef.current?.click()} className="p-3 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 transition-colors">
+                                        <Plus size={20} />
+                                    </button>
                                 </div>
-                                {/* Thumbnails */}
-                                {gallery.length > 0 && (
-                                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                                        {gallery.map((img, idx) => (
-                                            <div
-                                                key={img.id}
-                                                className={`relative flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${img.isMain ? 'border-[var(--legion-gold)] ring-2 ring-[var(--legion-gold)]/20' : 'border-white/10 hover:border-white/30'
-                                                    }`}
-                                                onClick={() => setMainImage(img.id)}
-                                            >
-                                                <img
-                                                    src={img.src}
-                                                    alt="Thumbnail"
-                                                    className="w-full h-full object-cover"
-                                                />
+                            </div>
 
-                                                {/* Type Badge */}
-                                                <div className="absolute bottom-0 inset-x-0 bg-black/60 text-[10px] text-white text-center py-0.5 backdrop-blur-sm">
-                                                    {img.type === 'enhanced' ? 'AI Studio' : img.type === 'stock' ? 'Stock' : 'Original'}
-                                                </div>
-
-                                                {/* Delete Button */}
-                                                {!isEnhancing && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            deleteImage(img.id);
-                                                        }}
-                                                        className="absolute top-1 right-1 bg-red-500/80 p-1 rounded-full text-white hover:bg-red-600 transition"
-                                                    >
-                                                        <X size={10} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ))}
-
-                                        {/* Add Picture Button */}
+                            {/* Horizontal Category Scroller (Stitch Design) */}
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 tracking-wider mb-3 block uppercase">Category</label>
+                                <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sticky">
+                                    {CATEGORIES.map(cat => (
                                         <button
-                                            onClick={() => fileInputRef.current?.click()}
-                                            className="flex-shrink-0 w-24 h-24 rounded-lg border-2 border-dashed border-white/10 flex flex-col items-center justify-center text-gray-500 hover:text-white hover:border-white/30 transition-colors"
+                                            key={cat.id}
+                                            onClick={() => setFormData({ ...formData, category: cat.id })}
+                                            className={`flex flex-col items-center gap-2 min-w-[80px] p-3 rounded-2xl border transition-all ${formData.category === cat.id
+                                                    ? 'bg-legion-gold text-black border-legion-gold shadow-[0_0_20px_rgba(255,215,0,0.3)] scale-105'
+                                                    : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
+                                                }`}
                                         >
-                                            <Plus size={20} />
-                                            <span className="text-[10px] mt-1">Add</span>
+                                            <div className="bg-transparent">{cat.icon}</div>
+                                            <span className="text-[10px] font-bold">{cat.name}</span>
                                         </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Lightbox */}
-                            <AnimatePresence>
-                                {lightboxIndex !== null && gallery[lightboxIndex] && (
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        className="fixed inset-0 z-[100] bg-black/95 flex flex-col"
-                                    >
-                                        <div className="flex justify-end p-4">
-                                            <button
-                                                onClick={() => setLightboxIndex(null)}
-                                                className="text-white/70 hover:text-white"
-                                            >
-                                                <X size={32} />
-                                            </button>
-                                        </div>
-
-                                        <div className="flex-1 flex items-center justify-center p-4">
-                                            <img
-                                                src={gallery[lightboxIndex].src}
-                                                className="max-w-full max-h-full object-contain"
-                                                alt="Fullscreen"
-                                            />
-                                        </div>
-
-                                        <div className="p-8 flex justify-center gap-4 overflow-x-auto">
-                                            {gallery.map((img, idx) => (
-                                                <div
-                                                    key={img.id}
-                                                    onClick={() => setLightboxIndex(idx)}
-                                                    className={`w-16 h-16 rounded-md overflow-hidden cursor-pointer border-2 ${idx === lightboxIndex ? 'border-white' : 'border-transparent opacity-50'
-                                                        }`}
-                                                >
-                                                    <img src={img.src} className="w-full h-full object-cover" />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-
-                            {/* Enhancement Error */}
-                            {enhanceError && (
-                                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-yellow-400 text-sm">
-                                    ⚠️ {enhanceError} - Using original photo
-                                </div>
-                            )}
-
-                            {/* Info Banner */}
-                            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex items-start gap-3">
-                                <Info className="text-blue-400 flex-shrink-0 mt-0.5" size={18} />
-                                <div>
-                                    <p className="text-blue-400 text-sm font-medium">For accurate pricing</p>
-                                    <p className="text-gray-400 text-xs mt-1">
-                                        Enter the exact brand and model. We'll search current online prices.
-                                    </p>
+                                    ))}
                                 </div>
                             </div>
 
-                            {/* Form */}
-                            <div className="glass-panel p-5 space-y-5">
-                                {/* Brand */}
-                                <div>
-                                    <label className="block text-gray-400 text-xs font-medium mb-2">
-                                        BRAND <span className="text-gray-600">(e.g., Sony, Apple, Nike)</span>
-                                    </label>
+                            {/* Details Form */}
+                            <div className="space-y-5">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 tracking-wider uppercase">Title</label>
                                     <input
                                         type="text"
-                                        value={formData.brand}
-                                        onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                                        placeholder="Sony"
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:border-[var(--legion-gold)]"
-                                    />
-                                </div>
-
-                                {/* Model */}
-                                <div>
-                                    <label className="block text-gray-400 text-xs font-medium mb-2">
-                                        MODEL <span className="text-gray-600">(e.g., WH-1000XM4, iPhone 14)</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.model}
-                                        onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                                        placeholder="WH-1000XM4"
-                                        className={`w-full bg-white/5 border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:border-[var(--legion-gold)] ${errors.title ? 'border-red-500/50' : 'border-white/10'}`}
-                                    />
-                                    {errors.title && <p className="text-red-400 text-xs mt-1">{errors.title}</p>}
-                                </div>
-
-                                {/* Title (optional extra description) */}
-                                <div>
-                                    <label className="block text-gray-400 text-xs font-medium mb-2">
-                                        EXTRA DETAILS <span className="text-gray-600">(optional)</span>
-                                    </label>
-                                    <input
-                                        type="text"
+                                        placeholder="What are you selling?"
                                         value={formData.title}
-                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                        placeholder="Noise cancelling headphones, black color"
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:border-[var(--legion-gold)]"
+                                        onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                        className="w-full bg-transparent border-b border-white/10 py-3 text-xl font-medium placeholder-gray-600 focus:border-legion-gold focus:outline-none transition-colors"
                                     />
                                 </div>
 
-                                {/* Category */}
-                                <div>
-                                    <label className="block text-gray-400 text-xs font-medium mb-2">CATEGORY *</label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {CATEGORIES.map(cat => (
-                                            <button
-                                                key={cat.id}
-                                                type="button"
-                                                onClick={() => setFormData({ ...formData, category: cat.id })}
-                                                className={`py-3 rounded-lg text-center transition-all ${formData.category === cat.id
-                                                    ? 'bg-[var(--legion-gold)] text-black font-semibold'
-                                                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                                                    }`}
-                                            >
-                                                <span className="text-lg block">{cat.icon}</span>
-                                                <span className="text-[10px]">{cat.name}</span>
-                                            </button>
-                                        ))}
+                                <div className="flex gap-4">
+                                    <div className="flex-1 space-y-1">
+                                        <label className="text-xs font-bold text-gray-500 tracking-wider uppercase">Brand</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Brand"
+                                            value={formData.brand}
+                                            onChange={e => setFormData({ ...formData, brand: e.target.value })}
+                                            className="w-full bg-transparent border-b border-white/10 py-2 text-base focus:border-legion-gold focus:outline-none transition-colors"
+                                        />
                                     </div>
-                                    {errors.category && <p className="text-red-400 text-xs mt-1">{errors.category}</p>}
+                                    <div className="flex-1 space-y-1">
+                                        <label className="text-xs font-bold text-gray-500 tracking-wider uppercase">Model</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Model"
+                                            value={formData.model}
+                                            onChange={e => setFormData({ ...formData, model: e.target.value })}
+                                            className="w-full bg-transparent border-b border-white/10 py-2 text-base focus:border-legion-gold focus:outline-none transition-colors"
+                                        />
+                                    </div>
                                 </div>
 
-                                {/* Condition */}
+                                {/* Condition Chips */}
                                 <div>
-                                    <label className="block text-gray-400 text-xs font-medium mb-2">CONDITION *</label>
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <label className="text-xs font-bold text-gray-500 tracking-wider mb-3 block uppercase">Condition</label>
+                                    <div className="flex flex-wrap gap-2">
                                         {CONDITIONS.map(cond => (
                                             <button
                                                 key={cond.id}
-                                                type="button"
                                                 onClick={() => setFormData({ ...formData, condition: cond.id })}
-                                                className={`py-3 px-4 rounded-lg text-left transition-all ${formData.condition === cond.id
-                                                    ? 'bg-[var(--legion-gold)]/20 border-[var(--legion-gold)] border-2 text-white'
-                                                    : 'bg-white/5 border border-white/10 text-gray-400'
+                                                className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${formData.condition === cond.id
+                                                        ? 'bg-white text-black border-white'
+                                                        : 'bg-transparent text-gray-400 border-white/20 hover:border-white/40'
                                                     }`}
                                             >
-                                                <span className="font-medium block">{cond.label}</span>
-                                                <span className="text-xs opacity-70">{cond.desc}</span>
+                                                {cond.label}
                                             </button>
                                         ))}
                                     </div>
-                                    {errors.condition && <p className="text-red-400 text-xs mt-1">{errors.condition}</p>}
                                 </div>
 
-                                {/* Original Price (optional but helpful) */}
-                                <div>
-                                    <label className="block text-gray-400 text-xs font-medium mb-2">
-                                        ORIGINAL PURCHASE PRICE <span className="text-gray-600">(helps with accurate pricing)</span>
-                                    </label>
+                                {/* Price */}
+                                <div className="pt-2">
+                                    <label className="text-xs font-bold text-legion-gold tracking-wider mb-2 block uppercase">Price</label>
                                     <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                                        <span className="absolute left-0 top-1/2 -translate-y-1/2 text-2xl font-light text-gray-500">$</span>
                                         <input
                                             type="number"
-                                            value={formData.originalPrice}
-                                            onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
-                                            placeholder="What you paid for it"
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-600 focus:border-[var(--legion-gold)]"
+                                            placeholder="0.00"
+                                            value={formData.askingPrice}
+                                            onChange={e => setFormData({ ...formData, askingPrice: e.target.value })}
+                                            className="w-full bg-transparent border-none pl-6 text-4xl font-bold text-white placeholder-gray-700 focus:ring-0 p-0"
                                         />
                                     </div>
                                 </div>
                             </div>
 
-                            {/* CREATE PRO PHOTO - MANUAL TRIGGER */}
-                            {gallery.some(img => img.type === 'original') && (
-                                <div className="bg-gradient-to-r from-[var(--legion-gold)]/10 to-transparent border border-[var(--legion-gold)]/20 rounded-xl p-5 relative overflow-hidden">
-                                    {/* Glass reflection effect */}
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-16 -mt-16 pointer-events-none"></div>
-
-                                    <div className="flex items-start gap-4 relative z-10">
-                                        <div className="w-12 h-12 bg-[var(--legion-gold)]/20 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse-slow">
-                                            <Sparkles className="text-[var(--legion-gold)]" size={24} />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="text-white font-bold mb-1 flex items-center gap-2">
-                                                AI Studio Photo
-                                                <span className="text-[10px] bg-[var(--legion-gold)] text-black px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">Beta</span>
-                                            </h3>
-
-                                            <p className="text-gray-400 text-sm mb-4">
-                                                Generate a professional white-background photo.
-                                                <br />
-                                                <span className="text-xs text-gray-500">
-                                                    Requires Brand & Model for best results.
-                                                </span>
-                                            </p>
-
-                                            {/* Action Button */}
-                                            <button
-                                                onClick={() => {
-                                                    const originalImg = gallery.find(g => g.type === 'original');
-                                                    if (originalImg?.file) {
-                                                        enhancePhoto(originalImg.file, `${formData.brand} ${formData.model} ${formData.title}`.trim());
-                                                    }
-                                                }}
-                                                disabled={isEnhancing || !formData.brand || !formData.model}
-                                                className={`w-full py-3 font-bold rounded-lg flex items-center justify-center gap-2 transition-all ${isEnhancing || !formData.brand || !formData.model
-                                                    ? 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5'
-                                                    : 'bg-[var(--legion-gold)] text-black hover:bg-[#E5C100] hover:shadow-[0_0_20px_rgba(255,215,0,0.3)]'
-                                                    }`}
-                                            >
-                                                {isEnhancing ? (
-                                                    <>
-                                                        <Loader className="animate-spin" size={18} />
-                                                        {enhanceStatus || 'Processing...'}
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Sparkles size={18} />
-                                                        {formData.brand && formData.model ? 'Generate AI Photo' : 'Enter Details to Unlock'}
-                                                    </>
-                                                )}
-                                            </button>
-
-                                            {/* NEW: Stock Photo Button */}
-                                            <div className="flex items-center gap-3 mt-3">
-                                                <div className="h-px flex-1 bg-white/10"></div>
-                                                <span className="text-[10px] text-gray-500 font-medium">OR</span>
-                                                <div className="h-px flex-1 bg-white/10"></div>
-                                            </div>
-
-                                            <button
-                                                onClick={fetchStockPhoto}
-                                                disabled={isEnhancing || !formData.brand || !formData.model}
-                                                className={`w-full py-3 font-bold rounded-lg flex items-center justify-center gap-2 transition-all mt-3 border ${isEnhancing || !formData.brand || !formData.model
-                                                    ? 'border-white/5 text-gray-500 cursor-not-allowed'
-                                                    : 'border-white/20 text-white hover:bg-white/5 hover:border-[var(--legion-gold)]/50'
-                                                    }`}
-                                            >
-                                                <Search size={18} />
-                                                Find Stock Photo (Instant)
-                                            </button>
-
-                                            {/* Helper text if disabled */}
-                                            {!formData.brand && !formData.model && (
-                                                <p className="text-center text-xs text-gray-600 mt-2">
-                                                    Enter Brand & Model above to enable
-                                                </p>
-                                            )}
-
-                                            {/* Progress stages during enhancement */}
-                                            {isEnhancing && (
-                                                <div className="mt-4 bg-black/20 rounded-lg p-3 backdrop-blur-sm">
-                                                    <div className="flex justify-between text-xs text-gray-400 mb-2">
-                                                        <span>Progress</span>
-                                                        <span>{Math.round(((enhanceStage + 1) / ENHANCE_STAGES.length) * 100)}%</span>
-                                                    </div>
-                                                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden flex gap-0.5">
-                                                        {ENHANCE_STAGES.map((stage, idx) => (
-                                                            <div
-                                                                key={idx}
-                                                                className={`flex-1 transition-all duration-500 ${idx <= enhanceStage ? 'bg-[var(--legion-gold)]' : 'bg-transparent'
-                                                                    }`}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                    <p className="text-xs text-[var(--legion-gold)]/80 text-center mt-2 animate-pulse">
-                                                        {ENHANCE_STAGES[enhanceStage]}
-                                                    </p>
-                                                </div>
-                                            )}
-
-                                            {/* Error display */}
-                                            {enhanceError && !isEnhancing && (
-                                                <div className="mt-3 bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-start gap-2">
-                                                    <AlertCircle size={16} className="text-red-400 mt-0.5 flex-shrink-0" />
-                                                    <div>
-                                                        <p className="text-red-400 text-sm font-medium">Generation Failed</p>
-                                                        <p className="text-red-400/70 text-xs mt-1">{enhanceError}</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Pro Photo Created Success */}
-                            {/* Pro Photo Created Success */}
-                            {gallery.some(img => img.type === 'enhanced') && (
-                                <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 flex items-center gap-3">
-                                    <CheckCircle className="text-green-400" size={24} />
-                                    <div>
-                                        <p className="text-green-400 font-medium">Pro Photo Created!</p>
-                                        <p className="text-gray-400 text-sm">Amazon-style white background applied</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Next Button */}
-                            <button
-                                onClick={goToPriceStep}
-                                className="w-full py-4 bg-[var(--legion-gold)] text-black font-bold rounded-xl flex items-center justify-center gap-2"
-                            >
-                                <Search size={20} />
-                                Find Price & Continue
-                            </button>
-                        </motion.div>
-                    )}
-
-                    {/* STEP 3: PRICE */}
-                    {step === 'price' && (
-                        <motion.div
-                            key="price"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="space-y-6"
-                        >
-                            {/* Product Summary */}
-                            <div className="glass-panel p-4 flex gap-4">
-                                <img
-                                    src={productImage}
-                                    alt="Product"
-                                    className="w-20 h-20 object-cover rounded-lg bg-gray-800"
-                                />
-                                <div className="flex-1">
-                                    <h3 className="text-white font-semibold">
-                                        {formData.brand} {formData.model}
-                                    </h3>
-                                    <p className="text-gray-400 text-sm">{formData.title}</p>
-                                    <div className="flex gap-2 mt-2">
-                                        <span className="text-xs bg-white/10 text-gray-300 px-2 py-1 rounded">
-                                            {CATEGORIES.find(c => c.id === formData.category)?.name}
-                                        </span>
-                                        <span className="text-xs bg-white/10 text-gray-300 px-2 py-1 rounded">
-                                            {CONDITIONS.find(c => c.id === formData.condition)?.label}
-                                        </span>
-                                    </div>
-                                </div>
+                            {/* Action Button */}
+                            <div className="pt-8 sticky bottom-6 z-20">
                                 <button
-                                    onClick={() => setStep('details')}
-                                    className="text-[var(--legion-gold)] text-sm"
+                                    onClick={handleSubmit}
+                                    disabled={isSubmitting}
+                                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-legion-gold to-yellow-500 text-black font-extrabold text-lg shadow-[0_0_40px_rgba(255,215,0,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                                 >
-                                    Edit
+                                    {isSubmitting ? <Loader className="animate-spin" /> : <Zap className="fill-current" />}
+                                    <span>POST LISTING</span>
                                 </button>
                             </div>
-
-                            {/* Price Lookup Result */}
-                            {isPriceLooking ? (
-                                <div className="glass-panel p-6 text-center">
-                                    <Loader className="animate-spin mx-auto mb-3 text-[var(--legion-gold)]" size={32} />
-                                    <p className="text-white font-medium">Searching online prices...</p>
-                                    <p className="text-gray-400 text-sm mt-1">Checking {getSearchQuery()}</p>
-                                </div>
-                            ) : priceData ? (
-                                <div className="glass-panel p-5 space-y-4">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <CheckCircle className="text-green-400" size={18} />
-                                        <span className="text-green-400 font-medium">Price Found!</span>
-                                        <span className="text-gray-500 text-xs ml-auto">
-                                            Source: {priceData.source || 'web'}
-                                        </span>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-white/5 rounded-lg p-4 text-center">
-                                            <p className="text-gray-400 text-xs mb-1">Retail Price</p>
-                                            <p className="text-2xl font-bold text-white">
-                                                ₹{priceData.retailPrice?.toLocaleString()}
-                                            </p>
-                                        </div>
-                                        <div className="bg-green-500/10 rounded-lg p-4 text-center border border-green-500/30">
-                                            <p className="text-gray-400 text-xs mb-1">Suggested Resale</p>
-                                            <p className="text-2xl font-bold text-green-400">
-                                                ₹{priceData.suggestedRange?.max?.toLocaleString()}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {priceData.confidence && (
-                                        <div className="text-center text-gray-500 text-xs">
-                                            Confidence: {priceData.confidence}% • {priceData.note}
-                                        </div>
-                                    )}
-                                </div>
-                            ) : priceError ? (
-                                <div className="glass-panel p-5">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <AlertCircle className="text-yellow-400" size={18} />
-                                        <span className="text-yellow-400 font-medium">Couldn't find exact price</span>
-                                    </div>
-                                    <p className="text-gray-400 text-sm mb-4">{priceError}</p>
-                                    <button
-                                        onClick={lookupPrice}
-                                        className="w-full py-2 bg-white/10 text-white rounded-lg text-sm"
-                                    >
-                                        Try Again
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="glass-panel p-5 text-center">
-                                    <p className="text-gray-400">Enter details to search for current prices</p>
-                                    <button
-                                        onClick={lookupPrice}
-                                        disabled={!canSearchPrice()}
-                                        className="mt-4 px-6 py-2 bg-[var(--legion-gold)] text-black rounded-lg font-medium disabled:opacity-50"
-                                    >
-                                        Search Price
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* User's Asking Price */}
-                            <div className="glass-panel p-5">
-                                <label className="block text-white font-medium mb-3">
-                                    Your Selling Price *
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">₹</span>
-                                    <input
-                                        type="number"
-                                        value={formData.askingPrice}
-                                        onChange={(e) => setFormData({ ...formData, askingPrice: e.target.value })}
-                                        placeholder="0"
-                                        className={`w-full bg-white/5 border rounded-xl pl-12 pr-4 py-4 text-white text-3xl font-bold placeholder-gray-600 focus:border-[var(--legion-gold)] ${errors.askingPrice ? 'border-red-500/50' : 'border-white/10'}`}
-                                    />
-                                </div>
-                                {errors.askingPrice && <p className="text-red-400 text-xs mt-2">{errors.askingPrice}</p>}
-
-                                {/* Savings Display */}
-                                {priceData?.retailPrice && formData.askingPrice && (
-                                    <div className="mt-4 bg-green-500/10 rounded-lg p-3 text-center">
-                                        <span className="text-green-400 font-medium">
-                                            Buyers save {Math.round((1 - (parseFloat(formData.askingPrice) / priceData.retailPrice)) * 100)}%
-                                            (₹{(priceData.retailPrice - parseFloat(formData.askingPrice)).toLocaleString()})
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Location */}
-                            <div className="glass-panel p-5">
-                                <label className="block text-white font-medium mb-3 flex items-center gap-2">
-                                    <MapPin size={18} />
-                                    Pickup Location
-                                </label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <input
-                                        type="text"
-                                        value={formData.location.city}
-                                        onChange={(e) => setFormData({ ...formData, location: { ...formData.location, city: e.target.value } })}
-                                        placeholder="City *"
-                                        className={`w-full bg-white/5 border rounded-lg px-4 py-3 text-white placeholder-gray-600 ${errors.city ? 'border-red-500/50' : 'border-white/10'}`}
-                                    />
-                                    <input
-                                        type="text"
-                                        value={formData.location.state}
-                                        onChange={(e) => setFormData({ ...formData, location: { ...formData.location, state: e.target.value } })}
-                                        placeholder="State"
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Error */}
-                            {errors.submit && (
-                                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-center gap-3">
-                                    <AlertCircle className="text-red-400" size={20} />
-                                    <p className="text-red-400 text-sm">{errors.submit}</p>
-                                </div>
-                            )}
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
+            </main>
 
-            {/* Fixed Bottom CTA */}
-            {step === 'price' && (
-                <div className="fixed bottom-0 left-0 right-0 bg-[var(--void-deep)]/95 backdrop-blur-xl border-t border-white/10 p-4">
-                    <div className="max-w-lg mx-auto">
-                        <button
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
-                            className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${isSubmitting
-                                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                : 'bg-[var(--legion-gold)] text-black hover:shadow-[0_0_30px_rgba(212,175,55,0.4)]'
-                                }`}
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <Loader className="animate-spin" size={20} />
-                                    Creating Listing...
-                                </>
-                            ) : (
-                                <>
-                                    <Zap size={20} />
-                                    List for ₹{formData.askingPrice ? parseFloat(formData.askingPrice).toLocaleString() : '0'}
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            )}
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleGalleryUpload} className="hidden" />
         </div>
     );
 };
