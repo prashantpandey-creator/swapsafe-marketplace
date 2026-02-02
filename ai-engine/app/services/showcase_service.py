@@ -29,6 +29,15 @@ def get_upscale_service():
         print("⚠️ Upscale service not available")
         return None
 
+# Import enhance service
+def get_enhance_service():
+    try:
+        from .enhance_service import enhance_service
+        return enhance_service
+    except ImportError:
+        print("⚠️ Enhance service not available")
+        return None
+
 class ShowcaseService:
     """
     Creates professional e-commerce showcase photos with clean backgrounds.
@@ -37,6 +46,7 @@ class ShowcaseService:
     def __init__(self):
         self.remove_bg, self.rembg_session = get_rembg()
         self.upscale_service = get_upscale_service()
+        self.enhance_service = get_enhance_service()
         print("📸 Showcase Service initialized")
     
     async def create_showcase(
@@ -52,15 +62,21 @@ class ShowcaseService:
         """
         Creates a professional showcase photo.
         
-        1. Remove background from product image
-        2. Add clean white/gradient background
-        3. Center product with proper padding
-        4. Add subtle shadow for depth
+        1. VALIDATE & ENHANCE: Fix lighting/color on raw photo
+        2. SEGMENT: Remove background
+        3. COMPOSITE: Place on white/gradient background
         """
         import time
         start = time.time()
         
         try:
+            # Step 0: Pre-enhancement (Lighting/Color) - NEW
+            if self.enhance_service:
+                print("   ✨ Step 0: Enhancing lighting and details...")
+                enhance_start = time.time()
+                image_bytes = self.enhance_service.enhance_product(image_bytes)
+                print(f"      ✅ Enhanced in {time.time()-enhance_start:.2f}s")
+
             # Step 1: Remove background
             print("   ✂️ Step A: Removing background...")
             step_start = time.time()
@@ -97,11 +113,6 @@ class ShowcaseService:
                 print("      ⚠️ rembg not available, using original")
                 fg_image = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
             
-            # Step 1.8: Trim transparency (Smart Crop) - NEW
-            print("   ✂️ Step A.8: Trimming transparency...")
-            fg_image = self._trim_transparency(fg_image)
-            print(f"      ✅ Trimmed to {fg_image.width}x{fg_image.height}")
-            
             # Step 2: Create background
             print(f"   🎨 Step B: Creating {background} background...")
             if background == "gradient":
@@ -123,6 +134,7 @@ class ShowcaseService:
                 shadow = self._create_shadow(fg_image, output_size)
                 bg_image = Image.alpha_composite(bg_image, shadow)
                 print("      ✅ Shadow added")
+            
             
             # Step 5: Composite final image
             print("   🔄 Step E: Compositing final image...")
@@ -171,13 +183,6 @@ class ShowcaseService:
         except Exception as e:
             print(f"❌ Showcase creation failed: {e}")
             raise e
-            
-    def _trim_transparency(self, img: Image.Image) -> Image.Image:
-        """Crops transparent borders from image"""
-        bbox = img.getbbox()
-        if bbox:
-            return img.crop(bbox)
-        return img
     
     def _create_gradient_bg(self, size: tuple) -> Image.Image:
         """Creates a subtle gradient background"""

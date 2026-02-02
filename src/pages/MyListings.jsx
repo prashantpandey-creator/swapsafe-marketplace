@@ -98,6 +98,12 @@ const MyListings = () => {
                             </div>
                         ))}
                     </div>
+                ) : (
+                    <div className="text-center py-20 bg-white/5 rounded-2xl border border-white/10">
+                        <h3 className="text-xl font-bold text-white mb-2">No active listings</h3>
+                        <p className="text-gray-400 mb-6">You haven't listed anything yet.</p>
+                        <Link to="/sell" className="btn btn-outline">Create First Listing</Link>
+                    </div>
                 )}
             </div>
 
