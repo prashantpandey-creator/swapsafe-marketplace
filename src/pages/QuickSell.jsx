@@ -36,6 +36,7 @@ const QuickSell = () => {
     // Image Gallery State
     const [gallery, setGallery] = useState([]);
     const [lightboxIndex, setLightboxIndex] = useState(null);
+    const [useProMode, setUseProMode] = useState(true); // Default to SOTA
 
     // Helper: Add image to gallery
     const addToGallery = (src, type, file = null, isMain = false) => {
@@ -118,7 +119,8 @@ const QuickSell = () => {
                     fileName: file.name,
                     brand: formData.brand,
                     model: formData.model,
-                    category: formData.category
+                    category: formData.category,
+                    mode: useProMode ? 'pro' : 'fast'
                 })
             });
 
@@ -295,7 +297,7 @@ const QuickSell = () => {
                             className="space-y-8"
                         >
                             {/* Image Preview Area */}
-                            <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-black border border-white/10 shadow-2xl">
+                            <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-black border border-white/10 shadow-2xl group">
                                 {gallery.length > 0 ? (
                                     <img
                                         src={gallery.find(img => img.isMain)?.src || gallery[0]?.src}
@@ -306,11 +308,52 @@ const QuickSell = () => {
                                     <div className="flex items-center justify-center h-full text-gray-500">No Image</div>
                                 )}
 
-                                {/* Add precise overlay controls if needed */}
-                                <div className="absolute bottom-4 right-4 flex gap-2">
-                                    <button onClick={() => fileInputRef.current?.click()} className="p-3 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 transition-colors">
-                                        <Plus size={20} />
+                                {/* Loading / Status Overlay */}
+                                {isEnhancing && (
+                                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-20">
+                                        <Loader className="animate-spin text-legion-gold mb-3" size={32} />
+                                        <p className="text-white font-bold">{enhanceStatus}</p>
+                                        <p className="text-gray-400 text-xs mt-1">
+                                            {useProMode ? 'Using SOTA Vision (Slow & Premium)' : 'Fast Enhancement'}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Controls Overlay */}
+                                <div className="absolute bottom-4 right-4 left-4 flex items-center justify-between z-10">
+                                    {/* Pro Mode Toggle */}
+                                    <button
+                                        onClick={() => setUseProMode(!useProMode)}
+                                        className={`px-3 py-1.5 rounded-full backdrop-blur-md border text-xs font-bold transition-all flex items-center gap-1.5 ${useProMode
+                                            ? 'bg-legion-gold/20 border-legion-gold text-legion-gold'
+                                            : 'bg-black/40 border-white/10 text-gray-400'}`}
+                                    >
+                                        <Zap size={12} className={useProMode ? 'fill-current' : ''} />
+                                        {useProMode ? 'PRO MODE' : 'FAST'}
                                     </button>
+
+                                    <div className="flex gap-2">
+                                        {/* Enhance Button */}
+                                        {gallery.length > 0 && !isEnhancing && (
+                                            <button
+                                                onClick={() => {
+                                                    const mainImg = gallery.find(img => img.isMain) || gallery[0];
+                                                    // Convert URL to File if needed, or simple pass blob
+                                                    // For now, assume mainImg.file exists or we fetch it
+                                                    if (mainImg.file) enhancePhoto(mainImg.file);
+                                                }}
+                                                disabled={isEnhancing}
+                                                className="p-3 rounded-full bg-legion-gold text-black shadow-lg hover:scale-110 transition-transform"
+                                            >
+                                                <Sparkles size={20} />
+                                            </button>
+                                        )}
+
+                                        {/* Add More Button */}
+                                        <button onClick={() => fileInputRef.current?.click()} className="p-3 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 transition-colors">
+                                            <Plus size={20} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -323,8 +366,8 @@ const QuickSell = () => {
                                             key={cat.id}
                                             onClick={() => setFormData({ ...formData, category: cat.id })}
                                             className={`flex flex-col items-center gap-2 min-w-[80px] p-3 rounded-2xl border transition-all ${formData.category === cat.id
-                                                    ? 'bg-legion-gold text-black border-legion-gold shadow-[0_0_20px_rgba(255,215,0,0.3)] scale-105'
-                                                    : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
+                                                ? 'bg-legion-gold text-black border-legion-gold shadow-[0_0_20px_rgba(255,215,0,0.3)] scale-105'
+                                                : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
                                                 }`}
                                         >
                                             <div className="bg-transparent">{cat.icon}</div>
@@ -379,8 +422,8 @@ const QuickSell = () => {
                                                 key={cond.id}
                                                 onClick={() => setFormData({ ...formData, condition: cond.id })}
                                                 className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${formData.condition === cond.id
-                                                        ? 'bg-white text-black border-white'
-                                                        : 'bg-transparent text-gray-400 border-white/20 hover:border-white/40'
+                                                    ? 'bg-white text-black border-white'
+                                                    : 'bg-transparent text-gray-400 border-white/20 hover:border-white/40'
                                                     }`}
                                             >
                                                 {cond.label}
