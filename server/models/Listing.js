@@ -91,6 +91,40 @@ const listingSchema = new mongoose.Schema({
         type: String,
         enum: ['draft', 'standard', 'pro', null],
         default: null
+    },
+    // ============================================
+    // DIGITAL TWIN FIELDS
+    // ============================================
+    // Product identification for Digital Twin matching
+    productInfo: {
+        brand: { type: String, trim: true },
+        model: { type: String, trim: true },
+        variant: { type: String, trim: true },
+        subcategory: { type: String, trim: true }
+    },
+    // Unique identifier (IMEI, VIN, Serial, etc.)
+    uniqueId: {
+        value: { type: String, trim: true },          // Cleaned/validated value
+        type: { type: String, enum: ['imei', 'vin', 'serial', 'isbn', 'sku', 'mac', 'none'] },
+        masked: { type: String },                      // Masked for display (***054291)
+        verified: { type: Boolean, default: false }
+    },
+    // Reference to Digital Twin (if created)
+    digitalTwin: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'DigitalTwin',
+        default: null
+    },
+    // AI condition analysis
+    conditionAnalysis: {
+        score: { type: Number, min: 0, max: 10 },
+        wear: { type: String, enum: ['none', 'minimal', 'moderate', 'heavy'] },
+        blemishes: [{
+            type: { type: String },
+            location: { type: String },
+            severity: { type: String, enum: ['minor', 'moderate', 'major'] }
+        }],
+        analyzedAt: Date
     }
 }, {
     timestamps: true

@@ -47,7 +47,7 @@ function Cart() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
-                                className="bg-legion-card border border-white/10 rounded-xl p-4 flex gap-4 group hover:border-white/20 transition-all"
+                                className="glass-panel p-4 flex gap-4 group hover:border-white/20 transition-all"
                             >
                                 <Link to={`/product/${item.id}`} className="shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-white/5">
                                     <img
@@ -94,7 +94,7 @@ function Cart() {
 
                 {/* Order Summary */}
                 <div className="lg:col-span-1">
-                    <div className="bg-legion-card border border-white/10 rounded-xl p-6 sticky top-24">
+                    <div className="glass-panel p-6 sticky top-24">
                         <h3 className="text-xl font-bold text-white mb-6">Order Summary</h3>
 
                         <div className="space-y-4 mb-6">

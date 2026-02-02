@@ -62,28 +62,68 @@ const QuickSell = () => {
     // AI Enhancement State
     const [isEnhancing, setIsEnhancing] = useState(false);
     const [enhancedImage, setEnhancedImage] = useState(null);
+    const [originalImage, setOriginalImage] = useState(null); // NEW: Original from API for comparison
     const [enhanceError, setEnhanceError] = useState(null);
+    const [enhanceStatus, setEnhanceStatus] = useState('');
+    const [enhanceStage, setEnhanceStage] = useState(0);
+    const [showOriginal, setShowOriginal] = useState(false); // NEW: Toggle for comparison
+
+    const ENHANCE_STAGES = [
+        'Preparing image...',
+        'Sending to AI...',
+        'Removing background...',
+        'Creating showcase...',
+        'Complete!'
+    ];
+
+    // Check if we have enough product info to enhance intelligently
+    // NOTE: Now we auto-enhance immediately, this is for optional re-enhance with context
+    const canReEnhancePhoto = () => {
+        return productImage && imageFile && formData.brand && formData.model && formData.category;
+    };
 
     // AI Enhance photo - removes background, adds white background
     // Routes through backend which proxies to AI engine via Cloudflare tunnel
     const enhancePhoto = async (file, productName = '') => {
         setIsEnhancing(true);
         setEnhanceError(null);
+        setEnhanceStatus('Preparing image...');
+        setEnhanceStage(0);
 
         try {
-            // Convert file to base64 for sending to backend
+            // Stage 1: Convert file to base64
+            console.log('═══════════════════════════════════════');
+            console.log('🎨 ENHANCE PHOTO STARTED');
+            console.log('═══════════════════════════════════════');
+
+            setEnhanceStatus('Converting image to base64...');
+            setEnhanceStage(0);
+            console.log('📸 Stage 1: Converting file to base64...');
+
             const reader = new FileReader();
             const base64Promise = new Promise((resolve, reject) => {
                 reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
+                reader.onerror = (e) => {
+                    console.error('❌ FileReader error:', e);
+                    reject(new Error('Failed to read image file'));
+                };
             });
             reader.readAsDataURL(file);
             const imageData = await base64Promise;
 
-            console.log(`🎯 Enhancing with context: ${productName || 'No name provided'}`);
+            console.log('✅ Base64 conversion complete');
+            console.log(`   - Data length: ${imageData.length} chars`);
+            console.log(`   - Product: ${formData.brand} ${formData.model}`);
 
-            // Call backend API which proxies to AI engine
+            // Stage 2: Send to backend
+            setEnhanceStatus('Sending to AI engine...');
+            setEnhanceStage(1);
+            console.log('📤 Stage 2: Sending to backend...');
+
             const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            console.log(`   - API URL: ${API_URL}/ai/enhance-photo`);
+
+            const startTime = Date.now();
             const response = await fetch(`${API_URL}/ai/enhance-photo`, {
                 method: 'POST',
                 headers: {
@@ -92,24 +132,58 @@ const QuickSell = () => {
                 body: JSON.stringify({
                     imageData,
                     productName,
-                    fileName: file.name
+                    fileName: file.name,
+                    brand: formData.brand,
+                    model: formData.model,
+                    category: formData.category
                 })
             });
 
+            const elapsedMs = Date.now() - startTime;
+            console.log(`📥 Response received in ${elapsedMs}ms`);
+            console.log(`   - Status: ${response.status} ${response.statusText}`);
+
+            // Stage 3: Process response
+            setEnhanceStatus('Processing response...');
+            setEnhanceStage(2);
+            console.log('🔄 Stage 3: Processing response...');
+
             if (response.ok) {
                 const result = await response.json();
-                if (result.success && result.image_data) {
-                    setEnhancedImage(result.image_data);
-                    console.log('✅ Photo enhanced with white background!');
-                    return result.image_data;
-                }
-            }
+                console.log('📊 Result:', {
+                    success: result.success,
+                    product_matched: result.product_matched,
+                    reference_used: result.reference_used,
+                    image_data_length: result.image_data?.length || 0
+                });
 
-            console.warn('Enhancement unavailable, using original');
-            return null;
+                if (result.success && result.image_data) {
+                    setEnhanceStatus('Complete!');
+                    setEnhanceStage(4);
+                    setEnhancedImage(result.image_data);
+                    // NEW: Store original image from API for side-by-side
+                    if (result.original_image_data) {
+                        setOriginalImage(result.original_image_data);
+                    }
+                    console.log('✅ ENHANCE COMPLETE');
+                    console.log(`   Enhanced: ${result.image_data?.length || 0} chars`);
+                    console.log(`   Original: ${result.original_image_data?.length || 0} chars`);
+                    console.log('═══════════════════════════════════════');
+                    return result.image_data;
+                } else {
+                    throw new Error('No image data in response');
+                }
+            } else {
+                const errorData = await response.json().catch(() => ({ error: response.statusText }));
+                console.error('❌ Backend error:', errorData);
+                throw new Error(errorData.error || `HTTP ${response.status}`);
+            }
         } catch (error) {
-            console.error('Enhancement error:', error);
-            setEnhanceError('Could not enhance photo');
+            console.error('💥 ENHANCE FAILED:', error.message);
+            console.error(error);
+            console.log('═══════════════════════════════════════');
+            setEnhanceStatus(`Failed: ${error.message}`);
+            setEnhanceError(error.message);
             return null;
         } finally {
             setIsEnhancing(false);
@@ -117,16 +191,18 @@ const QuickSell = () => {
     };
 
 
-    // Handle camera capture - save image (no auto-enhance, user needs to enter details first)
+    // Handle camera capture - Wait for details before enhancing
     const handleCameraCapture = async (imageUrl, file) => {
         setShowCamera(false);
         setProductImage(imageUrl);
         setImageFile(file);
         setStep('details');
-        // NO auto-enhance - wait for user to enter product name first
+
+        // NOTE: We do NOT auto-enhance here anymore.
+        // We wait for user to enter Brand/Model in the next step for better AI context.
     };
 
-    // Gallery upload
+    // Gallery upload - Wait for details before enhancing
     const handleGalleryUpload = async (e) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -134,7 +210,9 @@ const QuickSell = () => {
             setProductImage(url);
             setImageFile(file);
             setStep('details');
-            // NO auto-enhance - wait for user to enter product name first
+
+            // NOTE: We do NOT auto-enhance here anymore.
+            // We wait for user to enter Brand/Model in the next step for better AI context.
         }
     };
 
@@ -165,7 +243,7 @@ const QuickSell = () => {
                 originalPrice: formData.originalPrice || ''
             });
 
-            const response = await fetch(`http://localhost:5000/api/price/lookup?${params}`, {
+            const response = await fetch(`${API_URL}/price/lookup?${params}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -233,25 +311,36 @@ const QuickSell = () => {
         }
     };
 
-    // Submit listing
+    // Submit listing - saves BOTH original and enhanced images
     const handleSubmit = async () => {
         if (!validatePrice()) return;
 
         setIsSubmitting(true);
 
         try {
-            // Prefer enhanced image (white background) if available
-            let imageUrl = enhancedImage || productImage;
+            // Collect all images - enhanced + original (NEW: save both)
+            const images = [];
 
-            // If we have the original file and no enhanced version, upload original
-            if (imageFile && !enhancedImage) {
-                try {
-                    imageUrl = await uploadImage(imageFile);
-                } catch (uploadError) {
-                    console.warn('Upload failed, using local URL');
-                }
+            // Add enhanced image first (primary display)
+            if (enhancedImage) {
+                images.push(enhancedImage);
             }
 
+            // Add original image second (NEW: for transparency)
+            if (originalImage) {
+                images.push(originalImage);
+            }
+
+            // Fallback: if no enhanced images, upload the file
+            if (images.length === 0 && imageFile) {
+                try {
+                    const uploadedUrl = await uploadImage(imageFile);
+                    images.push(uploadedUrl);
+                } catch (uploadError) {
+                    console.warn('Upload failed, using local URL');
+                    images.push(productImage);
+                }
+            }
 
             const title = [formData.brand, formData.model, formData.title]
                 .filter(Boolean)
@@ -264,11 +353,13 @@ const QuickSell = () => {
                 category: formData.category,
                 condition: formData.condition,
                 price: parseFloat(formData.askingPrice),
-                images: [imageUrl],
+                images, // Now contains both enhanced and original
                 location: formData.location,
                 originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
                 retailPrice: priceData?.retailPrice || null
             };
+
+            console.log(`📸 Submitting listing with ${images.length} images`);
 
             await listingsAPI.create(listingData);
             navigate('/my-listings', { state: { success: true } });
@@ -384,60 +475,100 @@ const QuickSell = () => {
                             exit={{ opacity: 0, x: -20 }}
                             className="space-y-6"
                         >
-                            {/* Image Preview - Shows enhanced version when ready */}
-                            <div className={`aspect-video rounded-xl overflow-hidden relative ${enhancedImage ? 'bg-white' : 'bg-gradient-to-b from-gray-800 to-gray-900'}`}>
-                                <img
-                                    src={enhancedImage || productImage}
-                                    alt="Product"
-                                    className="w-full h-full object-contain"
-                                />
-
-                                {/* Enhancement Status Overlay */}
-                                {isEnhancing && (
-                                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
-                                        <Loader className="animate-spin text-[var(--legion-gold)] mb-3" size={32} />
-                                        <p className="text-white text-sm font-medium">Removing background...</p>
-                                        <p className="text-gray-400 text-xs mt-1">Creating pro showcase photo</p>
+                            {/* Image Preview - Side-by-side comparison (NEW) */}
+                            <div className="rounded-xl overflow-hidden relative">
+                                {/* Toggle buttons when both images ready */}
+                                {enhancedImage && originalImage && !isEnhancing && (
+                                    <div className="flex gap-2 mb-3">
+                                        <button
+                                            onClick={() => setShowOriginal(true)}
+                                            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${showOriginal
+                                                ? 'bg-white/20 text-white border border-white/30'
+                                                : 'bg-white/5 text-gray-400 border border-white/10'
+                                                }`}
+                                        >
+                                            📷 Original
+                                        </button>
+                                        <button
+                                            onClick={() => setShowOriginal(false)}
+                                            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${!showOriginal
+                                                ? 'bg-[var(--legion-gold)]/20 text-[var(--legion-gold)] border border-[var(--legion-gold)]/50'
+                                                : 'bg-white/5 text-gray-400 border border-white/10'
+                                                }`}
+                                        >
+                                            ✨ Enhanced
+                                        </button>
                                     </div>
                                 )}
 
-                                {/* Enhanced Badge */}
-                                {enhancedImage && !isEnhancing && (
-                                    <div className="absolute top-3 left-3 bg-green-500/90 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
-                                        <Sparkles size={12} />
-                                        Pro Photo Ready
-                                    </div>
-                                )}
+                                {/* Image display */}
+                                <div className={`aspect-video rounded-xl overflow-hidden relative ${(enhancedImage && !showOriginal) ? 'bg-white' : 'bg-gradient-to-b from-gray-800 to-gray-900'
+                                    }`}>
+                                    <img
+                                        src={
+                                            enhancedImage && originalImage
+                                                ? (showOriginal ? originalImage : enhancedImage)
+                                                : (enhancedImage || productImage)
+                                        }
+                                        alt="Product"
+                                        className="w-full h-full object-contain"
+                                    />
 
-                                {/* Retake Button */}
-                                <button
-                                    onClick={() => {
-                                        setStep('capture');
-                                        setEnhancedImage(null);
-                                        setProductImage(null);
-                                    }}
-                                    className="absolute top-3 right-3 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition"
-                                >
-                                    <Camera size={16} />
-                                </button>
+                                    {/* Enhancement Status Overlay */}
+                                    {isEnhancing && (
+                                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
+                                            <Loader className="animate-spin text-[var(--legion-gold)] mb-3" size={32} />
+                                            <p className="text-white text-sm font-medium">{enhanceStatus || 'Enhancing...'}</p>
+                                            <p className="text-gray-400 text-xs mt-1">Creating pro photo with clean background</p>
 
-                                {/* Toggle Original/Enhanced */}
-                                {enhancedImage && !isEnhancing && (
+                                            {/* Progress bar */}
+                                            <div className="w-48 mt-4 flex gap-1">
+                                                {ENHANCE_STAGES.map((_, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className={`h-1.5 flex-1 rounded-full transition-all ${idx <= enhanceStage ? 'bg-[var(--legion-gold)]' : 'bg-white/20'
+                                                            }`}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Enhanced Badge */}
+                                    {enhancedImage && !isEnhancing && !showOriginal && (
+                                        <div className="absolute top-3 left-3 bg-green-500/90 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
+                                            <Sparkles size={12} />
+                                            Pro Photo Ready
+                                        </div>
+                                    )}
+
+                                    {/* Original Badge */}
+                                    {showOriginal && originalImage && !isEnhancing && (
+                                        <div className="absolute top-3 left-3 bg-gray-600/90 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
+                                            📷 Original
+                                        </div>
+                                    )}
+
+                                    {/* Retake Button */}
                                     <button
-                                        onClick={() => setEnhancedImage(null)}
-                                        className="absolute bottom-3 left-3 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full hover:bg-black/70 transition"
+                                        onClick={() => {
+                                            setStep('capture');
+                                            setEnhancedImage(null);
+                                            setOriginalImage(null);
+                                            setProductImage(null);
+                                            setShowOriginal(false);
+                                        }}
+                                        className="absolute top-3 right-3 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition"
                                     >
-                                        View Original
+                                        <Camera size={16} />
                                     </button>
-                                )}
-                                {!enhancedImage && productImage && !isEnhancing && (
-                                    <button
-                                        onClick={() => imageFile && enhancePhoto(imageFile, `${formData.brand} ${formData.model} ${formData.title}`.trim())}
-                                        className="absolute bottom-3 left-3 bg-[var(--legion-gold)]/90 text-black text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1"
-                                    >
-                                        <Sparkles size={12} />
-                                        Enhance Photo
-                                    </button>
+                                </div>
+
+                                {/* Quick comparison hint */}
+                                {enhancedImage && originalImage && !isEnhancing && (
+                                    <p className="text-center text-gray-500 text-xs mt-2">
+                                        Tap buttons above to compare original vs enhanced
+                                    </p>
                                 )}
                             </div>
 
@@ -566,35 +697,91 @@ const QuickSell = () => {
                                 </div>
                             </div>
 
-                            {/* CREATE PRO PHOTO - Amazon Style */}
-                            {!enhancedImage && productImage && (formData.brand || formData.model) && (
-                                <div className="bg-gradient-to-r from-[var(--legion-gold)]/20 to-transparent border border-[var(--legion-gold)]/30 rounded-xl p-5">
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 bg-[var(--legion-gold)]/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                            {/* CREATE PRO PHOTO - MANUAL TRIGGER (NEW) */}
+                            {!enhancedImage && productImage && (
+                                <div className="bg-gradient-to-r from-[var(--legion-gold)]/10 to-transparent border border-[var(--legion-gold)]/20 rounded-xl p-5 relative overflow-hidden">
+                                    {/* Glass reflection effect */}
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-16 -mt-16 pointer-events-none"></div>
+
+                                    <div className="flex items-start gap-4 relative z-10">
+                                        <div className="w-12 h-12 bg-[var(--legion-gold)]/20 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse-slow">
                                             <Sparkles className="text-[var(--legion-gold)]" size={24} />
                                         </div>
                                         <div className="flex-1">
-                                            <h3 className="text-white font-bold mb-1">Create Pro Photo</h3>
+                                            <h3 className="text-white font-bold mb-1 flex items-center gap-2">
+                                                AI Studio Photo
+                                                <span className="text-[10px] bg-[var(--legion-gold)] text-black px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">Beta</span>
+                                            </h3>
+
                                             <p className="text-gray-400 text-sm mb-4">
-                                                AI will analyze "{(formData.brand + ' ' + formData.model).trim()}" and create an Amazon-style product photo with clean white background.
+                                                Generate a professional white-background photo.
+                                                <br />
+                                                <span className="text-xs text-gray-500">
+                                                    Requires Brand & Model for best results.
+                                                </span>
                                             </p>
+
+                                            {/* Action Button */}
                                             <button
-                                                onClick={() => imageFile && enhancePhoto(imageFile, `${formData.brand} ${formData.model} ${formData.title}`.trim())}
-                                                disabled={isEnhancing}
-                                                className="w-full py-3 bg-[var(--legion-gold)] text-black font-bold rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                                                onClick={() => enhancePhoto(imageFile, `${formData.brand} ${formData.model} ${formData.title}`.trim())}
+                                                disabled={isEnhancing || !formData.brand || !formData.model}
+                                                className={`w-full py-3 font-bold rounded-lg flex items-center justify-center gap-2 transition-all ${isEnhancing || !formData.brand || !formData.model
+                                                    ? 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5'
+                                                    : 'bg-[var(--legion-gold)] text-black hover:bg-[#E5C100] hover:shadow-[0_0_20px_rgba(255,215,0,0.3)]'
+                                                    }`}
                                             >
                                                 {isEnhancing ? (
                                                     <>
                                                         <Loader className="animate-spin" size={18} />
-                                                        Creating Pro Photo...
+                                                        {enhanceStatus || 'Processing...'}
                                                     </>
                                                 ) : (
                                                     <>
                                                         <Sparkles size={18} />
-                                                        Remove Background & Create Pro Photo
+                                                        {formData.brand && formData.model ? 'Generate AI Photo' : 'Enter Details to Unlock'}
                                                     </>
                                                 )}
                                             </button>
+
+                                            {/* Helper text if disabled */}
+                                            {!formData.brand && !formData.model && (
+                                                <p className="text-center text-xs text-gray-600 mt-2">
+                                                    Enter Brand & Model above to enable
+                                                </p>
+                                            )}
+
+                                            {/* Progress stages during enhancement */}
+                                            {isEnhancing && (
+                                                <div className="mt-4 bg-black/20 rounded-lg p-3 backdrop-blur-sm">
+                                                    <div className="flex justify-between text-xs text-gray-400 mb-2">
+                                                        <span>Progress</span>
+                                                        <span>{Math.round(((enhanceStage + 1) / ENHANCE_STAGES.length) * 100)}%</span>
+                                                    </div>
+                                                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden flex gap-0.5">
+                                                        {ENHANCE_STAGES.map((stage, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                className={`flex-1 transition-all duration-500 ${idx <= enhanceStage ? 'bg-[var(--legion-gold)]' : 'bg-transparent'
+                                                                    }`}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                    <p className="text-xs text-[var(--legion-gold)]/80 text-center mt-2 animate-pulse">
+                                                        {ENHANCE_STAGES[enhanceStage]}
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {/* Error display */}
+                                            {enhanceError && !isEnhancing && (
+                                                <div className="mt-3 bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-start gap-2">
+                                                    <AlertCircle size={16} className="text-red-400 mt-0.5 flex-shrink-0" />
+                                                    <div>
+                                                        <p className="text-red-400 text-sm font-medium">Generation Failed</p>
+                                                        <p className="text-red-400/70 text-xs mt-1">{enhanceError}</p>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

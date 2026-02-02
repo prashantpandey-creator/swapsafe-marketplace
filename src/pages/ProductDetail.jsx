@@ -7,6 +7,7 @@ import { useCart } from '../context/CartContext'
 import { listingsAPI, shieldAPI } from '../services/api'
 import { formatPrice, getTimeAgo, getConditionColor, conditions } from '../data/mockData'
 import GuardianBadge from '../components/trust/GuardianBadge'
+import { VerificationReport, ShieldBanner } from '../components/trust'
 import './ProductDetail.css'
 
 function ProductDetail() {
@@ -360,6 +361,35 @@ function ProductDetail() {
                                         </div>
                                     </Link>
                                 </div>
+                            </div>
+
+                            {/* Verification Report - Only for verified items */}
+                            {aiVerified && (
+                                <div className="bg-legion-card border border-green-500/20 rounded-2xl p-6 mt-6">
+                                    <h3 className="text-sm font-bold text-green-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <Check size={16} className="text-green-400" />
+                                        Verification Status
+                                    </h3>
+                                    <VerificationReport
+                                        deviceInfo={{
+                                            model: title,
+                                            imei: product.uniqueId || product.imei || null
+                                        }}
+                                        checks={{
+                                            imei: !!product.imei,
+                                            notStolen: true,
+                                            carrier: true,
+                                            condition: true
+                                        }}
+                                        verifiedAt={product.verifiedAt || createdAt}
+                                        digitalTwinId={product.digitalTwinId || null}
+                                    />
+                                </div>
+                            )}
+
+                            {/* SwapSafe Shield Banner for all items */}
+                            <div className="mt-6">
+                                <ShieldBanner />
                             </div>
                         </div>
 

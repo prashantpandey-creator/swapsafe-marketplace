@@ -1,0 +1,422 @@
+/**
+ * ProductIdentificationStep Styles
+ * 
+ * Modern, premium styling for product identification flow
+ */
+
+.product-identification-step {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Header */
+.pid-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+    border-radius: 12px;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.pid-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.pid-category-icon {
+    width: 24px;
+    height: 24px;
+    color: white;
+}
+
+.pid-header-text h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+}
+
+.pid-header-text p {
+    margin: 0.25rem 0 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Field containers */
+.pid-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.pid-field label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Dropdown container */
+.pid-dropdown-container {
+    position: relative;
+}
+
+.pid-dropdown-trigger {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.pid-dropdown-trigger:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.pid-dropdown-trigger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pid-dropdown-trigger.has-value {
+    color: white;
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.pid-dropdown-trigger svg.rotate {
+    transform: rotate(180deg);
+}
+
+.pid-dropdown-trigger .text-green {
+    color: #22c55e;
+}
+
+/* Dropdown panel */
+.pid-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #1a1a2e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    overflow: hidden;
+    max-height: 300px;
+    display: flex;
+    flex-direction: column;
+}
+
+.pid-dropdown-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.pid-dropdown-search input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: white;
+    font-size: 0.9rem;
+}
+
+.pid-dropdown-search svg {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.pid-dropdown-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.pid-dropdown-item {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.15s;
+    text-align: left;
+}
+
+.pid-dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.pid-dropdown-item.selected {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+.pid-dropdown-item .pid-msrp {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-left: 0.5rem;
+}
+
+.pid-dropdown-empty {
+    padding: 1.5rem;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.9rem;
+}
+
+.pid-manual-entry-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(245, 158, 11, 0.1);
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: #f59e0b;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.pid-manual-entry-btn:hover {
+    background: rgba(245, 158, 11, 0.2);
+}
+
+/* Text input */
+.pid-text-input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: white;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.pid-text-input:focus {
+    border-color: rgba(245, 158, 11, 0.5);
+}
+
+/* Variant grid */
+.pid-variant-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.pid-variant-btn {
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.pid-variant-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.pid-variant-btn.selected {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.5);
+    color: #f59e0b;
+}
+
+/* Back to dropdown */
+.pid-back-to-dropdown {
+    align-self: flex-start;
+    padding: 0.5rem 0;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.pid-back-to-dropdown:hover {
+    color: #f59e0b;
+}
+
+/* Unique ID section */
+.pid-unique-id-section {
+    margin-top: 1rem;
+    padding: 1.25rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+}
+
+.pid-unique-id-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.pid-unique-id-header>svg:first-child {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.pid-unique-id-header>div {
+    flex: 1;
+}
+
+.pid-unique-id-header h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: white;
+}
+
+.pid-unique-id-header p {
+    margin: 0.125rem 0 0;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.pid-unique-id-header .text-gold {
+    color: #f59e0b;
+}
+
+/* ID input */
+.pid-unique-id-input-wrapper {
+    position: relative;
+}
+
+.pid-unique-id-input {
+    width: 100%;
+    padding: 0.875rem 2.5rem 0.875rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: white;
+    font-size: 1rem;
+    font-family: 'Monaco', 'Consolas', monospace;
+    letter-spacing: 1px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.pid-unique-id-input:focus {
+    border-color: rgba(245, 158, 11, 0.5);
+}
+
+.pid-unique-id-input.valid {
+    border-color: rgba(34, 197, 94, 0.5);
+    background: rgba(34, 197, 94, 0.05);
+}
+
+.pid-unique-id-input.invalid {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.pid-validating-spinner,
+.pid-valid-icon,
+.pid-invalid-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.pid-valid-icon {
+    color: #22c55e;
+}
+
+.pid-invalid-icon {
+    color: #ef4444;
+}
+
+/* Validation message */
+.pid-validation-message {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.pid-validation-message.success {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+}
+
+.pid-validation-message.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+/* Hint */
+.pid-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(245, 158, 11, 0.1);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.pid-hint svg {
+    color: #f59e0b;
+    flex-shrink: 0;
+}
+
+/* Optional note */
+.pid-optional-note {
+    margin-top: 0.75rem;
+    text-align: center;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Animation */
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

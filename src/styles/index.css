@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    /* --- LEGION OS PALETTE --- */
+    /* --- LEGION OS PALETTE (STITCH REDESIGN) --- */
     --void-deep: #050505;
     /* The Abyss */
     --void-surface: #0A0A0F;
@@ -14,17 +14,17 @@
     --void-border: #1F1F25;
     /* Subtle Edges */
 
-    --legion-gold: #D4AF37;
-    /* Primary Accent */
-    --legion-gold-dim: rgba(212, 175, 55, 0.15);
-    --legion-gold-glow: rgba(212, 175, 55, 0.5);
+    --legion-gold: #FFD700;
+    /* Stitch Gold (Vivid) */
+    --legion-gold-dim: rgba(255, 215, 0, 0.15);
+    --legion-gold-glow: rgba(255, 215, 0, 0.5);
 
-    --signal-green: #10B981;
-    /* Verified / Safe */
+    --signal-green: #22C55E;
+    /* Stitch Verified Green */
     --signal-red: #EF4444;
     /* Danger / Alert */
 
-    --glass-surface: rgba(10, 10, 15, 0.7);
+    --glass-surface: rgba(10, 10, 15, 0.6);
     --glass-border: rgba(255, 255, 255, 0.08);
   }
 
@@ -168,7 +168,7 @@ body.theme-void {
   --void-deep: #000000;
   --void-surface: #0A0A0A;
   --signal-green: #10B981;
-  background-image: 
+  background-image:
     radial-gradient(circle at 50% 100%, rgba(239, 68, 68, 0.03), transparent 30%);
 }
 

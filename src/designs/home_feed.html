@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SwapSafe Home Feed</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ffd900", // Gold
+                        "background-dark": "#0A0A0F", // Deepest charcoal/black
+                        "surface-glass": "rgba(255, 255, 255, 0.08)",
+                        "surface-glass-light": "rgba(255, 255, 255, 0.03)",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"],
+                        "sans": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem", 
+                        "lg": "2rem", 
+                        "xl": "3rem", 
+                        "2xl": "1.5rem",
+                        "3xl": "2rem",
+                        "full": "9999px"
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar hiding */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-nav {
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#0A0A0F] text-white font-display antialiased selection:bg-primary selection:text-black">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden pb-24">
+<!-- Header Section -->
+<header class="sticky top-0 z-40 w-full glass-nav px-4 pt-2 pb-4">
+<!-- Top Bar: Logo & Avatar -->
+<div class="flex items-center justify-between mb-4">
+<div class="w-10 flex justify-start">
+<!-- Placeholder for potential menu icon or back button -->
+</div>
+<h2 class="text-white text-xl font-extrabold tracking-tight">SwapSafe</h2>
+<div class="w-10 flex justify-end">
+<button class="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-surface-glass border border-white/5 overflow-hidden">
+<img alt="Profile" class="h-full w-full object-cover" data-alt="User profile avatar showing a smiling woman" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_YP2Nrr88Q8Y8h0vDDRwceDVnkQZveFvO_SOsV7tdywqkyeIZoGIMJ8R-xYEPaL7uyrwtJ82VuKdDSMLgsH3R6MZvUkpV-ZT3kO006gYfETcLGbeEzG8DY4XeBLVdyRqZU4wgBnkAgf0BhvxSRyHcYz7LYv3bZepymW9hpzb37HlZ5EcQe6uzUyxw2BHyXemTwtBQ8ymP-BytYPgkmCR_1unUKiUr_X1ozDylpturNC_o7px19JSbMsAZwnkfxmSOw6qZYuRGOzQ"/>
+<div class="absolute top-0 right-0 h-3 w-3 rounded-full bg-primary border-2 border-[#0A0A0F]"></div>
+</button>
+</div>
+</div>
+<!-- Search Bar -->
+<label class="flex w-full cursor-text items-center gap-3 rounded-full bg-surface-glass border border-white/10 px-4 h-12 focus-within:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-gray-400" style="font-size: 20px;">search</span>
+<input class="flex-1 bg-transparent border-none p-0 text-base font-medium text-white placeholder:text-gray-500 focus:ring-0" placeholder="Search verified products..." type="text"/>
+</label>
+</header>
+<!-- Main Scrollable Content -->
+<main class="flex flex-col gap-6 pt-4">
+<!-- Categories Chips -->
+<div class="flex w-full overflow-x-auto scrollbar-hide px-4 gap-3">
+<button class="flex shrink-0 h-10 items-center justify-center rounded-full bg-primary px-6 transition-transform active:scale-95">
+<p class="text-[#0A0A0F] text-sm font-bold leading-normal">Electronics</p>
+</button>
+<button class="flex shrink-0 h-10 items-center justify-center rounded-full glass-panel px-6 transition-transform active:scale-95">
+<p class="text-white/80 text-sm font-medium leading-normal">Fashion</p>
+</button>
+<button class="flex shrink-0 h-10 items-center justify-center rounded-full glass-panel px-6 transition-transform active:scale-95">
+<p class="text-white/80 text-sm font-medium leading-normal">Watches</p>
+</button>
+<button class="flex shrink-0 h-10 items-center justify-center rounded-full glass-panel px-6 transition-transform active:scale-95">
+<p class="text-white/80 text-sm font-medium leading-normal">Sneakers</p>
+</button>
+<button class="flex shrink-0 h-10 items-center justify-center rounded-full glass-panel px-6 transition-transform active:scale-95">
+<p class="text-white/80 text-sm font-medium leading-normal">Collectibles</p>
+</button>
+</div>
+<!-- Featured Section -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center justify-between px-4">
+<h3 class="text-lg font-bold text-white tracking-tight">SwapSafe Verified Picks</h3>
+<button class="text-xs font-medium text-primary hover:text-white transition-colors">See all</button>
+</div>
+<div class="flex w-full overflow-x-auto scrollbar-hide px-4 gap-4 pb-2">
+<!-- Featured Card 1 -->
+<div class="relative shrink-0 w-[280px] rounded-[2rem] glass-panel p-3 overflow-hidden group">
+<!-- Image Container -->
+<div class="relative h-64 w-full overflow-hidden rounded-[1.5rem]">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" data-alt="Luxury wrist watch on a dark background" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDNhR63TAnw9XTdtNz6mtRoyp3yurg0Mrfffy3SGWUIRT_Vre3JrMI2A6-gJJNBF3-rZUAAdtZsaMNHtkZR1EhOiN13JP3H5Djt6DfGvlRNeEulsWguNI0NLnE8-PQeeKtcPLhJV_tbp9Y17bN2rFpHgrhVkRPC3HNYc7G6CB9Y_lednZBvPfXYnlmvY2EPQB1ndbEfNE28KXsqDhzAC1EOaYRSyjo3u3hQrI1YniyT5vpyzDXo6ps5OKlpcM2_qeiS9T3sdF2djN0");'></div>
+<!-- Badges -->
+<div class="absolute top-3 left-3 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-md px-3 py-1 border border-white/10">
+<span class="material-symbols-outlined text-green-400 filled" style="font-size: 14px; font-variation-settings: 'FILL' 1;">verified</span>
+<span class="text-[10px] font-bold text-white uppercase tracking-wider">Verified</span>
+</div>
+</div>
+<!-- Content -->
+<div class="pt-4 px-2 pb-2">
+<h4 class="text-lg font-bold text-white mb-1">Rolex Submariner</h4>
+<div class="flex items-baseline gap-2">
+<span class="text-xl font-bold text-primary">$12,500</span>
+<span class="text-sm font-medium text-gray-500 line-through">$13,200</span>
+</div>
+</div>
+</div>
+<!-- Featured Card 2 -->
+<div class="relative shrink-0 w-[280px] rounded-[2rem] glass-panel p-3 overflow-hidden group">
+<!-- Image Container -->
+<div class="relative h-64 w-full overflow-hidden rounded-[1.5rem]">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" data-alt="Designer leather handbag closeup" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCGn3vlqga4h40vZomT3PjwGReLxFAHINhyL6LaHKq_SsofksCOHuBUjs_A_LyRd2hYCZwE05b3YtIr3MMYgWuy7idOG-PQLsTpW693O4fpLr77fhQE9LdTDwREGMzEfTG5B3o_kJPkzCDJw6SVytdw8t7ixaC1X9iPEZuAQTh5Y9ot46fsSbihfLJ68zJAjvfub5N1bs1H4gxwS-tbnlFg2pcY0TgVsbI6GF6h0-no4qvhj2sSo2afvkQ7bR3YY5h56vaOTClmK78");'></div>
+<!-- Badges -->
+<div class="absolute top-3 left-3 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-md px-3 py-1 border border-white/10">
+<span class="material-symbols-outlined text-green-400 filled" style="font-size: 14px; font-variation-settings: 'FILL' 1;">verified</span>
+<span class="text-[10px] font-bold text-white uppercase tracking-wider">Verified</span>
+</div>
+</div>
+<!-- Content -->
+<div class="pt-4 px-2 pb-2">
+<h4 class="text-lg font-bold text-white mb-1">Louis Vuitton Speedy</h4>
+<div class="flex items-baseline gap-2">
+<span class="text-xl font-bold text-primary">$1,200</span>
+<span class="text-sm font-medium text-gray-500 line-through">$1,450</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Main Feed Grid -->
+<section class="flex flex-col gap-4 px-4">
+<h3 class="text-lg font-bold text-white tracking-tight">Fresh Arrivals</h3>
+<div class="grid grid-cols-2 gap-4">
+<!-- Feed Item 1 -->
+<div class="flex flex-col gap-3 rounded-[1.5rem] glass-panel p-2">
+<div class="relative aspect-[4/5] w-full overflow-hidden rounded-[1.2rem] bg-gray-800">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Modern smartphone device with screen on" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDZA8UUDYfDzwfsoLzzesnwrg46jnTo5Z_Hv5VxxTVwwN9SFuOVNgGDfqSdB0T2MGObwbrWr4_MK5HgPQbMmTZ76n1P0p3r4O9IR3TMZ3ONS8bnNXTypuDU4ePpBBSYu7jRFXvK3JdVghfQPA5dqZpy2I4EZM3V6oXN4Xjk40zh752COIG4HY-KCzC3VYnKciurvu7xELy4o49583OUM3-z0m8wZBPUm4g55rvGRxbEnOLa42vZwLHnJo8kK1PehWsYd3VMjZxE6sU");'></div>
+<!-- Overlay Badge -->
+<div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent pt-8">
+<div class="inline-flex items-center gap-1 rounded-md bg-green-500/20 backdrop-blur-sm border border-green-500/30 px-1.5 py-0.5">
+<span class="material-symbols-outlined text-green-400" style="font-size: 12px; font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-[10px] font-bold text-green-100">Verified</span>
+</div>
+</div>
+</div>
+<div class="px-1 pb-1">
+<div class="flex justify-between items-start mb-1">
+<h4 class="text-sm font-bold text-white leading-tight line-clamp-2">iPhone 15 Pro Max</h4>
+</div>
+<p class="text-base font-bold text-primary mb-2">$1,050</p>
+<div class="flex items-center justify-between border-t border-white/5 pt-2">
+<div class="flex items-center gap-1.5">
+<img alt="Seller" class="h-5 w-5 rounded-full object-cover" data-alt="Seller avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBb2rSP4go4unC0LCo8v6ZmE6D7rA0MkvevNiixwYEKT0MZwvafpaH6B3Xn0aoFvTrVv8K0DgKf2cjqNLpKyvxkem78F8SSKHHyeFvE-qbdjeuRIJ-3T_SWAPs4t0iA6ufmxmOdVs8wvYvMahlje1vddsPjP8PPJ_e6aS1RARxexZE_6NJ213jllb0Okl8dZrTOD12lu63fRL8TQS0tG_Bm3XO5ggu8KMJzCf8nkzNGVf-8czl7Hj88Tc4mgMp10JJ0hTP59XaBHh0"/>
+<span class="text-[10px] text-gray-400">TechGuru <span class="text-primary">★ 4.9</span></span>
+</div>
+<span class="material-symbols-outlined text-gray-500" style="font-size: 14px;" title="Shield Protected">verified_user</span>
+</div>
+</div>
+</div>
+<!-- Feed Item 2 -->
+<div class="flex flex-col gap-3 rounded-[1.5rem] glass-panel p-2">
+<div class="relative aspect-[4/5] w-full overflow-hidden rounded-[1.2rem] bg-gray-800">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Playstation 5 console controller" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDqPtu0yKUT6V6TipVlvrfKnrvWGbM6jiZ2c1GU9MGhpuvCxLeQLfpcYpUbBMfs628EWwoT23zjdXRcZd5AZcy8NSPUOSrADfIzn3T2bQPBOmHK8fBE4_UkCi-GDFIeEeX-yNOTv0TXI4N0fbSij_SeQRyYRbtEVZkJrIKAVs8K29Ey_Mh_2Asy0aX7013Xzgq10YbH8V0BYoHL6rWUJExqagaD8TlVVH2xVQLK7fDLQhX7kXBAdvS6iXDjaLBJjTOAMU-wimuAlPc");'></div>
+<!-- Overlay Badge -->
+<div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent pt-8">
+<div class="inline-flex items-center gap-1 rounded-md bg-green-500/20 backdrop-blur-sm border border-green-500/30 px-1.5 py-0.5">
+<span class="material-symbols-outlined text-green-400" style="font-size: 12px; font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-[10px] font-bold text-green-100">Verified</span>
+</div>
+</div>
+</div>
+<div class="px-1 pb-1">
+<div class="flex justify-between items-start mb-1">
+<h4 class="text-sm font-bold text-white leading-tight line-clamp-2">PS5 DualSense</h4>
+</div>
+<p class="text-base font-bold text-primary mb-2">$55</p>
+<div class="flex items-center justify-between border-t border-white/5 pt-2">
+<div class="flex items-center gap-1.5">
+<img alt="Seller" class="h-5 w-5 rounded-full object-cover" data-alt="Seller avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMCu5Tlx2GPg7iWFkD4qFMbC2oC2uYOtLYHQbnKj8I9UKJYanaUTR_tQUPZWwLQT7tp-OUIdp66HXw1M5oDfTe8taPuoK_VFBnHH8KxQpvmeIpl8IPSYUtkGLjLPW4OQL_WNqZlY5svMMM2x87K6UvqiyHfbdX-hGkBKAqeW_N88X83rwrADNBz7QydIudAaYsL-9W5YzEizNP3gcriW59nrOLdXFgPIPlIdhUY9cDgS3xWilngbUXo-hAtpagpBbuPzht5ErildI"/>
+<span class="text-[10px] text-gray-400">GameX <span class="text-primary">★ 5.0</span></span>
+</div>
+<span class="material-symbols-outlined text-gray-500" style="font-size: 14px;" title="Shield Protected">verified_user</span>
+</div>
+</div>
+</div>
+<!-- Feed Item 3 -->
+<div class="flex flex-col gap-3 rounded-[1.5rem] glass-panel p-2">
+<div class="relative aspect-[4/5] w-full overflow-hidden rounded-[1.2rem] bg-gray-800">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="High top limited edition sneaker" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBY1w64e5e9yQqRdbErTY3UgTAGV2ZXsLXgsr48CyFhOWDm8gKP5Mzjh_KKNy095BNqfpobrljdqkDkHjDCkJnCMMgTk5gErrETIq-bufjj4ft8q6S3mYW-ohfGt5M84J0f2slDEb0pVDhojr8opLSGiR2p5IBpVxQl1CzC_xA13UEnSYnQjDhAkMIXezJJzKYiRDrtrunHRk4cxcLCosG86j3j6ZsDNZtgAV_8A-vJRFeSHa93waBBWYYqZT0JoXiB2EdR5_rTpso");'></div>
+<div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent pt-8">
+<div class="inline-flex items-center gap-1 rounded-md bg-green-500/20 backdrop-blur-sm border border-green-500/30 px-1.5 py-0.5">
+<span class="material-symbols-outlined text-green-400" style="font-size: 12px; font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-[10px] font-bold text-green-100">Verified</span>
+</div>
+</div>
+</div>
+<div class="px-1 pb-1">
+<div class="flex justify-between items-start mb-1">
+<h4 class="text-sm font-bold text-white leading-tight line-clamp-2">Jordan 1 Retro High</h4>
+</div>
+<p class="text-base font-bold text-primary mb-2">$320</p>
+<div class="flex items-center justify-between border-t border-white/5 pt-2">
+<div class="flex items-center gap-1.5">
+<img alt="Seller" class="h-5 w-5 rounded-full object-cover" data-alt="Seller avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSnEc8RYQ8_BLTLRgVEECeZrcPvoUv2DeB-UviHMSINGQGXfGpDQHQP9jRfIIcAmcRuZS3xfWJuZbzbUxnR1srlPDdagVXLoH-6nXvbptz8soEW0p8xOSVD0rrXfaQCt6bmaCqTlMOpvgf-8vZtyqhyCk8g2c6qmeALGIxdUr7Eyqa7IfkONAeg4xcqw070FXy6t9OXAx4Acu6IEz7MOxDt1joWA1RwTjh1qxgefSYaeTpqCiczpDkPJAILI9HI-D2z3Hdfxdo9nY"/>
+<span class="text-[10px] text-gray-400">SoleMate <span class="text-primary">★ 4.8</span></span>
+</div>
+<span class="material-symbols-outlined text-gray-500" style="font-size: 14px;" title="Shield Protected">verified_user</span>
+</div>
+</div>
+</div>
+<!-- Feed Item 4 -->
+<div class="flex flex-col gap-3 rounded-[1.5rem] glass-panel p-2">
+<div class="relative aspect-[4/5] w-full overflow-hidden rounded-[1.2rem] bg-gray-800">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Vintage film camera black body" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAepjJGEJ2ZQO-JnyIqvS5JuaBbDeRw8I-xiMwAq_YHXLHJUlRCsbiPTiRsaI42esBnITpN26LenWG15C5pmSoi4ypcIyIzPC8PTynTXGFrrMTDjEtkL_bS7_ehVSJEgAJUoyoNy4g6OO6yrsDqYc4TQeSHvJa-2YUsbduFf9ymPLHPrF4aQEn3lnymVlrHSInhUCiwF-AvkeDpRSA3PLWcCuF715IuGql95mYTf-uWZwZ9GGYCl__AKf21-p6RlZlr1qLQqSEp7_s");'></div>
+<div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent pt-8">
+<div class="inline-flex items-center gap-1 rounded-md bg-green-500/20 backdrop-blur-sm border border-green-500/30 px-1.5 py-0.5">
+<span class="material-symbols-outlined text-green-400" style="font-size: 12px; font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-[10px] font-bold text-green-100">Verified</span>
+</div>
+</div>
+</div>
+<div class="px-1 pb-1">
+<div class="flex justify-between items-start mb-1">
+<h4 class="text-sm font-bold text-white leading-tight line-clamp-2">Leica M6 Body</h4>
+</div>
+<p class="text-base font-bold text-primary mb-2">$3,500</p>
+<div class="flex items-center justify-between border-t border-white/5 pt-2">
+<div class="flex items-center gap-1.5">
+<img alt="Seller" class="h-5 w-5 rounded-full object-cover" data-alt="Seller avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFZsmLjiEJiG1nEtrAGfhkl8JS8vrSYERC-fcd0hI25uPGaTlbqIp66n1WB_qgpMpe4AxTDG4bctxMiMPUQRhEFcmT2I5_kkwmxbpelP6BYLmeASTll6IxRe3lwRUs8wQYC-ziFFlfoP7u1P8D3_ts41hdJ1uvNE_y7g5IwX6xHCaRbFTiTlT2dBPSOpuLcqgGm4S0EhpMjBI1gmwDJvxgdJzoNiPw1xSk9lO-g8Uo7nnUWKo5A9HmTLYXUcnGLjndmMv-o6m1VVg"/>
+<span class="text-[10px] text-gray-400">CamWorld <span class="text-primary">★ 5.0</span></span>
+</div>
+<span class="material-symbols-outlined text-gray-500" style="font-size: 14px;" title="Shield Protected">verified_user</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Dock -->
+<nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 glass-panel rounded-full px-6 py-3 flex items-center gap-8 shadow-2xl shadow-black/50">
+<button class="flex flex-col items-center gap-1 text-primary group">
+<span class="material-symbols-outlined filled" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">favorite</span>
+<span class="w-1 h-1 rounded-full bg-transparent"></span>
+</button>
+<!-- Center Add Button -->
+<button class="flex items-center justify-center w-12 h-12 bg-primary rounded-full text-black shadow-lg shadow-primary/20 hover:scale-105 transition-transform -mt-6 border-4 border-[#0A0A0F]">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="w-1 h-1 rounded-full bg-transparent"></span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">person</span>
+<span class="w-1 h-1 rounded-full bg-transparent"></span>
+</button>
+</nav>
+</div>
+</body></html>

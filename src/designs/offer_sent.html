@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Counter Offer Received</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f4c025",
+                        "background-dark": "#0A0A0F",
+                        "card-bg": "rgba(39, 36, 27, 0.4)",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Manrope', sans-serif;
+            min-height: 100dvh;
+        }
+        .glass-card {
+            background: rgba(39, 36, 27, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(244, 192, 37, 0.1);
+        }
+        .mesh-gradient {
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(244, 192, 37, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(239, 68, 68, 0.05) 0px, transparent 50%);
+        }
+        .gold-glow {
+            text-shadow: 0 0 15px rgba(244, 192, 37, 0.3);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-dark text-white font-display overflow-x-hidden flex flex-col">
+<div class="fixed inset-0 mesh-gradient pointer-events-none"></div>
+<header class="relative z-10 flex items-center px-6 pt-12 pb-4">
+<button class="flex items-center justify-center size-10 rounded-full bg-white/5 mr-4">
+<span class="material-symbols-outlined text-white">arrow_back_ios_new</span>
+</button>
+<h1 class="text-xl font-bold">Counter Offer Received</h1>
+</header>
+<main class="relative z-10 flex-1 flex flex-col px-6 pt-4 pb-8 max-w-md mx-auto w-full">
+<div class="w-full glass-card rounded-2xl p-4 mb-6">
+<div class="flex items-center gap-4">
+<div class="size-16 rounded-xl bg-cover bg-center shrink-0 border border-white/10" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD9aqjL6K6IbyDTODFlc61hAamB6EtU0cEefCqbsK_EuXWkz2RJwH3KuuRAgxrl3LdAPYWzBmSIBWHFFxRsOf1baIe8aL1ggFBgWZU-OJv8tLvcQ9qRr6wuRlWQ9Ih-wYiR7JbtD4R0UEI-9rqdWiAopqgEuaWLaARyaQuDAJwD3WRfzK3HYipbRJ63Yh4LMbvHDSjq8-Zv3xWVGCUbz2P74DYY8jn-PWoAiPILJLgW5Y6Croi49sOjVTCAcTKu2h8_Hij1dUfpiss');">
+</div>
+<div class="flex-1">
+<h3 class="text-white text-base font-bold leading-tight">iPhone 15 Pro Max</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-[#bab29c] text-xs font-medium uppercase tracking-wider">Natural Titanium</span>
+<span class="size-1 rounded-full bg-white/20"></span>
+<div class="flex items-center text-primary text-[10px] font-bold uppercase">
+<span class="material-symbols-outlined text-[12px] mr-1">verified</span>
+                            Verified
+                        </div>
+</div>
+</div>
+</div>
+</div>
+<div class="text-center mb-8">
+<div class="flex flex-col gap-4">
+<div class="flex flex-col items-center">
+<span class="text-[#bab29c] text-xs font-bold uppercase tracking-widest mb-1">Your Offer</span>
+<span class="text-white/60 text-2xl font-bold line-through decoration-white/20">₹87,000</span>
+</div>
+<div class="flex items-center justify-center">
+<div class="h-[1px] w-8 bg-gradient-to-r from-transparent to-primary/30"></div>
+<span class="mx-3 text-primary/40 text-[10px] font-black uppercase">Counter Offer</span>
+<div class="h-[1px] w-8 bg-gradient-to-l from-transparent to-primary/30"></div>
+</div>
+<div class="flex flex-col items-center">
+<span class="text-[#bab29c] text-xs font-bold uppercase tracking-widest mb-1">Alex J's Counter</span>
+<span class="text-primary text-5xl font-extrabold gold-glow tracking-tight">₹88,500</span>
+<span class="mt-2 inline-flex items-center px-3 py-1 bg-primary/10 border border-primary/20 rounded-full text-primary text-[11px] font-bold">
+<span class="material-symbols-outlined text-sm mr-1">trending_up</span>
+                        +₹1,500 more
+                    </span>
+</div>
+</div>
+</div>
+<div class="mb-8">
+<div class="flex items-center gap-2 mb-3">
+<div class="size-6 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-sm text-white/40">person</span>
+</div>
+<span class="text-xs font-bold text-white/80">Alex J's Note</span>
+</div>
+<div class="relative bg-white/5 rounded-2xl rounded-tl-none p-4 border border-white/10">
+<p class="text-[#bab29c] text-sm leading-relaxed italic">
+                    "I can't go lower than ₹88.5k because the battery health is 100% and it includes a premium case."
+                </p>
+<div class="absolute -left-[1px] -top-[1px] w-4 h-4 bg-[#0A0A0F] rounded-br-2xl border-t border-l border-white/10"></div>
+</div>
+</div>
+<div class="w-full mb-8">
+<div class="flex justify-between items-end mb-2">
+<div class="flex flex-col">
+<span class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Response Window</span>
+<span class="text-white text-base font-bold">23h 48m remaining</span>
+</div>
+<span class="material-symbols-outlined text-primary text-xl">schedule</span>
+</div>
+<div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full shadow-[0_0_10px_rgba(244,192,37,0.4)]" style="width: 98%;"></div>
+</div>
+</div>
+<div class="w-full mt-auto flex flex-col gap-3">
+<button class="w-full bg-primary hover:brightness-110 active:scale-[0.98] text-background-dark font-extrabold py-4 rounded-xl transition-all flex items-center justify-center gap-2">
+                Accept Counter Offer
+                <span class="material-symbols-outlined text-xl">arrow_forward</span>
+</button>
+<button class="w-full bg-transparent border border-primary/30 hover:border-primary/60 text-primary font-bold py-4 rounded-xl transition-all">
+                New Counter Offer
+            </button>
+<button class="w-full bg-transparent border border-red-500/30 hover:border-red-500/60 text-red-400 font-bold py-4 rounded-xl transition-all">
+                Decline
+            </button>
+</div>
+<div class="mt-6 flex items-center justify-center gap-2 text-white/30">
+<span class="material-symbols-outlined text-xs">verified_user</span>
+<span class="text-[10px] font-bold tracking-widest uppercase">Verified Secure Transaction</span>
+</div>
+</main>
+<div class="h-1 w-32 bg-white/20 rounded-full mx-auto mb-2 mt-4 shrink-0"></div>
+
+</body></html>

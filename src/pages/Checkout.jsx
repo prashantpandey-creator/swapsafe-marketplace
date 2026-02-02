@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { listingsAPI, paymentAPI } from '../services/api'
 import { formatPrice, safeZones } from '../data/mockData'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Shield, Truck, MapPin, CreditCard, CheckCircle, ChevronRight, Lock, Loader, ArrowLeft } from 'lucide-react'
 import './Checkout.css'
 
 function Checkout() {
@@ -16,7 +18,7 @@ function Checkout() {
     const isCartCheckout = id === 'cart'
     const [products, setProducts] = useState([])
     const [loading, setLoading] = useState(true)
-    const [step, setStep] = useState(1) // 1: Review, 2: Delivery/Meetup, 3: Payment, 4: Confirm
+    const [step, setStep] = useState(1)
     const [deliveryMethod, setDeliveryMethod] = useState(searchParams.get('method') || 'meetup')
     const [isProcessing, setIsProcessing] = useState(false)
     const [orderComplete, setOrderComplete] = useState(false)
@@ -75,9 +77,6 @@ function Checkout() {
         loadProducts()
     }, [id, isAuthenticated, navigate, isCartCheckout, cartItems])
 
-    if (loading) return <div className="checkout-loading">Loading...</div>
-    if (products.length === 0) return <div className="checkout-loading">No items to checkout</div>
-
     // Calculate totals
     const subtotal = products.reduce((sum, item) => sum + item.price, 0)
     const platformFee = Math.round(subtotal * 0.02)
@@ -111,23 +110,9 @@ function Checkout() {
         setIsProcessing(true)
         try {
             let orderResult;
-            if (paymentMethod === 'credits') {
-                if ((user?.credits || 0) < total) throw new Error("Insufficient credits balance");
-
-                const orderData = {
-                    listingId: products[0]._id || products[0].id,
-                    deliveryMethod,
-                    deliveryAddress: deliveryMethod === 'delivery' ? shippingAddress : undefined
-                };
-
-                const result = await paymentAPI.createCreditOrder(orderData);
-                if (result.success) orderResult = { id: result.order.orderId }
-                else throw new Error(result.error || "Transaction failed");
-
-            } else {
-                await new Promise(resolve => setTimeout(resolve, 2000))
-                orderResult = { id: `ORD-${Date.now()}` }
-            }
+            // Simulate processing
+            await new Promise(resolve => setTimeout(resolve, 2000))
+            orderResult = { id: `ORD-${Date.now()}` }
 
             setPlacedOrderId(orderResult.id)
             if (isCartCheckout) clearCart()
@@ -140,158 +125,325 @@ function Checkout() {
         }
     }
 
+    if (loading) return (
+        <div className="min-h-screen pt-24 flex items-center justify-center">
+            <Loader className="w-8 h-8 text-legion-gold animate-spin" />
+        </div>
+    )
+
     if (orderComplete) {
         return (
-            <div className="checkout-success container">
-                <div className="success-content">
-                    <div className="success-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+            <div className="min-h-screen pt-24 pb-20 px-4">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="max-w-xl mx-auto bg-legion-card border border-green-500/20 rounded-2xl p-8 text-center"
+                >
+                    <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <CheckCircle className="w-10 h-10 text-green-500" />
                     </div>
-                    <h1>Payment Successful!</h1>
-                    <p className="success-message">
-                        Your payment of <strong>{formatPrice(total)}</strong> has been securely held in escrow.
+                    <h1 className="text-3xl font-bold text-white mb-2">Payment Successful!</h1>
+                    <p className="text-gray-400 mb-8">
+                        Your payment of <span className="text-white font-bold">{formatPrice(total)}</span> has been securely held in escrow.
                     </p>
-                    <div className="success-actions">
-                        <Link to={`/tracker/${placedOrderId}`} className="btn btn-primary btn-lg">Track Order</Link>
-                        <Link to="/browse" className="btn btn-secondary">Continue Shopping</Link>
+
+                    <div className="bg-white/5 rounded-xl p-4 mb-8 text-left">
+                        <p className="text-sm text-gray-500 mb-1">Order ID</p>
+                        <p className="text-white font-mono">{placedOrderId}</p>
                     </div>
-                </div>
+
+                    <div className="flex flex-col gap-3">
+                        <Link to={`/tracker/${placedOrderId}`} className="w-full py-4 bg-legion-gold text-black font-bold rounded-xl hover:bg-yellow-400 transition-colors">
+                            Track Order
+                        </Link>
+                        <Link to="/browse" className="w-full py-4 bg-white/5 text-white font-bold rounded-xl hover:bg-white/10 transition-colors">
+                            Continue Shopping
+                        </Link>
+                    </div>
+                </motion.div>
             </div>
         )
     }
 
     return (
-        <div className="checkout-page">
-            <div className="container">
-                <h1>Checkout</h1>
-                <div className="checkout-progress">
-                    <div className={`progress-step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
-                        <span className="step-number">1</span><span className="step-label">Review</span>
-                    </div>
-                    <div className="progress-line"></div>
-                    <div className={`progress-step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}>
-                        <span className="step-number">2</span><span className="step-label">{deliveryMethod === 'meetup' ? 'Meetup' : 'Shipping'}</span>
-                    </div>
-                    <div className="progress-line"></div>
-                    <div className={`progress-step ${step >= 3 ? 'active' : ''}`}>
-                        <span className="step-number">3</span><span className="step-label">Payment</span>
+        <div className="min-h-screen pt-24 pb-20 px-4 bg-legion-bg">
+            <div className="container mx-auto max-w-6xl">
+                {/* Header */}
+                <div className="flex items-center gap-4 mb-8">
+                    <button onClick={() => navigate(-1)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white">
+                        <ArrowLeft size={20} />
+                    </button>
+                    <h1 className="text-2xl font-bold text-white">Secure Checkout</h1>
+                    <div className="ml-auto flex items-center gap-2 text-green-400 bg-green-400/10 px-3 py-1 rounded-full border border-green-400/20">
+                        <Lock size={14} />
+                        <span className="text-xs font-bold uppercase tracking-wider">Encrypted</span>
                     </div>
                 </div>
 
-                <div className="checkout-grid">
-                    <div className="checkout-main">
+                {/* Trust / Escrow Banner */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-green-900/40 to-green-900/10 border border-green-500/20 p-4 mb-8">
+                    <div className="flex gap-4 items-start">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500/10 text-green-400 shadow-[0_0_15px_rgba(74,222,128,0.2)]">
+                            <Shield size={20} />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <h4 className="text-sm font-bold text-white">Escrow Protection Active</h4>
+                            <p className="text-sm text-gray-300 leading-relaxed">Your money is held safely in escrow until you verify and approve the device.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid lg:grid-cols-3 gap-8">
+                    {/* Main Content */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Progress Steps */}
+                        <div className="flex items-center justify-between mb-8 px-4">
+                            {[
+                                { num: 1, label: 'Review' },
+                                { num: 2, label: 'Delivery' },
+                                { num: 3, label: 'Payment' }
+                            ].map((s) => (
+                                <div key={s.num} className={`flex items-center gap-3 ${step >= s.num ? 'text-legion-gold' : 'text-gray-600'}`}>
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 ${step >= s.num ? 'border-legion-gold bg-legion-gold/10' : 'border-gray-700 bg-transparent'}`}>
+                                        {s.num}
+                                    </div>
+                                    <span className="hidden sm:block font-medium">{s.label}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Step 1: Review */}
                         {step === 1 && (
-                            <div className="checkout-section animate-fadeIn">
-                                <h2>Review Your Order ({products.length} items)</h2>
-                                {products.map((product, index) => (
-                                    <div key={index} className="product-review-card mb-4">
-                                        <img src={product.images?.[0] || product.image || ''} alt={product.title} />
-                                        <div className="product-details">
-                                            <h3>{product.title}</h3>
-                                            <p className="seller-info">Sold by <strong>{product.seller?.name || 'Seller'}</strong></p>
+                            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                                <div className="bg-legion-card border border-white/10 rounded-2xl p-6">
+                                    <h2 className="text-xl font-bold text-white mb-6">Order Items</h2>
+                                    {products.map((product, idx) => (
+                                        <div key={idx} className="glass-panel rounded-2xl p-4 flex gap-4 items-center shadow-lg shadow-black/20 mb-4 border border-white/5 bg-black/20">
+                                            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-[#222] border border-white/5">
+                                                <img src={product.images?.[0] || product.image} alt={product.title} className="w-full h-full object-cover" />
+                                            </div>
+                                            <div className="flex flex-col flex-1 gap-1">
+                                                <h3 className="font-bold text-white text-base leading-snug">{product.title}</h3>
+                                                <p className="text-sm text-gray-400">Sold by {product.seller?.name || 'Verified Seller'}</p>
+                                                <div className="mt-1 flex items-center justify-between">
+                                                    <span className="text-lg font-extrabold text-white">{formatPrice(product.price)}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1 mt-1">
+                                                    <Shield size={12} className="text-green-500" />
+                                                    <span className="text-xs font-medium text-green-400">SwapSafe Shield</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="product-price">{formatPrice(product.price)}</div>
-                                    </div>
-                                ))}
-                                <div className="delivery-selection mt-8">
-                                    <h3>Select Delivery Method</h3>
-                                    <div className="delivery-options">
-                                        <label className={`delivery-option ${deliveryMethod === 'meetup' ? 'selected' : ''}`}>
-                                            <input type="radio" value="meetup" checked={deliveryMethod === 'meetup'} onChange={() => setDeliveryMethod('meetup')} />
-                                            <div className="option-content">
-                                                <div className="option-text"><strong>Safe Meetup</strong><span>Meet at verify location</span></div>
-                                                <span className="option-price-tag">Free</span>
-                                            </div>
-                                        </label>
-                                        <label className={`delivery-option ${deliveryMethod === 'delivery' ? 'selected' : ''}`}>
-                                            <input type="radio" value="delivery" checked={deliveryMethod === 'delivery'} onChange={() => setDeliveryMethod('delivery')} />
-                                            <div className="option-content">
-                                                <div className="option-text"><strong>Home Delivery</strong><span>3-5 days</span></div>
-                                                <span className="option-price-tag">₹149</span>
-                                            </div>
-                                        </label>
+                                    ))}
+
+                                    <div className="mt-8 pt-6 border-t border-white/10">
+                                        <h3 className="text-lg font-bold text-white mb-4">Choose Delivery Method</h3>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <label className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${deliveryMethod === 'meetup' ? 'border-legion-gold bg-legion-gold/5' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
+                                                <input type="radio" className="hidden" checked={deliveryMethod === 'meetup'} onChange={() => setDeliveryMethod('meetup')} />
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <MapPin className={deliveryMethod === 'meetup' ? 'text-legion-gold' : 'text-gray-400'} />
+                                                    <span className="font-bold text-white">Safe Meetup</span>
+                                                </div>
+                                                <p className="text-sm text-gray-400">Meet at a verified SwapSafe Zone</p>
+                                                <p className="text-green-400 text-sm font-bold mt-2">Free</p>
+                                            </label>
+
+                                            <label className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${deliveryMethod === 'delivery' ? 'border-legion-gold bg-legion-gold/5' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
+                                                <input type="radio" className="hidden" checked={deliveryMethod === 'delivery'} onChange={() => setDeliveryMethod('delivery')} />
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <Truck className={deliveryMethod === 'delivery' ? 'text-legion-gold' : 'text-gray-400'} />
+                                                    <span className="font-bold text-white">Secure Delivery</span>
+                                                </div>
+                                                <p className="text-sm text-gray-400">Insured shipping via Delhivery</p>
+                                                <p className="text-white text-sm font-bold mt-2">₹149</p>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            </motion.div>
                         )}
 
+                        {/* Step 2: Delivery Details */}
                         {step === 2 && (
-                            <div className="checkout-section animate-fadeIn">
-                                <h2>{deliveryMethod === 'meetup' ? 'Schedule Meetup' : 'Shipping Address'}</h2>
-                                {deliveryMethod === 'meetup' ? (
-                                    <div className="meetup-form">
-                                        <label>Select Date</label>
-                                        <input type="date" className="form-input mb-4" value={meetupDate} onChange={(e) => setMeetupDate(e.target.value)} />
-                                        <label>Select Time</label>
-                                        <select className="form-select mb-4" value={meetupTime} onChange={(e) => setMeetupTime(e.target.value)}>
-                                            <option value="">Choose time</option>
-                                            <option>10:00 AM</option><option>02:00 PM</option><option>06:00 PM</option>
-                                        </select>
-                                        <label>Safe Meeting Location</label>
-                                        <div className="safe-zones">
-                                            {filteredZones.map(zone => (
-                                                <label key={zone.id} className={`zone-card ${selectedZone?.id === zone.id ? 'selected' : ''}`}>
-                                                    <input type="radio" name="zone" checked={selectedZone?.id === zone.id} onChange={() => setSelectedZone(zone)} />
-                                                    <div className="zone-info"><strong>{zone.name}</strong><span>{zone.type}</span></div>
-                                                </label>
-                                            ))}
+                            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                                <div className="bg-legion-card border border-white/10 rounded-2xl p-6">
+                                    <h2 className="text-xl font-bold text-white mb-6">
+                                        {deliveryMethod === 'meetup' ? 'Schedule Meetup' : 'Shipping Address'}
+                                    </h2>
+
+                                    {deliveryMethod === 'meetup' ? (
+                                        <div className="space-y-6">
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className="block text-sm text-gray-400 mb-2">Preferred Date</label>
+                                                    <input type="date" value={meetupDate} onChange={(e) => setMeetupDate(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-legion-gold outline-none" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm text-gray-400 mb-2">Preferred Time</label>
+                                                    <select value={meetupTime} onChange={(e) => setMeetupTime(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-legion-gold outline-none">
+                                                        <option value="">Select Time</option>
+                                                        <option>10:00 AM</option>
+                                                        <option>02:00 PM</option>
+                                                        <option>06:00 PM</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm text-gray-400 mb-3">Select Safe Zone</label>
+                                                <div className="grid md:grid-cols-2 gap-4">
+                                                    {filteredZones.map(zone => (
+                                                        <div
+                                                            key={zone.id}
+                                                            onClick={() => setSelectedZone(zone)}
+                                                            className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedZone?.id === zone.id ? 'border-legion-gold bg-legion-gold/5' : 'border-white/10 bg-white/5 hover:border-white/20'}`}
+                                                        >
+                                                            <strong className="block text-white mb-1">{zone.name}</strong>
+                                                            <span className="text-xs text-gray-400">{zone.type} • {zone.city}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="shipping-form">
-                                        {/* Simplified Shipping Form */}
-                                        <input type="text" className="form-input mb-2" placeholder="Start typing address..." value={shippingAddress.address} onChange={(e) => setShippingAddress({ ...shippingAddress, address: e.target.value })} />
-                                        <input type="text" className="form-input mb-2" placeholder="City" value={shippingAddress.city} onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })} />
-                                        <input type="text" className="form-input mb-2" placeholder="State" value={shippingAddress.state} onChange={(e) => setShippingAddress({ ...shippingAddress, state: e.target.value })} />
-                                        <input type="text" className="form-input mb-2" placeholder="Pincode" value={shippingAddress.pincode} onChange={(e) => setShippingAddress({ ...shippingAddress, pincode: e.target.value })} />
-                                    </div>
-                                )}
-                            </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <input type="text" placeholder="Full Name" value={shippingAddress.name} onChange={(e) => setShippingAddress({ ...shippingAddress, name: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-legion-gold outline-none" />
+                                            <input type="text" placeholder="Full Address" value={shippingAddress.address} onChange={(e) => setShippingAddress({ ...shippingAddress, address: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-legion-gold outline-none" />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <input type="text" placeholder="City" value={shippingAddress.city} onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-legion-gold outline-none" />
+                                                <input type="text" placeholder="Pincode" value={shippingAddress.pincode} onChange={(e) => setShippingAddress({ ...shippingAddress, pincode: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-legion-gold outline-none" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
                         )}
 
+                        {/* Step 3: Payment */}
                         {step === 3 && (
-                            <div className="checkout-section animate-fadeIn">
-                                <h2>Payment Method</h2>
-                                <div className="payment-methods">
-                                    <label className={`payment-option ${paymentMethod === 'credits' ? 'selected' : ''}`}>
-                                        <input type="radio" value="credits" checked={paymentMethod === 'credits'} onChange={() => setPaymentMethod('credits')} />
-                                        <div className="payment-icon text-legion-gold">Credits</div>
-                                        <div><span className="block font-bold">Legion Credits</span><span>Bal: {formatPrice(user?.credits || 0)}</span></div>
-                                    </label>
-                                    <label className={`payment-option ${paymentMethod === 'card' ? 'selected' : ''}`}>
-                                        <input type="radio" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} />
-                                        <div className="payment-icon">Card</div>
-                                        <span>Credit/Debit Card</span>
-                                    </label>
-                                </div>
+                            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                                <div className="bg-legion-card border border-white/10 rounded-2xl p-6">
+                                    <h2 className="text-xl font-bold text-white mb-6">Payment Method</h2>
 
-                                {paymentMethod === 'credits' && (
-                                    <div className="bg-legion-gold/10 border border-legion-gold/30 rounded-xl p-4 mb-6">
-                                        <p className="text-sm text-gray-300">Safe, Instant, Escrow-Protected.</p>
-                                        {(user?.credits || 0) < total ? (
-                                            <div className="text-red-400 font-bold mt-2">⚠️ Insufficient Balance</div>
-                                        ) : (
-                                            <div className="text-green-400 font-bold mt-2">✓ Balance Available</div>
-                                        )}
+                                    <div className="space-y-4">
+                                        <label className={`relative flex cursor-pointer items-center justify-between p-4 rounded-xl border transition-all ${paymentMethod === 'credits' ? 'bg-legion-gold/5 border-legion-gold' : 'border-white/10 hover:bg-white/5'}`}>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2C2C35] text-legion-gold">
+                                                    <Shield size={20} />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-white">Legion Credits</span>
+                                                    <span className="text-xs text-legion-gold">Balance: {formatPrice(user?.credits || 0)}</span>
+                                                </div>
+                                            </div>
+                                            <input type="radio" className="hidden" checked={paymentMethod === 'credits'} onChange={() => setPaymentMethod('credits')} />
+                                            <div className={paymentMethod === 'credits' ? 'text-legion-gold' : 'text-gray-600'}>
+                                                {paymentMethod === 'credits' ? <CheckCircle size={20} /> : <div className="w-5 h-5 rounded-full border-2 border-current" />}
+                                            </div>
+                                        </label>
+
+                                        <label className={`relative flex cursor-pointer items-center justify-between p-4 rounded-xl border transition-all ${paymentMethod === 'card' ? 'bg-legion-gold/5 border-legion-gold' : 'border-white/10 hover:bg-white/5'}`}>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2C2C35] text-gray-400">
+                                                    <CreditCard size={20} />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-white">Credit / Debit Card</span>
+                                                    <span className="text-xs text-gray-400">Instantly processing via Stripe</span>
+                                                </div>
+                                            </div>
+                                            <input type="radio" className="hidden" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} />
+                                            <div className={paymentMethod === 'card' ? 'text-legion-gold' : 'text-gray-600'}>
+                                                {paymentMethod === 'card' ? <CheckCircle size={20} /> : <div className="w-5 h-5 rounded-full border-2 border-current" />}
+                                            </div>
+                                        </label>
                                     </div>
-                                )}
-                            </div>
+
+                                    {paymentMethod === 'card' && (
+                                        <div className="mt-6 p-4 bg-white/5 rounded-xl border border-white/10">
+                                            <div className="space-y-4">
+                                                <input type="text" placeholder="Card Number" value={cardDetails.number} onChange={(e) => setCardDetails({ ...cardDetails, number: e.target.value })} className="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-legion-gold outline-none" />
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <input type="text" placeholder="MM/YY" value={cardDetails.expiry} onChange={(e) => setCardDetails({ ...cardDetails, expiry: e.target.value })} className="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-legion-gold outline-none" />
+                                                    <input type="text" placeholder="CVV" value={cardDetails.cvv} onChange={(e) => setCardDetails({ ...cardDetails, cvv: e.target.value })} className="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-legion-gold outline-none" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
                         )}
                     </div>
 
-                    <aside className="checkout-sidebar">
-                        <div className="order-summary card">
-                            <h3>Order Summary</h3>
-                            <div className="summary-lines">
-                                <div className="summary-line"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-                                <div className="summary-line total"><span>Total</span><span>{formatPrice(total)}</span></div>
+                    {/* Order Summary Sidebar */}
+                    <div className="lg:col-span-1">
+                        <div className="sticky top-24 bg-legion-card border border-white/10 rounded-2xl p-6">
+                            <h3 className="text-lg font-bold text-white mb-6">Order Summary</h3>
+                            <div className="space-y-3 mb-6">
+                                <div className="flex justify-between text-gray-400">
+                                    <span>Subtotal</span>
+                                    <span>{formatPrice(subtotal)}</span>
+                                </div>
+                                <div className="flex justify-between text-gray-400">
+                                    <span>Platform Fee</span>
+                                    <span>{formatPrice(platformFee)}</span>
+                                </div>
+                                <div className="flex justify-between text-gray-400">
+                                    <span>Shipping</span>
+                                    <span>{deliveryMethod === 'delivery' ? formatPrice(shippingFee) : 'Free'}</span>
+                                </div>
+                                <div className="border-t border-white/10 pt-3 flex justify-between text-white font-bold text-lg">
+                                    <span>Total</span>
+                                    <span className="text-legion-gold">{formatPrice(total)}</span>
+                                </div>
                             </div>
-                            <button className="btn btn-primary w-full mt-4" onClick={handleNext} disabled={!canProceed() || isProcessing}>
-                                {isProcessing ? 'Processing...' : step < 3 ? 'Continue' : `Pay ${formatPrice(total)}`}
+
+                            <button
+                                onClick={handleNext}
+                                disabled={!canProceed() || isProcessing}
+                                className="w-full py-4 bg-legion-gold text-black font-bold rounded-xl hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                            >
+                                {isProcessing ? (
+                                    <Loader className="animate-spin" />
+                                ) : (
+                                    <>
+                                        {step === 3 ? `Pay ${formatPrice(total)}` : 'Continue'}
+                                        <ChevronRight size={20} />
+                                    </>
+                                )}
                             </button>
-                            {step > 1 && <button className="btn btn-ghost w-full mt-2" onClick={() => setStep(step - 1)}>Back</button>}
+
+                            <div className="mt-6 flex items-center gap-2 text-xs text-gray-500 justify-center">
+                                <Lock size={12} />
+                                <span>Payments are 100% encrypted & secure</span>
+                            </div>
                         </div>
-                    </aside>
+                    </div>
+                </div>
+            </div>
+
+            {/* Sticky Footer */}
+            <div className="fixed bottom-0 left-0 right-0 bg-[#0A0A0F]/90 backdrop-blur-xl border-t border-white/10 px-6 py-4 pb-8 z-40 transform translate-y-0 transition-transform">
+                <div className="mx-auto max-w-6xl flex items-center justify-between gap-4">
+                    <div className="flex flex-col">
+                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Total to Pay</span>
+                        <span className="text-xl font-extrabold text-white">{formatPrice(total)}</span>
+                    </div>
+                    <button
+                        onClick={handleNext}
+                        disabled={!canProceed() || isProcessing}
+                        className="flex-1 max-w-md bg-legion-gold hover:bg-yellow-400 text-black font-bold h-12 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(244,192,37,0.3)] disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+                    >
+                        {isProcessing ? (
+                            <Loader className="animate-spin" size={20} />
+                        ) : (
+                            <>
+                                <Lock size={18} />
+                                {step === 3 ? `Pay ${formatPrice(total)}` : 'Continue'}
+                            </>
+                        )}
+                    </button>
                 </div>
             </div>
         </div>

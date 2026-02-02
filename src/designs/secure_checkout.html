@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Secure Checkout</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f4c025",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#0A0A0F", // Modified to match user request
+                        "surface-dark": "#18181B",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "2xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+        
+        /* Glassmorphism utilities */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-dark text-white font-display antialiased selection:bg-primary selection:text-black">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden pb-24">
+<!-- Header -->
+<header class="sticky top-0 z-50 flex items-center justify-between px-4 py-4 bg-[#0A0A0F]/90 backdrop-blur-md border-b border-white/5">
+<button class="flex size-10 items-center justify-center rounded-full hover:bg-white/5 transition-colors text-white">
+<span class="material-symbols-outlined" style="font-size: 20px;">arrow_back_ios_new</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight">Secure Checkout</h1>
+<div class="flex size-10 items-center justify-center text-primary">
+<span class="material-symbols-outlined filled" style="font-variation-settings: 'FILL' 1;">lock</span>
+</div>
+</header>
+<main class="flex flex-col gap-6 p-4">
+<!-- Order Summary Card -->
+<section>
+<div class="glass-card rounded-2xl p-4 flex gap-4 items-center shadow-lg shadow-black/20">
+<div class="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-[#222] border border-white/5">
+<div class="h-full w-full bg-center bg-cover" data-alt="Close up of iPhone 15 Pro Max titanium finish" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBtQ214SDsmr4kCATqhYH_opwBAqSPLDp4Bpb_xWUTDSpRRPP4ztNRPVK5NXVwgGGeWnfauwKkBeta1eXtRTu0LREmpDiV7f-XCOfFwQ1FZBIpH-9slRX9CSucYIabxni4x0KfgDGvb6ZgxC3mjyUIBs8BQvxKo7VVs7BukTNSiiQoXzmUYNsDkIlPjjM0C6GpcKVedBAKifnGx2cDuiguKRLKDl3BNVY2GP28IIzOandEPFQ8G7uu3kKjTALnLJCKBhOWqXHrXPpE");'></div>
+</div>
+<div class="flex flex-col flex-1 gap-1">
+<h3 class="font-bold text-white text-base leading-snug">iPhone 15 Pro Max</h3>
+<p class="text-sm text-gray-400">256GB - Natural Titanium</p>
+<div class="mt-1 flex items-center justify-between">
+<span class="text-lg font-extrabold text-white">₹89,999</span>
+</div>
+<div class="flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-green-500" style="font-size: 14px;">local_shipping</span>
+<span class="text-xs font-medium text-green-400">Free (SwapSafe Shield)</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Trust / Escrow Banner -->
+<section>
+<div class="relative overflow-hidden rounded-xl bg-gradient-to-r from-green-900/20 to-green-900/5 border border-green-500/20 p-4">
+<div class="flex gap-4 items-start">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500/10 text-green-400 shadow-[0_0_15px_rgba(74,222,128,0.2)]">
+<span class="material-symbols-outlined filled" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<div class="flex flex-col gap-1">
+<h4 class="text-sm font-bold text-white">Escrow Protection Active</h4>
+<p class="text-sm text-gray-300 leading-relaxed">Your money is held safely in escrow until you verify and approve the device.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Shipping Address -->
+<section class="flex flex-col gap-3">
+<div class="flex items-center justify-between px-1">
+<h3 class="text-base font-bold text-white">Shipping Address</h3>
+<button class="text-sm font-bold text-primary hover:text-primary/80">Edit</button>
+</div>
+<div class="glass-card rounded-2xl p-4 flex flex-col gap-4">
+<div class="flex gap-4 items-center">
+<!-- Mini Map Preview -->
+<div class="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10 relative">
+<div class="h-full w-full bg-center bg-cover opacity-80" data-alt="Dark map showing street layout of Bangalore" data-location="Bangalore" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAGmS3tXziQK0sG3TXDZEI4xCoGbV0FVnAcRXlRIo9zDlGW5i4dG4vqUvf73awyDWyVzK0_uP7jYlVVvJ76G-A5nsgb0ppdFMXxieSQ8ACyOg0iT6sPJaBNFteiYyYEYAuNSw_s3EGBKyg9d3KgHlfbPlODKIh4Sz7dJIMogXEiG7jctcoAlnNheRgPD_C_xSVvgMdDMVQktXXkHNbCMtSQh9lLgBtoPFbbtMIplqhzpDYrpBcY04eASK721RY52EA6iJJ8Zl2mLWs"); filter: grayscale(100%) invert(90%) hue-rotate(180deg) brightness(80%);'></div>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary drop-shadow-md filled" style="font-size: 24px; font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+</div>
+<div class="flex flex-col justify-center gap-1">
+<div class="flex items-center gap-2">
+<span class="text-sm font-bold text-white">Home</span>
+<span class="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-300">Default</span>
+</div>
+<p class="text-sm text-gray-400 leading-relaxed line-clamp-2">12/A, 4th Cross, Park Street, Indiranagar, Bangalore, Karnataka - 560038</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Payment Methods -->
+<section class="flex flex-col gap-3">
+<h3 class="text-base font-bold text-white px-1">Payment Method</h3>
+<div class="glass-card rounded-2xl overflow-hidden flex flex-col divide-y divide-white/5">
+<!-- Selected Option -->
+<label class="relative flex cursor-pointer items-center justify-between p-4 bg-primary/5 transition-colors">
+<div class="flex items-center gap-4">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2C2C35] text-white">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-white">UPI</span>
+<span class="text-xs text-primary">GPay, PhonePe, Paytm</span>
+</div>
+</div>
+<input checked="" class="peer sr-only" name="payment" type="radio"/>
+<div class="text-primary">
+<span class="material-symbols-outlined filled" style="font-variation-settings: 'FILL' 1;">radio_button_checked</span>
+</div>
+<div class="absolute left-0 h-full w-1 bg-primary top-0"></div>
+</label>
+<!-- Other Options -->
+<label class="relative flex cursor-pointer items-center justify-between p-4 hover:bg-white/5 transition-colors">
+<div class="flex items-center gap-4">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2C2C35] text-gray-400">
+<span class="material-symbols-outlined">credit_card</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-gray-300">Credit / Debit Card</span>
+</div>
+</div>
+<input class="peer sr-only" name="payment" type="radio"/>
+<div class="text-gray-600 peer-checked:text-primary">
+<span class="material-symbols-outlined">radio_button_unchecked</span>
+</div>
+</label>
+<label class="relative flex cursor-pointer items-center justify-between p-4 hover:bg-white/5 transition-colors">
+<div class="flex items-center gap-4">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2C2C35] text-gray-400">
+<span class="material-symbols-outlined">account_balance</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-gray-300">Net Banking</span>
+</div>
+</div>
+<input class="peer sr-only" name="payment" type="radio"/>
+<div class="text-gray-600 peer-checked:text-primary">
+<span class="material-symbols-outlined">radio_button_unchecked</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Price Breakdown (Subtle) -->
+<section class="mt-2 px-2 pb-4">
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-sm text-gray-400">
+<span>Subtotal</span>
+<span>₹89,999</span>
+</div>
+<div class="flex justify-between text-sm text-gray-400">
+<span>Shipping</span>
+<span class="text-green-400">Free</span>
+</div>
+<div class="flex justify-between text-sm text-gray-400">
+<span>Platform Fee</span>
+<span class="text-gray-400 line-through">₹499</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Fixed Footer -->
+<footer class="fixed bottom-0 left-0 right-0 bg-[#0A0A0F]/80 backdrop-blur-xl border-t border-white/10 px-6 py-4 pb-8 z-40">
+<div class="mx-auto max-w-md w-full flex items-center justify-between gap-4">
+<div class="flex flex-col">
+<span class="text-xs font-medium text-gray-400 uppercase tracking-wide">Total to Pay</span>
+<span class="text-xl font-extrabold text-white">₹89,999</span>
+</div>
+<button class="flex-1 bg-primary hover:bg-yellow-400 active:scale-[0.98] transition-all h-12 rounded-xl flex items-center justify-center gap-2 font-bold text-[#0A0A0F] shadow-[0_0_20px_rgba(244,192,37,0.3)]">
+<span class="material-symbols-outlined filled" style="font-size: 20px; font-variation-settings: 'FILL' 1;">lock</span>
+                    Pay ₹89,999
+                </button>
+</div>
+</footer>
+</div>
+</body></html>

@@ -353,24 +353,75 @@ router.post('/remove-background', protect, async (req, res) => {
 
 // @route   POST /api/ai/enhance-photo
 // @desc    Proxy to Python AI Engine for photo enhancement (background removal + white BG)
+//          Now with product reference image lookup for smarter enhancement
 // @access  Public (no auth for quick sell flow)
 router.post('/enhance-photo', async (req, res) => {
-    console.log('🎨 AI Proxy: Received photo enhancement request');
+    console.log('');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🎨 ENHANCE-PHOTO REQUEST RECEIVED');
+    console.log('═══════════════════════════════════════════════════════════');
 
+    const startTime = Date.now();
     const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8000';
+    console.log('🌐 AI Engine URL:', AI_ENGINE_URL);
 
     try {
         // Check if we have file data in base64 format from frontend
-        const { imageData, productName, fileName } = req.body;
+        const { imageData, productName, fileName, brand, model, category } = req.body;
+
+        console.log('📥 Request received:');
+        console.log('   - productName:', productName || '(none)');
+        console.log('   - brand:', brand || '(none)');
+        console.log('   - model:', model || '(none)');
+        console.log('   - category:', category || '(none)');
+        console.log('   - fileName:', fileName || '(none)');
+        console.log('   - imageData length:', imageData ? `${imageData.length} chars` : 'MISSING');
 
         if (!imageData) {
+            console.log('❌ FAILED: No imageData in request');
             return res.status(400).json({
                 error: 'Image data is required',
                 hint: 'Send base64 image data in imageData field'
             });
         }
 
-        console.log(`📸 Processing image for: ${productName || 'Unknown Product'}`);
+        console.log('');
+        console.log('🔍 Step 1: ProductDatabase lookup...');
+
+        // =======================================
+        // NEW: Reference Image Lookup
+        // =======================================
+        let referenceImageUrl = null;
+        let productMatch = null;
+
+        if (brand && model) {
+            try {
+                // Import ProductDatabase dynamically
+                const ProductDatabase = (await import('../models/ProductDatabase.js')).default;
+
+                // Look up product in database
+                productMatch = await ProductDatabase.findOne({
+                    brand: new RegExp(`^${brand}$`, 'i'),
+                    model: new RegExp(`^${model}$`, 'i')
+                }).select('referenceImages specifications').lean();
+
+                if (productMatch?.referenceImages) {
+                    // Prefer hero image, fall back to front
+                    referenceImageUrl = productMatch.referenceImages.hero
+                        || productMatch.referenceImages.front
+                        || null;
+
+                    if (referenceImageUrl) {
+                        console.log(`✅ Found reference image for ${brand} ${model}`);
+                    }
+                } else {
+                    console.log(`⚠️ No reference images for ${brand} ${model} - using context only`);
+                }
+            } catch (dbError) {
+                console.warn('📦 ProductDatabase lookup failed:', dbError.message);
+                // Continue without reference - degrade gracefully
+            }
+        }
 
         // Convert base64 to buffer
         const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
@@ -383,11 +434,32 @@ router.post('/enhance-photo', async (req, res) => {
             filename: fileName || 'image.jpg',
             contentType: 'image/jpeg'
         });
+
+        // Pass product context
         if (productName) {
             formData.append('product_name', productName);
         }
 
+        // Pass reference image URL if found
+        if (referenceImageUrl) {
+            formData.append('reference_image_url', referenceImageUrl);
+            formData.append('has_exact_match', 'true');
+        } else {
+            formData.append('has_exact_match', 'false');
+        }
+
+        // Pass category for styling hints
+        if (category) {
+            formData.append('category', category);
+        }
+
         // Proxy to Python AI Engine
+        console.log('');
+        console.log('📤 Step 3: Sending to Python AI Engine...');
+        console.log('   - URL:', `${AI_ENGINE_URL}/api/v1/studio/enhance`);
+        console.log('   - Sending FormData with file + metadata');
+
+        const proxyStartTime = Date.now();
         const fetch = (await import('node-fetch')).default;
         const response = await fetch(`${AI_ENGINE_URL}/api/v1/studio/enhance`, {
             method: 'POST',
@@ -395,24 +467,42 @@ router.post('/enhance-photo', async (req, res) => {
             headers: formData.getHeaders()
         });
 
+        const proxyElapsed = Date.now() - proxyStartTime;
+        console.log(`📥 Python response in ${proxyElapsed}ms`);
+        console.log('   - Status:', response.status, response.statusText);
+
         if (!response.ok) {
-            throw new Error(`AI Engine returned ${response.status}`);
+            const errorText = await response.text();
+            console.log('❌ Python error response:', errorText);
+            throw new Error(`AI Engine returned ${response.status}: ${errorText}`);
         }
 
         const result = await response.json();
 
-        console.log('✅ Enhancement successful');
+        const totalElapsed = Date.now() - startTime;
+        console.log('');
+        console.log('✅ ENHANCEMENT SUCCESSFUL');
+        console.log('   - image_data length:', result.image_data?.length || 0, 'chars');
+        console.log('   - Total time:', totalElapsed, 'ms');
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('');
 
         res.json({
             success: true,
             status: 'success',
             image_data: result.image_data,
             original_size: result.original_size,
-            enhanced: true
+            enhanced: true,
+            product_matched: !!productMatch,
+            reference_used: !!referenceImageUrl
         });
 
     } catch (error) {
-        console.error('💥 Enhancement error:', error.message);
+        console.log('');
+        console.log('💥 ENHANCEMENT FAILED');
+        console.log('   - Error:', error.message);
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('');
 
         if (error.code === 'ECONNREFUSED' || error.message.includes('ECONNREFUSED')) {
             return res.status(503).json({

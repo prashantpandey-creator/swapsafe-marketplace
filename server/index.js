@@ -15,13 +15,14 @@ import paymentRoutes from './routes/payment.js';
 import uploadRoutes from './routes/upload.js';
 import jobRoutes from './routes/jobs.js';
 import priceRoutes from './routes/price.js';
+import productRoutes from './routes/products.js';
 
 const app = express();
 
 // Middleware
 // Middleware
 app.use(cors({
-    origin: '*', // ALLOW ALL ORIGINS FOR DEBUGGING (Revert to specific domains for production later)
+    origin: process.env.CLIENT_URL || '*', // Use env var in production
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -51,6 +52,7 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/price', priceRoutes);
+app.use('/api/products', productRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

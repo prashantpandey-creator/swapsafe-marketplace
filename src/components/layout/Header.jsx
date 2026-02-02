@@ -38,28 +38,26 @@ const Header = ({ currentTheme, toggleTheme }) => {
             <div className="container mx-auto px-4 flex items-center justify-between">
                 {/* Logo */}
                 <Link to="/" className="flex items-center gap-3 group">
-                    <div className="relative w-12 h-12">
+                    <div className="relative w-10 h-10">
                         <motion.div
                             className="absolute inset-0 bg-legion-gold/50 blur-xl rounded-full"
                             animate={{ opacity: [0.4, 0.7, 0.4] }}
                             transition={{ duration: 3, repeat: Infinity }}
                         />
-                        <img
-                            src={logo}
-                            alt="Buyers Legion Shield"
-                            className="w-full h-full object-contain relative z-10 drop-shadow-[0_0_10px_rgba(255,165,0,0.5)]"
-                        />
+                        <Shield className="w-full h-full text-legion-gold relative z-10 drop-shadow-[0_0_10px_rgba(255,215,0,0.5)]" fill="currentColor" fillOpacity={0.2} />
                     </div>
                     <span className="text-2xl font-black tracking-tight text-white group-hover:text-legion-gold transition-colors">
-                        BUYERS<span className="text-legion-gold">LEGION</span>
+                        SWAP<span className="text-legion-gold">SAFE</span>
                     </span>
                 </Link>
 
                 {/* Desktop Navigation */}
                 <nav className="hidden md:flex items-center gap-8">
-                    <Link to="/browse" className="text-gray-300 hover:text-white font-medium transition-colors">Marketplace</Link>
-                    <Link to="/community" className="text-gray-300 hover:text-white font-medium transition-colors">Brotherhood</Link>
-                    <Link to="/sell" className="text-gray-300 hover:text-white font-medium transition-colors">Sell Item</Link>
+                    <Link to="/browse" className="text-gray-300 hover:text-white font-medium transition-colors text-sm uppercase tracking-wide">Marketplace</Link>
+                    <Link to="/sell" className="text-gray-300 hover:text-white font-medium transition-colors text-sm uppercase tracking-wide">Sell</Link>
+                    <Link to="/shield" className="text-legion-gold hover:text-white font-medium transition-colors text-sm uppercase tracking-wide flex items-center gap-1">
+                        <Shield size={14} /> Shield
+                    </Link>
                 </nav>
 
                 {/* Actions */}
@@ -70,37 +68,12 @@ const Header = ({ currentTheme, toggleTheme }) => {
 
                     {/* Protection Indicator */}
                     <div className="hidden lg:flex items-center">
-                        <GuardianBadge level="divine" showLabel={true} animated={true} />
+                        {/* Simplified protection badge */}
+                        <div className="flex items-center gap-2 px-3 py-1 bg-legion-gold/10 rounded-full border border-legion-gold/20">
+                            <span className="w-2 h-2 rounded-full bg-legion-gold animate-pulse"></span>
+                            <span className="text-xs font-bold text-legion-gold">VERIFIED</span>
+                        </div>
                     </div>
-
-                    {/* Theme Toggle */}
-                    <button
-                        onClick={toggleTheme}
-                        className="p-2 text-gray-300 hover:text-legion-gold transition-colors relative group"
-                        title={
-                            currentTheme === 'classic' ? 'Prophecy: Sacred Geometry' :
-                                currentTheme === 'esoteric' ? 'Enter The Mystical Flow' :
-                                    currentTheme === 'mystical' ? 'Enter The Deep Void' :
-                                        currentTheme === 'void' ? 'Disable All Effects (Minimal)' :
-                                            'Return to Classic Reality'
-                        }
-                    >
-                        {currentTheme === 'classic' && (
-                            <EyeOff className="w-5 h-5" />
-                        )}
-                        {currentTheme === 'esoteric' && (
-                            <Eye className="w-5 h-5 text-legion-gold drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]" />
-                        )}
-                        {currentTheme === 'mystical' && (
-                            <Sparkles className="w-5 h-5 text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)] animate-pulse" />
-                        )}
-                        {currentTheme === 'void' && (
-                            <Moon className="w-5 h-5 text-indigo-400 drop-shadow-[0_0_5px_rgba(129,140,248,0.5)]" />
-                        )}
-                        {currentTheme === 'minimal' && (
-                            <MinusCircle className="w-5 h-5 text-gray-500" />
-                        )}
-                    </button>
 
                     {isAuthenticated && user ? (
                         <>

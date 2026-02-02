@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
+import { Grid, List, Filter, X, ChevronDown, Check, Search, MapPin } from 'lucide-react'
 import ProductCard from '../components/common/ProductCard'
 import VirtualProductGrid from '../components/common/VirtualProductGrid'
 import { listingsAPI } from '../services/api'
@@ -190,26 +191,14 @@ function Browse() {
                                     onClick={() => setViewMode('grid')}
                                     title="Grid View"
                                 >
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <rect x="3" y="3" width="7" height="7" />
-                                        <rect x="14" y="3" width="7" height="7" />
-                                        <rect x="14" y="14" width="7" height="7" />
-                                        <rect x="3" y="14" width="7" height="7" />
-                                    </svg>
+                                    <Grid size={18} />
                                 </button>
                                 <button
                                     className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
                                     onClick={() => setViewMode('list')}
                                     title="List View"
                                 >
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <line x1="8" y1="6" x2="21" y2="6" />
-                                        <line x1="8" y1="12" x2="21" y2="12" />
-                                        <line x1="8" y1="18" x2="21" y2="18" />
-                                        <line x1="3" y1="6" x2="3.01" y2="6" />
-                                        <line x1="3" y1="12" x2="3.01" y2="12" />
-                                        <line x1="3" y1="18" x2="3.01" y2="18" />
-                                    </svg>
+                                    <List size={18} />
                                 </button>
                             </div>
 
@@ -218,9 +207,7 @@ function Browse() {
                                 className="mobile-filter-toggle btn btn-secondary"
                                 onClick={() => setIsMobileFilterOpen(true)}
                             >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                                </svg>
+                                <Filter size={18} />
                                 Filters
                                 {activeFilterCount > 0 && (
                                     <span className="filter-count">{activeFilterCount}</span>
@@ -245,10 +232,7 @@ function Browse() {
                             className="close-sidebar"
                             onClick={() => setIsMobileFilterOpen(false)}
                         >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
+                            <X size={20} />
                         </button>
                     </div>
 
@@ -427,37 +411,37 @@ function Browse() {
                             {filters.category && (
                                 <span className="active-filter">
                                     {categories.find(c => c.slug === filters.category)?.name}
-                                    <button onClick={() => handleFilterChange('category', '')}>×</button>
+                                    <button onClick={() => handleFilterChange('category', '')}><X size={12} /></button>
                                 </span>
                             )}
                             {filters.condition && (
                                 <span className="active-filter">
                                     {conditions.find(c => c.value === filters.condition)?.label}
-                                    <button onClick={() => handleFilterChange('condition', '')}>×</button>
+                                    <button onClick={() => handleFilterChange('condition', '')}><X size={12} /></button>
                                 </span>
                             )}
                             {(filters.minPrice || filters.maxPrice) && (
                                 <span className="active-filter">
                                     {filters.minPrice ? formatPrice(filters.minPrice) : '₹0'} - {filters.maxPrice ? formatPrice(filters.maxPrice) : 'Any'}
-                                    <button onClick={() => { handleFilterChange('minPrice', ''); handleFilterChange('maxPrice', '') }}>×</button>
+                                    <button onClick={() => { handleFilterChange('minPrice', ''); handleFilterChange('maxPrice', '') }}><X size={12} /></button>
                                 </span>
                             )}
                             {filters.location && (
                                 <span className="active-filter">
                                     {filters.location}
-                                    <button onClick={() => handleFilterChange('location', '')}>×</button>
+                                    <button onClick={() => handleFilterChange('location', '')}><X size={12} /></button>
                                 </span>
                             )}
                             {filters.deliveryOnly && (
                                 <span className="active-filter">
                                     Delivery Available
-                                    <button onClick={() => handleFilterChange('deliveryOnly', false)}>×</button>
+                                    <button onClick={() => handleFilterChange('deliveryOnly', false)}><X size={12} /></button>
                                 </span>
                             )}
                             {filters.verifiedOnly && (
                                 <span className="active-filter">
                                     AI Verified
-                                    <button onClick={() => handleFilterChange('verifiedOnly', false)}>×</button>
+                                    <button onClick={() => handleFilterChange('verifiedOnly', false)}><X size={12} /></button>
                                 </span>
                             )}
                         </div>

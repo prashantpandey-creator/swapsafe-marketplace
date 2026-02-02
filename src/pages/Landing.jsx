@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Shield, Users, Zap, ArrowRight, Award, Box } from 'lucide-react';
+import { Search, Shield, Users, Zap, ArrowRight, Award, Box, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { listingsAPI } from '../services/api';
 import ProductCard from '../components/common/ProductCard';
@@ -56,35 +56,36 @@ const Landing = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8 }}
                     >
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-sm">
-                            <span className="w-2 h-2 rounded-full bg-legion-gold animate-pulse"></span>
-                            <span className="text-gray-300 text-sm font-medium">The #1 Trusted Marketplace Community</span>
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm hover:border-legion-gold/30 transition-colors cursor-pointer">
+                            <Shield className="w-4 h-4 text-legion-gold" />
+                            <span className="text-gray-300 text-sm font-medium">Every item verified. Every transaction protected.</span>
                         </div>
 
                         <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 leading-tight tracking-tight">
-                            JOIN THE <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-legion-gold via-yellow-200 to-legion-gold animate-gradient-x">
-                                BROTHERHOOD
+                            BUY & SELL <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-legion-gold via-yellow-200 to-legion-gold">
+                                VERIFIED GEAR
                             </span>
                         </h1>
 
                         <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto mb-10 font-light">
-                            Buy, sell, and trade with confidence. A revolutionary marketplace built on <span className="text-white font-semibold">trust</span>, <span className="text-white font-semibold">AI verification</span>, and <span className="text-white font-semibold">community</span>.
+                            The safest marketplace for second-hand electronics, fashion, and collectibles.
+                            Backed by <span className="text-white font-semibold">AI Verification</span> and <span className="text-white font-semibold">SwapSafe Shield</span>.
                         </p>
 
                         {/* Search Bar */}
-                        <div className="max-w-3xl mx-auto relative mb-12 group">
+                        <div className="max-w-2xl mx-auto relative mb-12 group">
                             <input
                                 type="text"
-                                placeholder="What are you looking for today?"
+                                placeholder="Search for iPhone 15, Jordan 1s, PS5..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                className="w-full h-16 pl-6 pr-32 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-legion-gold/50 focus:bg-white/10 transition-all backdrop-blur-md shadow-2xl"
+                                className="w-full h-14 pl-6 pr-32 rounded-full bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-legion-gold/50 focus:bg-white/10 transition-all backdrop-blur-md shadow-2xl"
                             />
                             <button
                                 onClick={handleSearch}
-                                className="absolute right-2 top-2 h-12 px-8 bg-legion-gold text-legion-bg font-bold rounded-xl hover:bg-yellow-400 transition-colors flex items-center gap-2"
+                                className="absolute right-1 top-1 h-12 px-8 bg-legion-gold text-black font-bold rounded-full hover:bg-yellow-400 transition-colors flex items-center gap-2"
                             >
                                 <Search className="w-5 h-5" />
                                 <span>Search</span>
@@ -93,27 +94,32 @@ const Landing = () => {
 
                         {/* CTA Buttons */}
                         <div className="flex flex-wrap justify-center gap-4 mb-16">
-                            <Link to="/studio" className="btn btn-outline flex items-center gap-2">
-                                <Box className="w-5 h-5" /> Try AI 3D Studio
+                            <Link to="/browse" className="px-8 py-4 bg-legion-gold text-black font-bold rounded-xl shadow-[0_0_20px_rgba(255,215,0,0.3)] hover:shadow-[0_0_30px_rgba(255,215,0,0.5)] hover:scale-105 transition-all flex items-center gap-2">
+                                Start Shopping <ArrowRight className="w-5 h-5" />
                             </Link>
-                            <Link to="/sell" className="btn btn-primary flex items-center gap-2">
-                                Start Selling
+                            <Link to="/sell" className="px-8 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all flex items-center gap-2">
+                                <Box className="w-5 h-5" /> Sell Your Items
+                            </Link>
+                            <Link to="/studio" className="px-8 py-4 bg-transparent border border-legion-gold/30 text-legion-gold font-bold rounded-xl hover:bg-legion-gold/10 transition-all flex items-center gap-2">
+                                <Sparkles className="w-5 h-5" /> AI Studio
                             </Link>
                         </div>
 
-                        {/* Stats / Trust Indicators */}
-                        <div className="flex flex-wrap justify-center gap-8 md:gap-16 text-gray-400">
-                            <div className="flex items-center gap-3">
-                                <Shield className="w-6 h-6 text-legion-accent" />
-                                <span className="text-lg">AI Verified Listings</span>
+                        {/* Trust Indicators Strip (Stitch Design) */}
+                        <div className="flex flex-wrap justify-center gap-8 md:gap-12 border-t border-white/5 pt-8">
+                            <div className="text-center">
+                                <p className="text-2xl font-bold text-white">12.5K+</p>
+                                <p className="text-sm text-gray-500 uppercase tracking-wider">Verified Sellers</p>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <Users className="w-6 h-6 text-legion-gold" />
-                                <span className="text-lg">10k+ Legion Members</span>
+                            <div className="w-px h-12 bg-white/10 hidden md:block"></div>
+                            <div className="text-center">
+                                <p className="text-2xl font-bold text-white">₹2.3 Cr+</p>
+                                <p className="text-sm text-gray-500 uppercase tracking-wider">Protected Value</p>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <Zap className="w-6 h-6 text-purple-400" />
-                                <span className="text-lg">Instant Transitions</span>
+                            <div className="w-px h-12 bg-white/10 hidden md:block"></div>
+                            <div className="text-center">
+                                <p className="text-2xl font-bold text-white">99.8%</p>
+                                <p className="text-sm text-gray-500 uppercase tracking-wider">Match Rate</p>
                             </div>
                         </div>
                     </motion.div>

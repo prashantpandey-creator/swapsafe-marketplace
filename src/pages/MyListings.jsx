@@ -4,11 +4,25 @@ import { useAuth } from '../context/AuthContext'
 import ProductCard from '../components/common/ProductCard'
 import { listingsAPI } from '../services/api'
 import { Plus, Trash2, Edit } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import ListingSuccess from '../components/sell/ListingSuccess'
 
 const MyListings = () => {
     const { user, isAuthenticated } = useAuth()
     const [myListings, setMyListings] = useState([])
     const [isLoading, setIsLoading] = useState(true)
+    const [showSuccess, setShowSuccess] = useState(false)
+
+    const location = useLocation()
+    const navigate = useNavigate()
+
+    useEffect(() => {
+        if (location.state?.success) {
+            setShowSuccess(true)
+            // Clear the state so it doesn't show on refresh
+            window.history.replaceState({}, document.title)
+        }
+    }, [location])
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -92,7 +106,16 @@ const MyListings = () => {
                     </div>
                 )}
             </div>
+                )}
         </div>
+
+            {/* Success Modal */ }
+    <AnimatePresence>
+        {showSuccess && (
+            <ListingSuccess onClose={() => setShowSuccess(false)} />
+        )}
+    </AnimatePresence>
+        </div >
     )
 }
 

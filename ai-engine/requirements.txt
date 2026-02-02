@@ -4,6 +4,8 @@ python-multipart==0.0.6
 torch; sys_platform != 'darwin'
 torch --index-url https://download.pytorch.org/whl/nightly/cpu; sys_platform == 'darwin'
 numpy
+numpy
+rembg
 pillow
 hf_transfer
 huggingface_hub
@@ -11,3 +13,7 @@ python-dotenv
 aiofiles
 requests
 psutil
+# Image upscaling
+realesrgan
+basicsr
+gfpgan

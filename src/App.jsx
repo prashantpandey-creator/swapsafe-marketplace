@@ -25,6 +25,7 @@ import Settings from './pages/Settings'
 import EditListing from './pages/EditListing'
 import Cart from './pages/Cart'
 import ThreeDStudio from './pages/ThreeDStudio'
+import SwapSafeShield from './pages/SwapSafeShield'
 
 import BackgroundManager from './components/layout/BackgroundManager'
 import ServerWaker from './components/common/ServerWaker'
@@ -84,6 +85,7 @@ function App() {
                                     <Route path="/settings" element={<Settings />} />
                                     <Route path="/edit-listing/:id" element={<EditListing />} />
                                     <Route path="/studio" element={<ThreeDStudio />} />
+                                    <Route path="/shield" element={<SwapSafeShield />} />
                                 </Routes>
                             </main>
                             <Footer />

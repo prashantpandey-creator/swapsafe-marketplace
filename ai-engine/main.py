@@ -11,15 +11,20 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-# CORS - Allow interaction with the Local React App
+# CORS - Allow production domains
 origins = [
     "http://localhost:3000",
     "http://localhost:5173",
 ]
 
+# Add production origin from env
+import os
+if os.getenv("CLIENT_URL"):
+    origins.append(os.getenv("CLIENT_URL"))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"], # Allow all for now to avoid tunnel issues, or strictly use 'origins'
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

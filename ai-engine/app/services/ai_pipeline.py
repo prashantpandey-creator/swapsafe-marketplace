@@ -94,22 +94,31 @@ class AiPipelineService:
     async def enhance_product_image(
         self,
         image_bytes: bytes,
-        product_name: str = ""
+        product_name: str = "",
+        reference_url: str = None,  # NEW: Reference image URL for exact matches
+        category: str = ""  # NEW: Product category for styling
     ) -> Dict[str, Any]:
         """
         Quick enhancement for product images.
         - Remove background (uses product_name for better context)
         - Add professional white background
         - Add subtle shadow
+        
+        NEW: If reference_url provided, can be used for smarter composition.
         Perfect for Quick Sell single-image uploads.
         """
         print(f"🎯 Enhancing: {product_name or 'Product'}")
+        if reference_url:
+            print(f"📸 Reference: {reference_url[:50]}...")
+        
         return await self.showcase.create_showcase(
             image_bytes=image_bytes,
             background="white",
             add_shadow=True,
             output_size=(1024, 1024),
-            product_hint=product_name  # Pass product context
+            product_hint=product_name,  # Pass product context
+            apply_upscale=True,  # Enable upscaling for better quality
+            return_original=True  # Return original image too for comparison
         )
 
 

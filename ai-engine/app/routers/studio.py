@@ -74,7 +74,10 @@ async def create_showcase(
 @router.post("/enhance")
 async def enhance_product(
     file: UploadFile = File(...),
-    product_name: str = Form("")  # Product name for better segmentation context
+    product_name: str = Form(""),  # Product name for better segmentation context
+    reference_image_url: str = Form(""),  # NEW: Reference image from ProductDatabase
+    has_exact_match: str = Form("false"),  # NEW: Whether exact product match found
+    category: str = Form("")  # NEW: Product category for styling hints
 ):
     """
     Quick enhancement for product images.
@@ -84,17 +87,70 @@ async def enhance_product(
     - White background
     - Professional shadow
     - 1024x1024 output
+    
+    NEW: If reference_image_url provided (exact product match), uses reference
+    for smarter composition and styling.
     """
+    import time
+    start_time = time.time()
+    
+    print("")
+    print("═" * 60)
+    print("🎨 PYTHON ENHANCE ENDPOINT CALLED")
+    print("═" * 60)
+    print(f"📁 File: {file.filename}")
+    print(f"📦 product_name: {product_name or '(none)'}")
+    print(f"🖼️  reference_url: {reference_image_url[:50] + '...' if reference_image_url else '(none)'}")
+    print(f"✓  has_exact_match: {has_exact_match}")
+    print(f"📂 category: {category or '(none)'}")
+    
     try:
+        print("")
+        print("📥 Step 1: Reading uploaded file...")
         content = await file.read()
-        print(f"📦 Enhancing product: {product_name or 'Unknown'}")
+        print(f"   ✅ Read {len(content)} bytes")
+        
+        has_match = has_exact_match.lower() == 'true'
+        if has_match and reference_image_url:
+            print(f"📦 Using reference image for {product_name}")
+        else:
+            print(f"📦 No reference - enhancing with context only")
+        
+        print("")
+        print("🎯 Step 2: Calling AI pipeline...")
         result = await pipeline_service.enhance_product_image(
             image_bytes=content,
-            product_name=product_name
+            product_name=product_name,
+            reference_url=reference_image_url if has_match else None,
+            category=category
         )
-        return result
+        
+        elapsed = time.time() - start_time
+        print("")
+        print(f"✅ ENHANCEMENT COMPLETE in {elapsed:.2f}s")
+        print(f"   - status: {result.get('status')}")
+        print(f"   - enhanced_image length: {len(result.get('image_data', ''))}")
+        print(f"   - original_image length: {len(result.get('original_image_data', ''))}")
+        print("═" * 60)
+        print("")
+        
+        # Return both images for frontend comparison
+        return {
+            "success": True,
+            "image_data": result.get("image_data"),  # Enhanced image
+            "original_image_data": result.get("original_image_data"),  # Original for comparison
+            "dimensions": result.get("dimensions"),
+            "processing_time_ms": int(elapsed * 1000)
+        }
         
     except Exception as e:
+        import traceback
+        print("")
+        print("💥 ENHANCEMENT FAILED")
+        print(f"   Error: {e}")
+        traceback.print_exc()
+        print("═" * 60)
+        print("")
         raise HTTPException(status_code=500, detail=str(e))
 
 
