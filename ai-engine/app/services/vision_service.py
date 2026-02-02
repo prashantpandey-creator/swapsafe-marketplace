@@ -34,6 +34,7 @@ class VisionService:
             print("✅ BiRefNet Loaded")
         except Exception as e:
             print(f"❌ BiRefNet Load Failed: {e}")
+            raise e
 
     def segment_image(self, image: Image.Image) -> Image.Image:
         """

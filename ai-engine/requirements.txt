@@ -22,3 +22,4 @@ timm
 einops
 scikit-image
 filelock
+kornia
