@@ -521,6 +521,56 @@ router.post('/enhance-photo', async (req, res) => {
     }
 });
 
+// @route   POST /api/ai/fetch-stock
+// @desc    Proxy to Python AI Engine to find professional stock photo
+// @access  Public
+router.post('/fetch-stock', async (req, res) => {
+    console.log('');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🔍 FETCH-STOCK REQUEST RECEIVED');
+    console.log('═══════════════════════════════════════════════════════════');
+
+    const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8000';
+    console.log('🌐 AI Engine URL:', AI_ENGINE_URL);
+
+    try {
+        const { productName } = req.body;
+        console.log('   - Product:', productName);
+
+        if (!productName) {
+            return res.status(400).json({ error: 'Product name is required' });
+        }
+
+        const fetch = (await import('node-fetch')).default;
+        const response = await fetch(`${AI_ENGINE_URL}/api/v1/studio/fetch_stock`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ product_name: productName })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.log('❌ Python error:', errorText);
+            throw new Error(`AI Engine returned ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ Stock Photo Found:', result.image_url || 'No URL');
+        res.json(result);
+
+    } catch (error) {
+        console.error('💥 Fetch Stock Failed:', error.message);
+
+        if (error.code === 'ECONNREFUSED') {
+            return res.status(503).json({
+                error: 'AI Engine is not running',
+                code: 'AI_ENGINE_OFFLINE'
+            });
+        }
+        res.status(500).json({ error: 'Failed to fetch stock photo' });
+    }
+});
+
 // ============ FALLBACK ALGORITHMS ============
 
 function getFallbackPriceEstimate(title, category, condition) {

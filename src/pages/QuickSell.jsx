@@ -185,6 +185,48 @@ const QuickSell = () => {
             setEnhanceStatus(`Failed: ${error.message}`);
             setEnhanceError(error.message);
             return null;
+            return null;
+        } finally {
+            setIsEnhancing(false);
+        }
+    };
+
+    // NEW: Fetch Stock Photo
+    const fetchStockPhoto = async () => {
+        setIsEnhancing(true);
+        setEnhanceError(null);
+        setEnhanceStatus('Searching for stock photo...');
+        setEnhanceStage(1);
+
+        try {
+            const productName = `${formData.brand} ${formData.model} ${formData.title}`.trim();
+            console.log('🔍 FETCH STOCK:', productName);
+
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            const response = await fetch(`${API_URL}/ai/fetch-stock`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productName })
+            });
+
+            const result = await response.json();
+
+            if (result.image_data) {
+                setEnhancedImage(result.image_data);
+                // Keep original image as "user photo"
+                if (!originalImage && productImage) {
+                    setOriginalImage(productImage); // Or convert to base64 if needed, but URL is fine for display
+                }
+                setEnhanceStatus('Complete!');
+                setEnhanceStage(4);
+            } else {
+                throw new Error("No stock image found");
+            }
+
+        } catch (error) {
+            console.error('Stock fetch failed:', error);
+            setEnhanceError('Could not find stock photo. Try specific model name.');
+            setEnhanceStatus('');
         } finally {
             setIsEnhancing(false);
         }
@@ -741,6 +783,25 @@ const QuickSell = () => {
                                                         {formData.brand && formData.model ? 'Generate AI Photo' : 'Enter Details to Unlock'}
                                                     </>
                                                 )}
+                                            </button>
+
+                                            {/* NEW: Stock Photo Button */}
+                                            <div className="flex items-center gap-3 mt-3">
+                                                <div className="h-px flex-1 bg-white/10"></div>
+                                                <span className="text-[10px] text-gray-500 font-medium">OR</span>
+                                                <div className="h-px flex-1 bg-white/10"></div>
+                                            </div>
+
+                                            <button
+                                                onClick={fetchStockPhoto}
+                                                disabled={isEnhancing || !formData.brand || !formData.model}
+                                                className={`w-full py-3 font-bold rounded-lg flex items-center justify-center gap-2 transition-all mt-3 border ${isEnhancing || !formData.brand || !formData.model
+                                                        ? 'border-white/5 text-gray-500 cursor-not-allowed'
+                                                        : 'border-white/20 text-white hover:bg-white/5 hover:border-[var(--legion-gold)]/50'
+                                                    }`}
+                                            >
+                                                <Search size={18} />
+                                                Find Stock Photo (Instant)
                                             </button>
 
                                             {/* Helper text if disabled */}
