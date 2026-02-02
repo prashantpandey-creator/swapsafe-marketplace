@@ -4,8 +4,23 @@ Studio Router - API endpoints for AI-powered product enhancement
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from typing import List, Optional
 from app.services.ai_pipeline import pipeline_service
+from app.services.stock_service import stock_service
+from pydantic import BaseModel
 
 router = APIRouter()
+
+class StockRequest(BaseModel):
+    product_name: str
+
+@router.post("/fetch_stock")
+async def fetch_stock_image(request: StockRequest):
+    """
+    Finds a professional stock photo for the product.
+    """
+    result = stock_service.find_product_image(request.product_name)
+    if result:
+        return result
+    return {"status": "error", "message": "No suitable stock image found"}
 
 
 @router.post("/generate-3d")

@@ -29,14 +29,7 @@ def get_upscale_service():
         print("⚠️ Upscale service not available")
         return None
 
-# Import enhance service
-def get_enhance_service():
-    try:
-        from .enhance_service import enhance_service
-        return enhance_service
-    except ImportError:
-        print("⚠️ Enhance service not available")
-        return None
+
 
 class ShowcaseService:
     """
@@ -46,7 +39,6 @@ class ShowcaseService:
     def __init__(self):
         self.remove_bg, self.rembg_session = get_rembg()
         self.upscale_service = get_upscale_service()
-        self.enhance_service = get_enhance_service()
         print("📸 Showcase Service initialized")
     
     async def create_showcase(
@@ -62,21 +54,15 @@ class ShowcaseService:
         """
         Creates a professional showcase photo.
         
-        1. VALIDATE & ENHANCE: Fix lighting/color on raw photo
-        2. SEGMENT: Remove background
-        3. COMPOSITE: Place on white/gradient background
+        1. Remove background from product image
+        2. Add clean white/gradient background
+        3. Center product with proper padding
+        4. Add subtle shadow for depth
         """
         import time
         start = time.time()
         
         try:
-            # Step 0: Pre-enhancement (Lighting/Color) - NEW
-            if self.enhance_service:
-                print("   ✨ Step 0: Enhancing lighting and details...")
-                enhance_start = time.time()
-                image_bytes = self.enhance_service.enhance_product(image_bytes)
-                print(f"      ✅ Enhanced in {time.time()-enhance_start:.2f}s")
-
             # Step 1: Remove background
             print("   ✂️ Step A: Removing background...")
             step_start = time.time()
