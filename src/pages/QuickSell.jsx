@@ -579,31 +579,40 @@ const QuickSell = () => {
                                             </button>
                                         </>
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
                                             <ImageIcon size={48} className="mb-2 opacity-50" />
-                                            <p className="text-sm">No images yet</p>
+                                            <p className="text-sm">No images selected</p>
                                         </div>
                                     )}
 
-                                    {/* Loading Overlay */}
+                                    {/* Enhancement Status Overlay */}
                                     {isEnhancing && (
-                                        <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10">
+                                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-10">
                                             <Loader className="animate-spin text-[var(--legion-gold)] mb-3" size={32} />
-                                            <p className="text-white text-sm font-medium">{enhanceStatus}</p>
+                                            <p className="text-white text-sm font-medium">{enhanceStatus || 'Enhancing...'}</p>
+                                            <p className="text-gray-400 text-xs mt-1">Creating pro photo with clean background</p>
 
                                             {/* Progress bar */}
                                             <div className="w-48 mt-4 flex gap-1">
                                                 {ENHANCE_STAGES.map((_, idx) => (
                                                     <div
                                                         key={idx}
-                                                        className={`h-1.5 flex-1 rounded-full transition-all ${idx <= enhanceStage ? 'bg-[var(--legion-gold)]' : 'bg-white/20'}`}
+                                                        className={`h-1.5 flex-1 rounded-full transition-all ${idx <= enhanceStage ? 'bg-[var(--legion-gold)]' : 'bg-white/20'
+                                                            }`}
                                                     />
                                                 ))}
                                             </div>
                                         </div>
                                     )}
-                                </div>
 
+                                    {/* Enhanced Badge */}
+                                    {gallery.find(img => img.isMain)?.type === 'enhanced' && !isEnhancing && (
+                                        <div className="absolute top-3 left-3 bg-[var(--legion-gold)] text-black text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-lg">
+                                            <Sparkles size={12} />
+                                            Pro Photo Ready
+                                        </div>
+                                    )}
+                                </div>
                                 {/* Thumbnails */}
                                 {gallery.length > 0 && (
                                     <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
@@ -934,7 +943,8 @@ const QuickSell = () => {
                             )}
 
                             {/* Pro Photo Created Success */}
-                            {enhancedImage && (
+                            {/* Pro Photo Created Success */}
+                            {gallery.some(img => img.type === 'enhanced') && (
                                 <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 flex items-center gap-3">
                                     <CheckCircle className="text-green-400" size={24} />
                                     <div>

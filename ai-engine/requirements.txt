@@ -13,7 +13,12 @@ python-dotenv
 aiofiles
 requests
 psutil
-# Image upscaling
-realesrgan
-basicsr
-gfpgan
+
+# SOTA Vision (IC-Light & BiRefNet)
+diffusers>=0.28.0
+transformers>=4.40.0
+accelerate
+timm
+einops
+scikit-image
+filelock
