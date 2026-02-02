@@ -97,6 +97,11 @@ class ShowcaseService:
                 print("      ⚠️ rembg not available, using original")
                 fg_image = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
             
+            # Step 1.8: Trim transparency (Smart Crop) - NEW
+            print("   ✂️ Step A.8: Trimming transparency...")
+            fg_image = self._trim_transparency(fg_image)
+            print(f"      ✅ Trimmed to {fg_image.width}x{fg_image.height}")
+            
             # Step 2: Create background
             print(f"   🎨 Step B: Creating {background} background...")
             if background == "gradient":
@@ -166,6 +171,13 @@ class ShowcaseService:
         except Exception as e:
             print(f"❌ Showcase creation failed: {e}")
             raise e
+            
+    def _trim_transparency(self, img: Image.Image) -> Image.Image:
+        """Crops transparent borders from image"""
+        bbox = img.getbbox()
+        if bbox:
+            return img.crop(bbox)
+        return img
     
     def _create_gradient_bg(self, size: tuple) -> Image.Image:
         """Creates a subtle gradient background"""

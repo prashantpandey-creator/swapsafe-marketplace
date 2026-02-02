@@ -7,9 +7,11 @@
 // Verification components
 export {
     VerificationBadge,
-    VerificationReport,
     VerifiedSellerBadge
 } from './VerificationBadge';
+
+export { default as VerificationReport } from './VerificationReport';
+
 
 // Shield/Protection components
 export {
