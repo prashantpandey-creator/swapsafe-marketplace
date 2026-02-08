@@ -1,12 +1,18 @@
 import { useLocation } from 'react-router-dom';
 import InteractiveMandala from './InteractiveMandala';
+import PsychedelicBackground from './PsychedelicBackground';
 
 const BackgroundManager = ({ currentTheme }) => {
     const location = useLocation();
 
-    // STRICT: Only show on Home Page AND Classic Theme
+    // Psychedelic theme shows its background on all pages
+    if (currentTheme === 'psychedelic') {
+        return <PsychedelicBackground />;
+    }
+
+    // Classic mandala only on home page
     if (location.pathname !== '/' || currentTheme !== 'classic') {
-        return null; // Minimal, Esoteric, Mystical all hide the mandala
+        return null;
     }
 
     return <InteractiveMandala variant="home" />;

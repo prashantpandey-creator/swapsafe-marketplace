@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Menu, X, Search, User, MessageSquare, ShoppingBag, Settings, LogOut, Eye, EyeOff, Sparkles, MinusCircle, Moon } from 'lucide-react';
+import { Shield, Menu, X, Search, User, MessageSquare, ShoppingBag, Settings, LogOut, Eye, EyeOff, Sparkles, MinusCircle, Moon, Zap } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import GuardianBadge from '../trust/GuardianBadge';
@@ -82,7 +82,8 @@ const Header = ({ currentTheme, toggleTheme }) => {
                                 currentTheme === 'esoteric' ? 'Enter The Mystical Flow' :
                                     currentTheme === 'mystical' ? 'Enter The Deep Void' :
                                         currentTheme === 'void' ? 'Disable All Effects (Minimal)' :
-                                            'Return to Classic Reality'
+                                            currentTheme === 'minimal' ? 'Enter Psychedelic Dimension' :
+                                                'Return to Classic Reality'
                         }
                     >
                         {currentTheme === 'classic' && (
@@ -99,6 +100,9 @@ const Header = ({ currentTheme, toggleTheme }) => {
                         )}
                         {currentTheme === 'minimal' && (
                             <MinusCircle className="w-5 h-5 text-gray-500" />
+                        )}
+                        {currentTheme === 'psychedelic' && (
+                            <Zap className="w-5 h-5 text-fuchsia-400 drop-shadow-[0_0_10px_rgba(191,0,255,0.8)] animate-pulse" />
                         )}
                     </button>
 

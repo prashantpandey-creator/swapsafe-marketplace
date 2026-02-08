@@ -185,6 +185,22 @@ body.theme-minimal {
   background-color: #111827;
 }
 
+/* Psychedelic Theme - Neon Purple Emanation */
+body.theme-psychedelic {
+  --legion-gold: #bf00ff;
+  --legion-gold-dim: rgba(191, 0, 255, 0.15);
+  --legion-gold-glow: rgba(191, 0, 255, 0.6);
+  --void-deep: #05000f;
+  --void-surface: #0d0020;
+  --glass-surface: rgba(13, 0, 32, 0.75);
+  --glass-border: rgba(191, 0, 255, 0.12);
+  --signal-green: #e040fb;
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(191, 0, 255, 0.06), transparent 50%),
+    radial-gradient(circle at 30% 70%, rgba(139, 0, 255, 0.04), transparent 40%),
+    radial-gradient(circle at 70% 30%, rgba(224, 64, 251, 0.03), transparent 40%);
+}
+
 /* Theme transition smoothing */
 body {
   transition: background-color 0.5s ease, background-image 0.5s ease;
@@ -205,6 +221,16 @@ body.theme-void .btn-primary {
 
 body.theme-minimal .btn-primary {
   background: #6366F1;
+}
+
+body.theme-psychedelic .btn-primary {
+  background: linear-gradient(135deg, #bf00ff, #7c4dff, #d500f9);
+  box-shadow: 0 0 20px rgba(191, 0, 255, 0.4);
+}
+
+body.theme-psychedelic .glass-panel {
+  border-color: rgba(191, 0, 255, 0.15);
+  box-shadow: 0 0 30px rgba(191, 0, 255, 0.05), inset 0 0 30px rgba(139, 0, 255, 0.03);
 }
 
 /* Glass panel theme adjustments */

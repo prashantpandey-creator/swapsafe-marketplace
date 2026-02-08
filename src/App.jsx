@@ -34,12 +34,9 @@ function App() {
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'esoteric')
 
     const toggleTheme = () => {
-        let newTheme = 'classic'
-        if (theme === 'classic') newTheme = 'esoteric'
-        else if (theme === 'esoteric') newTheme = 'mystical'
-        else if (theme === 'mystical') newTheme = 'void'
-        else if (theme === 'void') newTheme = 'minimal'
-        else if (theme === 'minimal') newTheme = 'classic'
+        const themes = ['classic', 'esoteric', 'mystical', 'void', 'minimal', 'psychedelic']
+        const currentIndex = themes.indexOf(theme)
+        const newTheme = themes[(currentIndex + 1) % themes.length]
 
         setTheme(newTheme)
         localStorage.setItem('theme', newTheme)
