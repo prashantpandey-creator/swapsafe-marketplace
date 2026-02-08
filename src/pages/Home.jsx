@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Search } from 'lucide-react'
 import ProductCard from '../components/common/ProductCard'
+import SpiralBackground from '../components/common/SpiralBackground'
 import { listingsAPI } from '../services/api'
 import { categories } from '../data/mockData'
 import './Home.css'
@@ -47,94 +49,72 @@ function Home() {
 
     return (
         <div className="home">
-            {/* Hero Section */}
-            <section className="hero">
-                <div className="hero-bg">
-                    <div className="hero-gradient"></div>
-                    <div className="hero-particles">
-                        {[...Array(20)].map((_, i) => (
-                            <div key={i} className="particle" style={{
-                                '--delay': `${Math.random() * 5}s`,
-                                '--x': `${Math.random() * 100}%`,
-                                '--y': `${Math.random() * 100}%`,
-                                '--size': `${Math.random() * 4 + 2}px`
-                            }}></div>
-                        ))}
-                    </div>
-                </div>
+            <SpiralBackground />
 
-                <div className="hero-content container">
-                    <div className="hero-badge animate-fadeIn">
-                        <span className="badge badge-primary">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                            </svg>
-                            Secure Escrow Protection
+            {/* Hero Section - Buyers Legion Theme with Spiral Background */}
+            <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+
+                <div className="relative z-10 container mx-auto px-4 text-center">
+                    {/* Legion Shield Logo */}
+                    <div className="mb-8 animate-float">
+                        <img
+                            src="/assets/legion_shield.png"
+                            alt="Buyers Legion Shield"
+                            className="w-32 h-32 mx-auto drop-shadow-[0_0_50px_rgba(255,215,0,0.5)]"
+                        />
+                    </div>
+
+                    <div className="hero-badge animate-fadeIn mb-6 inline-block">
+                        <span className="bg-black/40 backdrop-blur-md border border-[var(--legion-gold)]/30 text-[var(--legion-gold)] px-4 py-1.5 rounded-full text-sm font-bold tracking-widest uppercase shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                            Join the Brotherhood
                         </span>
                     </div>
 
-                    <h1 className="hero-title">
-                        Buy & Sell Used Items
-                        <span className="text-gradient"> Safely</span>
+                    <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-[var(--legion-gold)] to-white drop-shadow-2xl">
+                        BUYERS<br />LEGION
                     </h1>
 
-                    <p className="hero-subtitle">
-                        India's most trusted marketplace for pre-owned items.
-                        Secure payments, verified sellers, and safe meetups.
+                    <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto mb-10 font-light leading-relaxed">
+                        The elite marketplace for the chosen few. <br />
+                        <span className="text-[var(--legion-gold)] font-bold">Secure. Verified. Eternal.</span>
                     </p>
 
                     {/* Hero Search */}
-                    <form className="hero-search" onSubmit={handleSearch}>
-                        <div className="search-wrapper">
-                            <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="11" cy="11" r="8" />
-                                <path d="M21 21l-4.35-4.35" />
-                            </svg>
+                    <form className="max-w-2xl mx-auto mb-12 relative group" onSubmit={handleSearch}>
+                        <div className="absolute -inset-1 bg-gradient-to-r from-[var(--legion-gold)] to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+                        <div className="relative flex items-center bg-black/80 backdrop-blur-xl rounded-2xl border border-white/10 p-2 shadow-2xl">
+                            <Search className="ml-4 text-gray-400" size={24} />
                             <input
                                 type="text"
-                                placeholder="Search for electronics, furniture, vehicles..."
+                                placeholder="Search the vault..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="search-input"
+                                className="w-full bg-transparent border-none text-white px-4 py-3 focus:ring-0 placeholder-gray-500 text-lg"
                             />
-                            <button type="submit" className="btn btn-primary btn-lg">
-                                Search
+                            <button type="submit" className="bg-[var(--legion-gold)] text-black font-bold px-8 py-3 rounded-xl hover:bg-white hover:scale-105 transition-all">
+                                SEARCH
                             </button>
-                        </div>
-                        <div className="search-tags">
-                            <span>Popular:</span>
-                            <Link to="/browse?search=iphone" className="tag">iPhone</Link>
-                            <Link to="/browse?search=laptop" className="tag">Laptop</Link>
-                            <Link to="/browse?search=furniture" className="tag">Furniture</Link>
-                            <Link to="/browse?search=bike" className="tag">Bike</Link>
                         </div>
                     </form>
 
                     {/* Stats */}
-                    <div className="hero-stats">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
                         {stats.map((stat, index) => (
-                            <div key={index} className="stat-item">
-                                <span className="stat-value">{stat.value}</span>
-                                <span className="stat-label">{stat.label}</span>
+                            <div key={index} className="bg-black/30 backdrop-blur-sm border border-white/5 p-4 rounded-xl">
+                                <span className="block text-3xl font-bold text-white">{stat.value}</span>
+                                <span className="text-xs text-[var(--legion-gold)] uppercase tracking-wider">{stat.label}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* Floating Elements */}
-                <div className="hero-floating">
-                    <div className="floating-card floating-card-1 animate-float">
-                        <div className="floating-icon">💰</div>
-                        <span>Secure Payments</span>
-                    </div>
-                    <div className="floating-card floating-card-2 animate-float" style={{ animationDelay: '1s' }}>
-                        <div className="floating-icon">🤝</div>
-                        <span>Safe Meetups</span>
-                    </div>
-                    <div className="floating-card floating-card-3 animate-float" style={{ animationDelay: '2s' }}>
-                        <div className="floating-icon">✅</div>
-                        <span>Verified Items</span>
-                    </div>
+                {/* Floating Guruji Guardian - Absolute Position */}
+                <div className="absolute bottom-0 right-0 z-20 pointer-events-none hidden lg:block opacity-90">
+                    <img
+                        src="/assets/guruji_main.png"
+                        alt="Guardian Protector"
+                        className="h-[600px] w-auto object-contain drop-shadow-[0_0_100px_rgba(0,0,0,0.8)] filter brightness-110 contrast-110"
+                    />
                 </div>
             </section>
 
@@ -280,97 +260,60 @@ function Home() {
                 </div>
             </section>
 
-            {/* Trust Section */}
-            <section className="section trust-section">
-                <div className="container">
-                    <div className="trust-content">
-                        <div className="trust-text">
-                            <h2>Why Choose SwapSafe?</h2>
-                            <p>We've built the most trusted platform for buying and selling used items</p>
+            {/* Trust Section - Guardian Theme */}
+            <section className="section trust-section relative overflow-hidden">
+                {/* Background Ornament - Trishul */}
+                <div className="absolute top-0 right-[-10%] opacity-10 pointer-events-none rotate-12">
+                    <img src="/assets/guardian_trishul.png" alt="Trishul" className="w-[800px] h-auto" />
+                </div>
 
-                            <div className="trust-features">
-                                <div className="trust-feature">
-                                    <div className="feature-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h4>Escrow Protection</h4>
-                                        <p>Your payment is held securely until you confirm the item is as described</p>
-                                    </div>
+                <div className="container relative z-10">
+                    <div className="flex flex-col md:flex-row items-center gap-12">
+                        {/* Left: Text Content */}
+                        <div className="flex-1 space-y-8">
+                            <div>
+                                <h2 className="text-4xl md:text-5xl font-black mb-4 uppercase tracking-tighter">
+                                    The Guardian <span className="text-[var(--legion-gold)]">Protector</span>
+                                </h2>
+                                <p className="text-xl text-gray-400 font-light border-l-4 border-[var(--legion-gold)] pl-6">
+                                    "In the Legion, we do not just trade. We protect. Every transaction is watched over by the Guardian Protocol."
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-6">
+                                <div className="bg-white/5 border border-white/10 p-6 rounded-2xl hover:bg-white/10 transition-colors group">
+                                    <h4 className="flex items-center gap-3 text-2xl font-bold text-white mb-2 group-hover:text-[var(--legion-gold)] transition-colors">
+                                        <div className="bg-[var(--legion-gold)] h-2 w-2 rounded-full"></div>
+                                        Escrow Shield
+                                    </h4>
+                                    <p className="text-gray-400 pl-5">Payments are held in the sacred vault. Funds are only released when you, the buyer, are satisfied.</p>
                                 </div>
 
-                                <div className="trust-feature">
-                                    <div className="feature-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                                            <polyline points="22 4 12 14.01 9 11.01" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h4>AI Verification</h4>
-                                        <p>Our AI detects fake listings and verifies product authenticity</p>
-                                    </div>
-                                </div>
-
-                                <div className="trust-feature">
-                                    <div className="feature-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                            <circle cx="12" cy="10" r="3" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h4>Safe Meetup Zones</h4>
-                                        <p>Pre-approved public locations for in-person exchanges</p>
-                                    </div>
-                                </div>
-
-                                <div className="trust-feature">
-                                    <div className="feature-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <rect x="1" y="3" width="15" height="13" />
-                                            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-                                            <circle cx="5.5" cy="18.5" r="2.5" />
-                                            <circle cx="18.5" cy="18.5" r="2.5" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h4>Doorstep Delivery</h4>
-                                        <p>Opt for shipping with tracking and insurance options</p>
-                                    </div>
+                                <div className="bg-white/5 border border-white/10 p-6 rounded-2xl hover:bg-white/10 transition-colors group">
+                                    <h4 className="flex items-center gap-3 text-2xl font-bold text-white mb-2 group-hover:text-[var(--legion-gold)] transition-colors">
+                                        <div className="bg-[var(--legion-gold)] h-2 w-2 rounded-full"></div>
+                                        AI Oracle
+                                    </h4>
+                                    <p className="text-gray-400 pl-5">Our all-seeing AI analyzes every listing pixel-by-pixel to banish fakes and verify authenticity.</p>
                                 </div>
                             </div>
+
+                            <Link to="/shield" className="inline-flex items-center gap-2 text-[var(--legion-gold)] font-bold uppercase tracking-widest hover:gap-4 transition-all">
+                                Read the Manifesto <span className="text-xl">→</span>
+                            </Link>
                         </div>
 
-                        <div className="trust-visual">
-                            <div className="visual-card">
-                                <div className="visual-header">
-                                    <span className="pulse-dot"></span>
-                                    <span>Transaction Protected</span>
-                                </div>
-                                <div className="visual-body">
-                                    <div className="visual-row">
-                                        <span>Buyer Payment</span>
-                                        <span className="badge badge-success">Received</span>
-                                    </div>
-                                    <div className="visual-row">
-                                        <span>Escrow Status</span>
-                                        <span className="badge badge-warning">Holding</span>
-                                    </div>
-                                    <div className="visual-row">
-                                        <span>Item Delivered</span>
-                                        <span className="badge badge-info">Pending</span>
-                                    </div>
-                                </div>
-                                <div className="visual-footer">
-                                    <div className="progress-bar">
-                                        <div className="progress-fill" style={{ width: '66%' }}></div>
-                                    </div>
-                                    <span>2 of 3 steps complete</span>
-                                </div>
+                        {/* Right: Guardian Visual */}
+                        <div className="flex-1 relative">
+                            <div className="relative z-10 animate-float">
+                                <img
+                                    src="/assets/guruji_main.png"
+                                    alt="Guardian of the Legion"
+                                    className="w-full max-w-lg mx-auto drop-shadow-[0_0_60px_rgba(255,215,0,0.2)]"
+                                />
                             </div>
+                            {/* Glowing Aura */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[var(--legion-gold)]/20 rounded-full blur-[100px] -z-10"></div>
                         </div>
                     </div>
                 </div>

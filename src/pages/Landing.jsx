@@ -4,6 +4,7 @@ import { Search, Shield, Users, Zap, ArrowRight, Award, Box, Sparkles } from 'lu
 import { Link, useNavigate } from 'react-router-dom';
 import { listingsAPI } from '../services/api';
 import ProductCard from '../components/common/ProductCard';
+import SpiralBackground from '../components/common/SpiralBackground';
 
 const Landing = () => {
     const navigate = useNavigate();
@@ -36,18 +37,9 @@ const Landing = () => {
         <div className="min-h-screen overflow-x-hidden">
             {/* Hero Section */}
             <section className="relative min-h-[90vh] flex items-center justify-center pt-20">
-                {/* Background Blobs */}
-                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                    <motion.div
-                        className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-legion-gold/20 rounded-full blur-[100px]"
-                        animate={{ x: [0, 100, 0], y: [0, 50, 0] }}
-                        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                    <motion.div
-                        className="absolute bottom-[10%] right-[-5%] w-[600px] h-[600px] bg-legion-accent/20 rounded-full blur-[120px]"
-                        animate={{ x: [0, -50, 0], y: [0, 100, 0] }}
-                        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-                    />
+                {/* Global Background */}
+                <div className="absolute inset-0 z-0">
+                    <SpiralBackground />
                 </div>
 
                 <div className="container mx-auto px-4 relative z-10 text-center">
