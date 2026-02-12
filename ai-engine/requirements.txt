@@ -23,3 +23,12 @@ einops
 scikit-image
 filelock
 kornia
+opencv-python  # For depth map processing
+duckduckgo-search>=4.0.0  # For stock image search
+
+# Plan B: 3D Reconstruction & Rendering
+replicate>=0.25.0         # Replicate API client for TripoSR
+trimesh>=4.0.0            # 3D mesh manipulation
+pyrender>=0.1.45          # Headless OpenGL rendering
+pyglet<2                  # pyrender dependency (version constraint for M1 compatibility)
+networkx>=2.8.0           # trimesh dependency

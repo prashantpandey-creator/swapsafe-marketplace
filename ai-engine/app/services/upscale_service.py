@@ -91,14 +91,31 @@ class UpscaleService:
             print(f"   📏 Input: {original_size[0]}x{original_size[1]}")
             
             # Step 1: Upscale
+            upscaled = None
+            use_fallback = True
+            
             if self._upsampler:
-                # Use Real-ESRGAN
-                print("   🔬 Upscaling with Real-ESRGAN...")
-                import numpy as np
-                img_np = np.array(img)
-                output, _ = self._upsampler.enhance(img_np, outscale=4)
-                upscaled = Image.fromarray(output)
-            else:
+                try:
+                    # Use Real-ESRGAN
+                    print("   🔬 Upscaling with Real-ESRGAN...")
+                    import numpy as np
+                    img_np = np.array(img)
+                    if img_np.dtype != np.uint8:
+                         img_np = img_np.astype(np.uint8)
+                         
+                    output, _ = self._upsampler.enhance(img_np, outscale=4)
+                    
+                    # Validation
+                    if output is not None and output.mean() > 5:
+                        upscaled = Image.fromarray(output)
+                        use_fallback = False
+                    else:
+                        print("   ⚠️ Real-ESRGAN produced black/invalid output. Switching to fallback.")
+                        
+                except Exception as e:
+                    print(f"   ⚠️ Real-ESRGAN failed: {e}. Switching to fallback.")
+            
+            if use_fallback:
                 # Fallback: Pillow bicubic upscale + sharpening
                 print("   🔬 Upscaling with Pillow (fallback)...")
                 upscaled = img.resize(
@@ -156,16 +173,80 @@ class UpscaleService:
         # Slight contrast boost
         contrast = ImageEnhance.Contrast(img)
         img = contrast.enhance(1.05)
-        
+
         # Slight saturation boost
         saturation = ImageEnhance.Color(img)
         img = saturation.enhance(1.08)
-        
+
         # Slight sharpness boost
         sharpness = ImageEnhance.Sharpness(img)
         img = sharpness.enhance(1.1)
-        
+
         return img
+
+    def enhance(self, image: Image.Image, scale: int = 2) -> Image.Image:
+        """
+        Synchronous image enhancement (for Plan B pipeline).
+
+        Args:
+            image: PIL Image (RGB or RGBA)
+            scale: Upscale factor (2 or 4)
+
+        Returns:
+            Enhanced PIL Image
+        """
+        self._ensure_initialized()
+
+        try:
+            # Convert to RGB if needed
+            if image.mode == "RGBA":
+                image = image.convert("RGB")
+            elif image.mode != "RGB":
+                image = image.convert("RGB")
+
+            print(f"   🔬 Enhancing image ({image.width}x{image.height})...")
+
+            # Try Real-ESRGAN
+            if self._upsampler:
+                try:
+                    import numpy as np
+                    img_np = np.array(image, dtype=np.uint8)
+
+                    # Use 4x upsampling
+                    output, _ = self._upsampler.enhance(img_np, outscale=4)
+
+                    if output is not None and output.mean() > 5:
+                        result = Image.fromarray(output)
+
+                        # If scale is 2, downscale from 4x
+                        if scale == 2:
+                            w, h = result.size
+                            result = result.resize((w // 2, h // 2), Image.Resampling.LANCZOS)
+
+                        print(f"   ✅ Enhanced to {result.width}x{result.height}")
+                        return result
+                    else:
+                        print("   ⚠️ Real-ESRGAN produced invalid output, using fallback")
+
+                except Exception as e:
+                    print(f"   ⚠️ Real-ESRGAN failed: {e}, using fallback")
+
+            # Fallback: Pillow upscale + enhance
+            new_width = image.width * scale
+            new_height = image.height * scale
+            result = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            result = result.filter(ImageFilter.UnsharpMask(radius=1.5, percent=100, threshold=2))
+
+            # Apply color enhancement
+            result = self._enhance_image(result)
+
+            print(f"   ✅ Enhanced to {result.width}x{result.height} (Pillow fallback)")
+            return result
+
+        except Exception as e:
+            print(f"   ❌ Enhancement failed: {e}")
+            # Return original if all else fails
+            return image
 
 
 # Singleton instance
