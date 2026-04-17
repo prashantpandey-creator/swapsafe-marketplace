@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import https from 'https';
+import http from 'http';
 
 // Load environment variables FIRST before importing routes
 dotenv.config();
@@ -93,4 +95,40 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
+    startKeepAlive();
 });
+
+// ============================================================
+// 🫀 KEEP-ALIVE PINGER — Prevents Render free tier cold starts
+// Pings backend + AI engine every 14 min (Render sleeps at 15)
+// ============================================================
+
+function startKeepAlive() {
+    const TARGETS = [
+        { name: 'Backend',   url: 'https://swapsafe-backend.onrender.com/api/health' },
+        { name: 'AI Engine', url: `${process.env.AI_ENGINE_URL || 'http://localhost:8001'}/health` },
+    ];
+
+    const INTERVAL_MS = 14 * 60 * 1000; // 14 minutes
+
+    function ping({ name, url }) {
+        const lib = url.startsWith('https') ? https : http;
+        lib.get(url, (res) => {
+            console.log(`❤️  [KeepAlive] ${name}: ${res.statusCode}`);
+        }).on('error', (err) => {
+            console.warn(`⚠️  [KeepAlive] ${name} unreachable: ${err.message}`);
+        });
+    }
+
+    // Stagger initial pings 5s after startup
+    setTimeout(() => {
+        TARGETS.forEach((t, i) => setTimeout(() => ping(t), i * 2000));
+    }, 5000);
+
+    // Then ping every 14 minutes
+    setInterval(() => {
+        TARGETS.forEach((t, i) => setTimeout(() => ping(t), i * 2000));
+    }, INTERVAL_MS);
+
+    console.log(`❤️  Keep-alive pinger started (every 14 min)`);
+}
