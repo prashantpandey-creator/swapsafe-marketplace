@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BiRefNet Test Gallery - Before/After</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2ff7, #f107a3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 1.1rem;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1rem 2rem;
+            text-align: center;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        .stat-card .label {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .comparison-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .comparison-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h3 {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .card-header .time {
+            color: #00d4ff;
+            font-size: 0.85rem;
+        }
+
+        .comparison-container {
+            position: relative;
+            aspect-ratio: 1;
+            overflow: hidden;
+            cursor: ew-resize;
+        }
+
+        .comparison-container img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #222;
+        }
+
+        .comparison-container .original {
+            z-index: 1;
+            background: #333;
+        }
+
+        .comparison-container .result {
+            z-index: 2;
+            clip-path: inset(0 50% 0 0);
+        }
+
+        .comparison-container .slider-handle {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: #00d4ff;
+            z-index: 10;
+            cursor: ew-resize;
+            transform: translateX(-50%);
+        }
+
+        .comparison-container .slider-handle::before {
+            content: '◀ ▶';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #00d4ff;
+            color: #000;
+            padding: 0.5rem;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            white-space: nowrap;
+        }
+
+        .labels {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            font-size: 0.85rem;
+        }
+
+        .labels span:first-child {
+            color: #ff6b6b;
+        }
+
+        .labels span:last-child {
+            color: #51cf66;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: #888;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #00d4ff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .success-badge {
+            background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+            color: #fff;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🎯 BiRefNet Test Gallery</h1>
+        <p>SOTA Background Removal • 100% Local • Zero Cost</p>
+    </div>
+
+    <div class="stats" id="stats">
+        <div class="stat-card">
+            <div class="value" id="total-count">-</div>
+            <div class="label">Images Processed</div>
+        </div>
+        <div class="stat-card">
+            <div class="value" id="avg-time">-</div>
+            <div class="label">Avg. Time (s)</div>
+        </div>
+        <div class="stat-card">
+            <div class="value">$0</div>
+            <div class="label">Total Cost</div>
+        </div>
+    </div>
+
+    <div class="gallery" id="gallery">
+        <div class="loading">Loading results...</div>
+    </div>
+
+    <script>
+        const GALLERY_DIR = './birefnet_gallery/';
+
+        async function loadResults() {
+            try {
+                const response = await fetch(GALLERY_DIR + 'results.json');
+                const results = await response.json();
+                renderGallery(results);
+            } catch (error) {
+                document.getElementById('gallery').innerHTML = `
+                    <div class="loading" style="color: #ff6b6b;">
+                        Error loading results. Make sure to run the batch processor first.
+                        <br><br>
+                        <code>python test_birefnet_batch.py</code>
+                    </div>
+                `;
+            }
+        }
+
+        function renderGallery(results) {
+            const gallery = document.getElementById('gallery');
+            const successResults = results.filter(r => r.status === 'success');
+
+            // Update stats
+            document.getElementById('total-count').textContent = successResults.length;
+            const avgTime = successResults.reduce((a, b) => a + b.process_time, 0) / successResults.length;
+            document.getElementById('avg-time').textContent = avgTime.toFixed(2);
+
+            gallery.innerHTML = successResults.map(result => `
+                <div class="comparison-card">
+                    <div class="card-header">
+                        <h3>${result.filename}</h3>
+                        <span class="time">⚡ ${result.process_time}s</span>
+                    </div>
+                    <div class="comparison-container" data-id="${result.safe_name}">
+                        <img class="original" src="${GALLERY_DIR}${result.original}" alt="Original">
+                        <img class="result" src="${GALLERY_DIR}${result.result}" alt="BiRefNet Result">
+                        <div class="slider-handle"></div>
+                    </div>
+                    <div class="labels">
+                        <span>📷 Original</span>
+                        <span class="success-badge">✨ BiRefNet</span>
+                    </div>
+                </div>
+            `).join('');
+
+            // Initialize sliders
+            initSliders();
+        }
+
+        function initSliders() {
+            document.querySelectorAll('.comparison-container').forEach(container => {
+                const handle = container.querySelector('.slider-handle');
+                const resultImg = container.querySelector('.result');
+                let isDragging = false;
+
+                const updatePosition = (e) => {
+                    const rect = container.getBoundingClientRect();
+                    let x = (e.clientX || e.touches[0].clientX) - rect.left;
+                    x = Math.max(0, Math.min(x, rect.width));
+                    const percent = (x / rect.width) * 100;
+
+                    handle.style.left = percent + '%';
+                    resultImg.style.clipPath = `inset(0 ${100 - percent}% 0 0)`;
+                };
+
+                handle.addEventListener('mousedown', () => isDragging = true);
+                handle.addEventListener('touchstart', () => isDragging = true);
+
+                document.addEventListener('mouseup', () => isDragging = false);
+                document.addEventListener('touchend', () => isDragging = false);
+
+                container.addEventListener('mousemove', (e) => {
+                    if (isDragging) updatePosition(e);
+                });
+                container.addEventListener('touchmove', (e) => {
+                    if (isDragging) updatePosition(e);
+                });
+
+                // Click to jump
+                container.addEventListener('click', updatePosition);
+            });
+        }
+
+        // Load on page load
+        loadResults();
+    </script>
+</body>
+
+</html>

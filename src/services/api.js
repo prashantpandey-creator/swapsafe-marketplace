@@ -95,6 +95,18 @@ export const authAPI = {
             method: 'PUT',
             body: JSON.stringify(profileData)
         });
+    },
+
+    loginAsGuest: async () => {
+        return await apiRequest('/auth/guest', {
+            method: 'POST'
+        });
+    }
+};
+
+export const jobsAPI = {
+    getStatus: async (jobId) => {
+        return await apiRequest(`/jobs/${jobId}`);
     }
 };
 
@@ -201,12 +213,33 @@ export const aiAPI = {
             method: 'POST',
             body: JSON.stringify({ imageUrl })
         });
+    },
+
+    // Quantum Marketing Studio (Direct to Python Engine)
+    generateMarketingImage: async (formData) => {
+        const AI_ENGINE_URL = import.meta.env.VITE_AI_ENGINE_URL || 'http://localhost:8000';
+        const response = await fetch(`${AI_ENGINE_URL}/api/v1/studio/generate-image`, {
+            method: 'POST',
+            body: formData // Send FormData directly (files)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Generation failed');
+        }
+
+        // Return Blob directly for binary images
+        return await response.blob();
     }
 };
 
 // ============ Payment/Order API ============
 
 export const paymentAPI = {
+    getConfig: async () => {
+        return await apiRequest('/payment/config');
+    },
+
     createOrder: async (orderData) => {
         return await apiRequest('/payment/create-order', {
             method: 'POST',

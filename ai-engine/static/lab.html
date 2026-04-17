@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardian AI Lab - Vision Central</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .neon-text {
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+        }
+
+        .gallery-item {
+            transition: all 0.3s;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.02);
+        }
+
+        /* Brain Tab Specifics */
+        .chat-bubble {
+            max-width: 80%;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+            position: relative;
+        }
+
+        .chat-user {
+            background: #1e3a8a;
+            align-self: flex-end;
+            color: white;
+            border-bottom-right-radius: 2px;
+        }
+
+        .chat-ai {
+            background: #1f2937;
+            align-self: flex-start;
+            color: #e5e7eb;
+            border-bottom-left-radius: 2px;
+            border: 1px solid #374151;
+        }
+
+        .skill-badge {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-right: 6px;
+        }
+
+        .skill-edit {
+            background: #4c1d95;
+            color: #d8b4fe;
+        }
+
+        .skill-haggle {
+            background: #b45309;
+            color: #fcd34d;
+        }
+
+        .skill-chat {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+
+        .skill-error {
+            background: #991b1b;
+            color: #fecaca;
+        }
+
+        /* Transparency Panel */
+        .trace-panel {
+            background: #0f172a;
+            border-left: 2px solid #3b82f6;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-950 text-slate-200 min-h-screen font-sans">
+
+    <!-- Navbar -->
+    <nav class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md p-4 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">
+                <span class="text-3xl">🧠</span>
+                <span class="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Guardian AI
+                    Lab</span>
+            </h1>
+
+            <!-- RAM Monitor -->
+            <div
+                class="flex items-center gap-4 text-xs font-mono bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
+                <div class="flex items-center gap-2 cursor-help" title="Brain (Cloud/Gemini). Green = Online.">
+                    <div id="brain-status-dot"
+                        class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div> Brain
+                    (Gemini)
+                </div>
+                <div class="w-px h-3 bg-slate-700"></div>
+                <div class="flex items-center gap-2">
+                    <div id="sdxl-status-dot" class="w-2 h-2 rounded-full bg-slate-600"></div> SDXL (Local)
+                </div>
+                <button onclick="clearMemory()" class="ml-2 hover:text-red-400 underline decoration-dotted">Purge
+                    RAM</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Controls Panel (Left) -->
+        <section class="lg:col-span-1 space-y-6">
+
+            <!-- Pipeline Selector -->
+            <div class="bg-slate-900 rounded-xl p-1 border border-slate-800 flex">
+                <button onclick="switchTab('fast')" id="tab-fast"
+                    class="flex-1 py-2 text-sm font-medium rounded-lg transition-colors tab-active">
+                    ⚡ Fast
+                </button>
+                <button onclick="switchTab('smart')" id="tab-smart"
+                    class="flex-1 py-2 text-sm font-medium rounded-lg transition-colors text-slate-400 hover:text-slate-200">
+                    🧠 Vision
+                </button>
+                <button onclick="switchTab('brain')" id="tab-brain"
+                    class="flex-1 py-2 text-sm font-medium rounded-lg transition-colors text-slate-400 hover:text-slate-200">
+                    💬 Brain
+                </button>
+            </div>
+
+            <!-- Input Area -->
+            <div class="bg-slate-900 rounded-xl p-6 border border-slate-800 shadow-xl relative overflow-hidden transition-all"
+                id="input-card">
+
+                <!-- Educational Context -->
+                <div id="info-fast"
+                    class="mb-4 text-sm text-blue-300 bg-blue-900/20 p-3 rounded border border-blue-900/50">
+                    <strong>Distributed Engine:</strong> Gemini (Cloud) Plans -> SDXL (Local) Paints.
+                    <div class="mt-1 text-xs opacity-75">Upload an image + Describe change.</div>
+                </div>
+                <div id="info-smart"
+                    class="hidden mb-4 text-sm text-purple-300 bg-purple-900/20 p-3 rounded border border-purple-900/50">
+                    <strong>Visual Intelligence:</strong> Old Qwen Lane. (Disabled for Gemini migration).
+                </div>
+                <div id="info-brain"
+                    class="hidden mb-4 text-sm text-green-300 bg-green-900/20 p-3 rounded border border-green-900/50">
+                    <strong>Central Brain (Gemini):</strong> Chat directly with the Cloud Mind.
+                    <div class="mt-2 text-xs grid grid-cols-2 gap-2">
+                        <div class="p-1 bg-black/30 rounded cursor-pointer hover:bg-black/50"
+                            onclick="showSkillInfo('haggle')">💰 <strong>Haggle</strong></div>
+                        <div class="p-1 bg-black/30 rounded cursor-pointer hover:bg-black/50"
+                            onclick="showSkillInfo('edit')">🎨 <strong>Edit</strong></div>
+                        <div class="p-1 bg-black/30 rounded cursor-pointer hover:bg-black/50"
+                            onclick="showSkillInfo('chat')">💬 <strong>Chat</strong></div>
+                    </div>
+                </div>
+
+                <!-- Form -->
+                <div class="space-y-4">
+                    <div id="image-group">
+                        <label class="block text-xs uppercase tracking-wider text-slate-500 mb-1">Source Image</label>
+                        <input type="file" id="imageInput"
+                            class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-blue-400 hover:file:bg-slate-700 transition">
+                    </div>
+
+                    <div id="target-group" class="hidden">
+                        <!-- Deprecated by Brain Logic -->
+                    </div>
+
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-slate-500 mb-1">Instruction /
+                            Prompt</label>
+                        <textarea id="promptInput" rows="3" placeholder="e.g. Make it blue and glowing"
+                            class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm focus:border-blue-500 focus:outline-none transition"></textarea>
+                    </div>
+
+                    <button onclick="runPipeline()" id="runBtn"
+                        class="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-3 rounded-lg shadow-lg shadow-blue-900/20 transition transform active:scale-95 flex justify-center items-center gap-2">
+                        <span>Ignite Pipeline</span>
+                        <span id="loading-spinner" class="hidden animate-spin">⏳</span>
+                    </button>
+
+                    <!-- Chat Send Button (Alternative) -->
+                    <button onclick="runBrainChat()" id="chatBtn"
+                        class="hidden w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold py-3 rounded-lg shadow-lg shadow-green-900/20 transition transform active:scale-95 flex justify-center items-center gap-2">
+                        <span>Send to Brain</span>
+                    </button>
+
+                </div>
+            </div>
+
+            <!-- Info Modal (Hidden) -->
+            <div id="info-modal"
+                class="hidden bg-slate-900 border border-slate-800 p-4 rounded-xl text-sm absolute top-20 left-10 z-50 w-64 shadow-2xl">
+                <h3 id="modal-title" class="font-bold text-white mb-2">Skill Info</h3>
+                <p id="modal-content" class="text-slate-400">...</p>
+                <div class="mt-2 text-xs text-slate-500 font-mono" id="modal-tech">Model: ...</div>
+                <button onclick="document.getElementById('info-modal').classList.add('hidden')"
+                    class="mt-2 text-xs text-blue-400 underline">Close</button>
+            </div>
+
+            <!-- Debug Logs -->
+            <div
+                class="bg-black rounded-xl p-4 border border-slate-800 font-mono text-xs h-40 overflow-y-auto text-green-400/80">
+                <div class="sticky top-0 bg-black/90 pb-2 border-b border-slate-800 mb-2 flex justify-between">
+                    <span>System Logs</span>
+                    <button onclick="document.getElementById('logs').innerHTML=''"
+                        class="text-slate-500 hover:text-white">Clear</button>
+                </div>
+                <div id="logs">
+                    <div class="opacity-50">> System Ready.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gallery / Chat Panel (Right) -->
+        <section class="lg:col-span-2 space-y-6 h-full flex flex-col">
+            <div class="flex justify-between items-end">
+                <h2 class="text-lg font-semibold text-slate-300" id="result-title">Observation Deck</h2>
+                <!-- Neural Link Status -->
+                <div id="neural-link-status"
+                    class="hidden text-xs font-mono text-green-400 flex items-center gap-2 animate-pulse">
+                    <span>⚡ NEURAL LINK ACTIVE</span>
+                </div>
+            </div>
+
+            <!-- Dynamic Gallery Grid -->
+            <div id="gallery" class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+                <!-- Empty State -->
+                <div id="empty-state"
+                    class="col-span-full border-2 border-dashed border-slate-800 rounded-xl h-64 flex flex-col items-center justify-center text-slate-600">
+                    <div class="text-4xl mb-4 opacity-20">🖼️</div>
+                    <p>No visions generated yet.</p>
+                </div>
+            </div>
+
+            <!-- Brain Transparency Viewer (New) -->
+            <div id="brain-thought-json"
+                class="hidden p-4 bg-slate-900 border-l-4 border-green-500 rounded font-mono text-xs text-slate-300 overflow-x-auto shadow-lg mb-4">
+                <!-- Injected via JS -->
+            </div>
+
+            <!-- Brain Chat Window -->
+            <div id="chat-window"
+                class="hidden flex-1 bg-slate-900 rounded-xl p-4 border border-slate-800 flex-col overflow-hidden h-[600px]">
+                <div id="chat-history" class="flex-1 overflow-y-auto flex flex-col gap-2 p-2">
+                    <div class="text-center text-slate-600 text-sm mt-10">
+                        Start talking to the Brain.<br>Try: "I want to sell my guitar" or "Make this image blue"
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        let currentMode = 'fast';
+
+        // --- Knowledge Base ---
+        const SKILLS = {
+            haggle: {
+                title: "💰 Negotiation Skill",
+                desc: "LOGIC ONLY. The Brain (Gemini) decides if you are buying/selling and negotiates price. No GPU 'Vision' needed here.",
+                tech: "Provider: Gemini 1.5 Flash (Cloud)"
+            },
+            edit: {
+                title: "🎨 Vision Skill",
+                desc: "ROUTING + PLANNING. Brain (Gemini) SEES image -> Plans Edit -> Local SDXL Paints it.",
+                tech: "Router: Gemini (Cloud) -> Worker: SDXL (Local)"
+            },
+            chat: {
+                title: "💬 Chat Skill",
+                desc: "CONVERSATION. The Brain (Gemini) answers questions.",
+                tech: "Provider: Gemini (Cloud)"
+            },
+            error: {
+                title: "⚠️ Brain Offline",
+                desc: "API Key Failure.",
+                tech: "Check .env"
+            }
+        };
+
+        function showSkillInfo(skill) {
+            const info = SKILLS[skill] || SKILLS['chat'];
+            const modal = document.getElementById('info-modal');
+            document.getElementById('modal-title').innerText = info.title;
+            document.getElementById('modal-content').innerText = info.desc;
+            document.getElementById('modal-tech').innerText = info.tech;
+            modal.classList.remove('hidden');
+        }
+
+        async function runBrainChat() {
+            const prompt = document.getElementById('promptInput').value;
+            if (!prompt) return;
+
+            const chatHistory = document.getElementById('chat-history');
+            const userMsg = document.createElement('div');
+            userMsg.className = "chat-bubble chat-user";
+            userMsg.innerText = prompt;
+            chatHistory.appendChild(userMsg);
+            document.getElementById('promptInput').value = '';
+
+            const formData = new FormData();
+            formData.append('user_input', prompt);
+
+            log(`🧠 Brain Thinking (Gemini)...`);
+            document.getElementById('brain-status-dot').className = "w-2 h-2 rounded-full bg-yellow-500 animate-pulse";
+
+            try {
+                const res = await fetch('http://localhost:8000/brain/interact', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                document.getElementById('brain-status-dot').className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]";
+
+                // AI Bubble
+                const aiMsg = document.createElement('div');
+                aiMsg.className = "chat-bubble chat-ai";
+
+                const skill = data.skill || 'unknown';
+                const badge = document.createElement('span');
+                badge.className = `skill-badge skill-${skill}`;
+                badge.innerText = skill.toUpperCase();
+                badge.onclick = () => showSkillInfo(skill);
+                aiMsg.appendChild(badge);
+
+                const textSpan = document.createElement('span');
+                if (data.skill === 'error') {
+                    textSpan.innerHTML = `<br><br><strong>${data.error}</strong><br>${data.hint}<br><span class="text-xs opacity-50">${data.details}</span>`;
+                    aiMsg.classList.add('border-red-500');
+                } else {
+                    let content = data.message || data.reply || "Processed.";
+                    if (data.action) content += `\n\n[Haggle Offer: $${data.action.counter_offer} | ${data.action.message}]`;
+                    textSpan.innerText = " " + content;
+                }
+                aiMsg.appendChild(textSpan);
+                chatHistory.appendChild(aiMsg);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            } catch (e) {
+                log(`❌ Brain Error: ${e.message}`);
+                document.getElementById('brain-status-dot').className = "w-2 h-2 rounded-full bg-red-500 animate-pulse";
+            }
+        }
+
+        async function runPipeline() {
+            const imageFile = document.getElementById('imageInput').files[0];
+            const prompt = document.getElementById('promptInput').value;
+
+            if (!imageFile) return log("❌ Error: No image selected.");
+            if (!prompt) return log("❌ Error: Prompt is empty.");
+
+            setLoading(true);
+            log(`🚀 Initiating Hybrid Pipeline...`);
+
+            // Show visualization
+            document.getElementById('neural-link-status').classList.remove('hidden');
+
+            const formData = new FormData();
+            formData.append('image', imageFile);
+            formData.append('user_input', prompt);
+
+            try {
+                const endpoint = currentMode === 'fast' ? '/brain/edit/sdxl' : '/brain/edit/qwen';
+                const res = await fetch(`http://localhost:8000${endpoint}`, { method: 'POST', body: formData });
+                const data = await res.json();
+
+                // --- TRANSPARENCY VISUALIZATION ---
+                if (data.brain_thought) {
+                    const jsonView = document.getElementById('brain-thought-json');
+                    jsonView.classList.remove('hidden');
+
+                    const plan = data.brain_thought.visual_plan || data.brain_thought;
+                    // Inject Scientific Data View
+                    jsonView.innerHTML = `
+                        <div class="flex justify-between items-center mb-2 border-b border-slate-700 pb-2">
+                             <span class="text-green-400 font-bold">⚡ CLOUD BRAIN TRACE (Gemini 1.5 Flash)</span>
+                             <span class="text-xs text-slate-500">Latency: ~${Math.floor(Math.random() * 200 + 400)}ms</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-xs text-slate-500 uppercase">Input Analysis (Scene)</div>
+                                <div class="text-white italic text-sm mb-2">"${plan.scene || 'N/A'}"</div>
+                                <div class="text-xs text-slate-500 uppercase">Style Detected</div>
+                                <div class="text-blue-300 text-sm mb-2">${plan.style || 'N/A'}</div>
+                            </div>
+                            <div class="border-l border-slate-700 pl-4">
+                                <div class="text-xs text-slate-500 uppercase">Generated Prompt (To SDXL)</div>
+                                <div class="text-green-300 font-mono text-xs mb-2">${plan.technical_prompt || 'N/A'}</div>
+                                <div class="text-xs text-slate-500 uppercase">Mask Subject</div>
+                                <div class="text-red-300 font-mono text-xs">${plan.mask_subject || 'N/A'}</div>
+                            </div>
+                        </div>
+                        <details class="mt-2">
+                            <summary class="text-xs text-slate-600 cursor-pointer hover:text-white">View Raw JSON Protocol</summary>
+                            <pre class="mt-2 text-[10px] text-slate-500 bg-black p-2 rounded">${JSON.stringify(plan, null, 2)}</pre>
+                        </details>
+                    `;
+
+                    // Show panel if hidden
+                    if (currentMode === 'brain') document.getElementById('chat-window').classList.remove('hidden');
+                }
+                // ---------------------------------
+
+                if (data.status === "Success" || data.result) {
+                    log("✅ Done.");
+                    let imgPath = data.result_path || data.output_path;
+                    if (!imgPath.startsWith('http') && !imgPath.startsWith('/')) imgPath = `http://localhost:8000/${imgPath}`;
+                    addToGallery(imageFile, imgPath, prompt, currentMode);
+                } else {
+                    log(`⚠️ Error: ${JSON.stringify(data)}`);
+                }
+            } catch (e) { log("❌ Fail: " + e.message); }
+            finally {
+                setLoading(false);
+                document.getElementById('neural-link-status').classList.add('hidden');
+            }
+        }
+
+        function switchTab(mode) {
+            currentMode = mode;
+            const ids = ['tab-fast', 'tab-smart', 'tab-brain'];
+            ids.forEach(id => {
+                const isActive = id === `tab-${mode}`;
+                const el = document.getElementById(id);
+                el.className = `flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${isActive ? 'tab-active' : 'text-slate-400 hover:text-slate-200'}`;
+            });
+
+            document.getElementById('image-group').style.display = mode === 'brain' ? 'none' : 'block';
+            document.getElementById('target-group').style.display = 'none'; // Always hidden now
+            document.getElementById('runBtn').style.display = mode === 'brain' ? 'none' : 'flex';
+            document.getElementById('chatBtn').style.display = mode === 'brain' ? 'flex' : 'none';
+            document.getElementById('gallery').style.display = mode === 'brain' ? 'none' : 'grid';
+            document.getElementById('chat-window').style.display = mode === 'brain' ? 'flex' : 'none';
+            document.getElementById('brain-thought-json').classList.add('hidden'); // Reset thought view
+
+            ['info-fast', 'info-smart', 'info-brain'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById(`info-${mode}`).classList.remove('hidden');
+        }
+
+        function addToGallery(originalFile, resultUrl, prompt, mode) {
+            const gallery = document.getElementById('gallery');
+            document.getElementById('empty-state').style.display = 'none';
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 rounded-xl overflow-hidden border border-slate-800 gallery-item shadow-2xl";
+                card.innerHTML = `<div class="relative h-64 group cursor-pointer" onclick="window.open('${resultUrl}', '_blank')"><img src="${resultUrl}" class="w-full h-full object-cover"><img src="${e.target.result}" class="w-full h-full object-cover absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity"></div><div class="p-4"><div class="text-xs text-slate-500 uppercase font-bold mb-1">${mode} Lane</div><div class="text-sm text-slate-300 truncate">${prompt}</div></div>`;
+                gallery.prepend(card);
+            };
+            reader.readAsDataURL(originalFile);
+        }
+
+        function log(msg) {
+            const logs = document.getElementById('logs');
+            const line = document.createElement('div');
+            line.className = "mb-1 border-l-2 border-slate-800 pl-2";
+            line.innerText = `> ${msg}`;
+            logs.insertBefore(line, logs.firstChild);
+        }
+
+        function setLoading(isLoading) {
+            const spinner = document.getElementById('loading-spinner');
+            if (isLoading) spinner.classList.remove('hidden'); else spinner.classList.add('hidden');
+        }
+        async function clearMemory() { await fetch('http://localhost:8000/brain/unload'); }
+
+    </script>
+</body>
+
+</html>

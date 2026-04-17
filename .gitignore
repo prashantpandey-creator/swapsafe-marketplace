@@ -5,3 +5,4 @@ dist
 .env
 **/.env
 ai-engine/venv/
+ai-lab/

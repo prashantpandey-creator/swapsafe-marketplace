@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import ProductCard from '../components/common/ProductCard'
 import { listingsAPI } from '../services/api'
@@ -53,7 +54,22 @@ const MyListings = () => {
         }
     }
 
-    if (!isAuthenticated) return null
+    // Redirect if not authenticated
+    useEffect(() => {
+        if (!isAuthenticated && !isLoading) {
+            navigate('/login', { state: { from: '/my-listings', message: 'Please log in to view your listings' } })
+        }
+    }, [isAuthenticated, isLoading, navigate])
+
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-screen pt-24 pb-12 flex justify-center items-center">
+                <div className="text-center">
+                    <p className="text-gray-400">Redirecting to login...</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen pt-24 pb-12">

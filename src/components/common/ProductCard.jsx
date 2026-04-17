@@ -48,7 +48,7 @@ function ProductCard({ product }) {
     }
 
     return (
-        <Link to={`/product/${productId}`} className="product-card">
+        <Link to={`/product/${productId}`} className="product-card glass-panel">
             <div className="product-image">
                 <img
                     src={imageUrl}

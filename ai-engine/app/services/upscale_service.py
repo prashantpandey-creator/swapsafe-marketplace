@@ -99,11 +99,14 @@ class UpscaleService:
                     # Use Real-ESRGAN
                     print("   🔬 Upscaling with Real-ESRGAN...")
                     import numpy as np
+                    from starlette.concurrency import run_in_threadpool
+                    
                     img_np = np.array(img)
                     if img_np.dtype != np.uint8:
                          img_np = img_np.astype(np.uint8)
                          
-                    output, _ = self._upsampler.enhance(img_np, outscale=4)
+                    # Run inference in threadpool (CPU/GPU bound)
+                    output, _ = await run_in_threadpool(self._upsampler.enhance, img_np, outscale=4)
                     
                     # Validation
                     if output is not None and output.mean() > 5:
@@ -186,67 +189,53 @@ class UpscaleService:
 
     def enhance(self, image: Image.Image, scale: int = 2) -> Image.Image:
         """
-        Synchronous image enhancement (for Plan B pipeline).
+        Synchronous upscaling method for pipeline use.
 
         Args:
-            image: PIL Image (RGB or RGBA)
-            scale: Upscale factor (2 or 4)
+            image: PIL Image to upscale
+            scale: Upscale factor (2x or 4x)
 
         Returns:
-            Enhanced PIL Image
+            Upscaled PIL Image
         """
+        import numpy as np
+
         self._ensure_initialized()
 
         try:
-            # Convert to RGB if needed
-            if image.mode == "RGBA":
-                image = image.convert("RGB")
-            elif image.mode != "RGB":
+            # Ensure RGB
+            if image.mode != "RGB":
                 image = image.convert("RGB")
 
-            print(f"   🔬 Enhancing image ({image.width}x{image.height})...")
+            if scale == 4 and self._upsampler:
+                # Use Real-ESRGAN 4x
+                img_np = np.array(image)
+                if img_np.dtype != np.uint8:
+                    img_np = img_np.astype(np.uint8)
 
-            # Try Real-ESRGAN
-            if self._upsampler:
                 try:
-                    import numpy as np
-                    img_np = np.array(image, dtype=np.uint8)
-
-                    # Use 4x upsampling
                     output, _ = self._upsampler.enhance(img_np, outscale=4)
-
                     if output is not None and output.mean() > 5:
-                        result = Image.fromarray(output)
+                        return Image.fromarray(output)
+                except:
+                    pass
 
-                        # If scale is 2, downscale from 4x
-                        if scale == 2:
-                            w, h = result.size
-                            result = result.resize((w // 2, h // 2), Image.Resampling.LANCZOS)
-
-                        print(f"   ✅ Enhanced to {result.width}x{result.height}")
-                        return result
-                    else:
-                        print("   ⚠️ Real-ESRGAN produced invalid output, using fallback")
-
-                except Exception as e:
-                    print(f"   ⚠️ Real-ESRGAN failed: {e}, using fallback")
-
-            # Fallback: Pillow upscale + enhance
-            new_width = image.width * scale
-            new_height = image.height * scale
-            result = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            result = result.filter(ImageFilter.UnsharpMask(radius=1.5, percent=100, threshold=2))
-
-            # Apply color enhancement
-            result = self._enhance_image(result)
-
-            print(f"   ✅ Enhanced to {result.width}x{result.height} (Pillow fallback)")
-            return result
+            # Fallback: Pillow upscale
+            new_size = (image.width * scale, image.height * scale)
+            upscaled = image.resize(new_size, Image.Resampling.LANCZOS)
+            upscaled = upscaled.filter(ImageFilter.UnsharpMask(radius=1.5, percent=100, threshold=2))
+            return upscaled
 
         except Exception as e:
-            print(f"   ❌ Enhancement failed: {e}")
-            # Return original if all else fails
+            print(f"⚠️ Upscale error: {e}")
             return image
+
+    def cleanup(self):
+        """Cleanup and free model memory."""
+        import gc
+        self._upsampler = None
+        self._initialized = False
+        gc.collect()
 
 
 # Singleton instance

@@ -30,8 +30,41 @@ class Replicate3DService:
         self.max_retries = 3
         self.retry_delay = 2  # Start with 2 seconds
 
-        if not self.api_token:
+        if self.api_token:
+            print(f"🔑 Replicate API token found ({len(self.api_token)} chars)")
+        else:
             print("⚠️  REPLICATE_API_TOKEN not set. 3D reconstruction will be skipped.")
+
+    async def validate_token(self) -> bool:
+        """
+        Validate Replicate API token at startup.
+
+        Returns:
+            True if token is valid, False otherwise
+        """
+        if not self.api_token:
+            return False
+
+        try:
+            url = "https://api.replicate.com/v1/predictions"
+            headers = {"Authorization": f"Token {self.api_token}"}
+
+            timeout = aiohttp.ClientTimeout(total=10)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                # Make a simple API call to verify token
+                async with session.get(url, headers=headers) as resp:
+                    if resp.status == 401:
+                        print("❌ Replicate API token is INVALID or EXPIRED")
+                        return False
+                    elif resp.status in (200, 403):  # 403 = valid token, just no permissions for this endpoint
+                        print("✅ Replicate API token is VALID")
+                        return True
+                    else:
+                        print(f"⚠️  Replicate API returned status {resp.status}")
+                        return False
+        except Exception as e:
+            print(f"⚠️  Could not validate token: {e}")
+            return False
 
     async def reconstruct_3d(
         self,

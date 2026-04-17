@@ -1,6 +1,7 @@
 import express from 'express';
 import Listing from '../models/Listing.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
+import upload from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -193,6 +194,43 @@ router.put('/:id', protect, async (req, res) => {
     } catch (error) {
         console.error('Update listing error:', error);
         res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// @route   POST /api/listings
+// @desc    Create a new listing (Async via Job Queue)
+// @access  Private
+router.post('/', protect, upload.array('images', 10), async (req, res) => {
+    try {
+        // Import dynamically to avoid circular dependencies if any
+        const { submitListingCreationJob } = await import('../services/jobQueue.js');
+
+        // Process images - map to buffer/base64 or just pass metadata if using cloud storage direct upload
+        // For now assuming we pass the file buffers or objects to the worker
+        // In a real production env with massive scale, we'd upload to S3 presigned URLs on client
+        // But for this hybrid approach, we'll pass the data to the worker
+
+        const listingData = {
+            ...req.body,
+            images: req.files && req.files.length > 0
+                ? req.files.map(f => `data:${f.mimetype};base64,${f.buffer.toString('base64')}`)
+                : []
+        };
+
+        // Submit to queue
+        const jobInfo = await submitListingCreationJob(req.user._id, listingData);
+
+        res.status(202).json({
+            success: true,
+            message: 'Listing creation started',
+            jobId: jobInfo.jobId,
+            status: jobInfo.status,
+            estimatedWaitMs: jobInfo.estimatedWaitMs
+        });
+
+    } catch (error) {
+        console.error('Create listing error:', error);
+        res.status(500).json({ error: 'Failed to create listing' });
     }
 });
 

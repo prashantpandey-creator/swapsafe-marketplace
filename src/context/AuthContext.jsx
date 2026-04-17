@@ -115,22 +115,21 @@ export function AuthProvider({ children }) {
         dispatch({ type: 'LOGOUT' })
     }
 
-    // Guest login - gives full access without backend authentication
-    const loginAsGuest = () => {
-        const guestUser = {
-            _id: 'guest_' + Date.now(),
-            name: 'Guest User',
-            email: 'guest@buyerslegion.com',
-            isGuest: true,
-            createdAt: new Date().toISOString(),
-            // Give guest all permissions for demo purposes
-            canSell: true,
-            canBuy: true,
-            avatar: null
+    // Guest login - creates temporary backend account with JWT
+    const loginAsGuest = async () => {
+        dispatch({ type: 'AUTH_START' })
+
+        try {
+            const data = await authAPI.loginAsGuest()
+            localStorage.setItem('swapsafe_token', data.token)
+            localStorage.setItem('swapsafe_user', JSON.stringify(data.user))
+            dispatch({ type: 'AUTH_SUCCESS', payload: data.user })
+            return { success: true }
+        } catch (error) {
+            const errorMessage = error.message || 'Failed to create guest account'
+            dispatch({ type: 'AUTH_ERROR', payload: errorMessage })
+            return { success: false, error: errorMessage }
         }
-        localStorage.setItem('swapsafe_user', JSON.stringify(guestUser))
-        dispatch({ type: 'AUTH_SUCCESS', payload: guestUser })
-        return { success: true }
     }
 
     const updateProfile = async (updates) => {

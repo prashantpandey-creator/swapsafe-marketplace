@@ -1,0 +1,8 @@
+Error: 'NoneType' object is not callable
+
+Traceback (most recent call last):
+  File "/Users/badenath/Documents/travel website/marketplace/ai-engine/app/services/ai_pipeline.py", line 117, in generate_marketing_image
+    result_image = vision_service.relight_product(
+  File "/Users/badenath/Documents/travel website/marketplace/ai-engine/app/services/vision_service.py", line 186, in relight_product
+    control_image_small = self.depth_processor(depth_input)
+TypeError: 'NoneType' object is not callable

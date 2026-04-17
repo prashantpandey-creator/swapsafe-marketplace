@@ -56,6 +56,22 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 50000 // Default high balance for testing as requested
     },
+    // Guest System
+    isGuest: {
+        type: Boolean,
+        default: false
+    },
+    guestExpiresAt: {
+        type: Date
+    },
+    accountStatus: {
+        type: String,
+        enum: ['active', 'temporary', 'suspended'],
+        default: 'active'
+    },
+    promotedAt: {
+        type: Date
+    },
     // Legion Shield Trust System
     trustScore: {
         type: Number,
