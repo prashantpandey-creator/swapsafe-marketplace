@@ -53,6 +53,26 @@ async def startup_event():
     device = DeviceConfig.get_device()
     mem = DeviceConfig.get_memory_info()
     print(f"🧠 Hardware Status: {mem['available_gb']}GB RAM Available | Tensor Core: {device}")
+    
+    # Start keep-alive self-pinger to prevent Render free tier cold starts
+    import asyncio
+    import aiohttp
+    
+    async def self_ping():
+        await asyncio.sleep(30)  # Wait for full startup
+        self_url = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8001")
+        interval = 14 * 60  # 14 minutes
+        print(f"❤️  AI Engine keep-alive started → pinging {self_url}/health every 14 min")
+        while True:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(f"{self_url}/health", timeout=aiohttp.ClientTimeout(total=10)) as r:
+                        print(f"❤️  [KeepAlive] AI Engine self-ping: {r.status}")
+            except Exception as e:
+                print(f"⚠️  [KeepAlive] Self-ping failed: {e}")
+            await asyncio.sleep(interval)
+    
+    asyncio.create_task(self_ping())
 
 @app.get("/")
 def read_root():
@@ -65,3 +85,4 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "timestamp": time.time()}
+
