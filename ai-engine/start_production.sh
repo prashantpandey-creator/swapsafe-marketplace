@@ -40,13 +40,13 @@ pkill -f "cloudflared tunnel" 2>/dev/null || true
 sleep 2
 
 # Start AI Engine
-echo -e "${GREEN}🧠 Starting AI Engine on port 8000...${NC}"
-uvicorn main:app --host 0.0.0.0 --port 8000 &
+echo -e "${GREEN}🧠 Starting AI Engine on port 8001...${NC}"
+uvicorn main:app --host 0.0.0.0 --port 8001 &
 AI_PID=$!
 sleep 3
 
 # Check AI Engine
-if ! curl -s http://localhost:8000/health > /dev/null; then
+if ! curl -s http://localhost:8001/health > /dev/null; then
     echo -e "${RED}❌ AI Engine failed to start${NC}"
     exit 1
 fi
@@ -54,7 +54,7 @@ echo -e "${GREEN}✅ AI Engine running${NC}"
 
 # Start Cloudflare Tunnel
 echo -e "${GREEN}🌐 Starting Cloudflare Tunnel...${NC}"
-cloudflared tunnel --url http://localhost:8000 2>&1 | tee tunnel.log &
+cloudflared tunnel --url http://localhost:8001 2>&1 | tee tunnel.log &
 TUNNEL_PID=$!
 
 # Wait for tunnel URL

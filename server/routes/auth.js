@@ -111,6 +111,50 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// @route   POST /api/auth/guest
+// @desc    Create temporary guest account with JWT
+// @access  Public
+router.post('/guest', async (req, res) => {
+    try {
+        const crypto = await import('crypto');
+
+        // Create temporary guest user with 7-day expiration
+        const guestUser = await User.create({
+            name: `Guest${Date.now()}`,
+            email: `guest_${crypto.randomUUID()}@temp.buyerslegion.com`,
+            password: crypto.randomBytes(32).toString('hex'), // random, unrecoverable
+            isGuest: true,
+            guestExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+            accountStatus: 'temporary'
+        });
+
+        // Generate token with 7-day expiry
+        const token = jwt.sign(
+            { id: guestUser._id, isGuest: true },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        res.json({
+            success: true,
+            user: {
+                id: guestUser._id,
+                name: guestUser.name,
+                email: guestUser.email,
+                avatar: guestUser.getAvatar(),
+                isGuest: true,
+                guestExpiresAt: guestUser.guestExpiresAt,
+                accountStatus: guestUser.accountStatus,
+                createdAt: guestUser.createdAt
+            },
+            token
+        });
+    } catch (error) {
+        console.error('Guest login error:', error);
+        res.status(500).json({ error: 'Server error creating guest account' });
+    }
+});
+
 // @route   GET /api/auth/me
 // @desc    Get current user profile
 // @access  Private

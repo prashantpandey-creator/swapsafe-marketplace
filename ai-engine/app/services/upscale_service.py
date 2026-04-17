@@ -91,14 +91,34 @@ class UpscaleService:
             print(f"   📏 Input: {original_size[0]}x{original_size[1]}")
             
             # Step 1: Upscale
+            upscaled = None
+            use_fallback = True
+            
             if self._upsampler:
-                # Use Real-ESRGAN
-                print("   🔬 Upscaling with Real-ESRGAN...")
-                import numpy as np
-                img_np = np.array(img)
-                output, _ = self._upsampler.enhance(img_np, outscale=4)
-                upscaled = Image.fromarray(output)
-            else:
+                try:
+                    # Use Real-ESRGAN
+                    print("   🔬 Upscaling with Real-ESRGAN...")
+                    import numpy as np
+                    from starlette.concurrency import run_in_threadpool
+                    
+                    img_np = np.array(img)
+                    if img_np.dtype != np.uint8:
+                         img_np = img_np.astype(np.uint8)
+                         
+                    # Run inference in threadpool (CPU/GPU bound)
+                    output, _ = await run_in_threadpool(self._upsampler.enhance, img_np, outscale=4)
+                    
+                    # Validation
+                    if output is not None and output.mean() > 5:
+                        upscaled = Image.fromarray(output)
+                        use_fallback = False
+                    else:
+                        print("   ⚠️ Real-ESRGAN produced black/invalid output. Switching to fallback.")
+                        
+                except Exception as e:
+                    print(f"   ⚠️ Real-ESRGAN failed: {e}. Switching to fallback.")
+            
+            if use_fallback:
                 # Fallback: Pillow bicubic upscale + sharpening
                 print("   🔬 Upscaling with Pillow (fallback)...")
                 upscaled = img.resize(
@@ -156,16 +176,66 @@ class UpscaleService:
         # Slight contrast boost
         contrast = ImageEnhance.Contrast(img)
         img = contrast.enhance(1.05)
-        
+
         # Slight saturation boost
         saturation = ImageEnhance.Color(img)
         img = saturation.enhance(1.08)
-        
+
         # Slight sharpness boost
         sharpness = ImageEnhance.Sharpness(img)
         img = sharpness.enhance(1.1)
-        
+
         return img
+
+    def enhance(self, image: Image.Image, scale: int = 2) -> Image.Image:
+        """
+        Synchronous upscaling method for pipeline use.
+
+        Args:
+            image: PIL Image to upscale
+            scale: Upscale factor (2x or 4x)
+
+        Returns:
+            Upscaled PIL Image
+        """
+        import numpy as np
+
+        self._ensure_initialized()
+
+        try:
+            # Ensure RGB
+            if image.mode != "RGB":
+                image = image.convert("RGB")
+
+            if scale == 4 and self._upsampler:
+                # Use Real-ESRGAN 4x
+                img_np = np.array(image)
+                if img_np.dtype != np.uint8:
+                    img_np = img_np.astype(np.uint8)
+
+                try:
+                    output, _ = self._upsampler.enhance(img_np, outscale=4)
+                    if output is not None and output.mean() > 5:
+                        return Image.fromarray(output)
+                except:
+                    pass
+
+            # Fallback: Pillow upscale
+            new_size = (image.width * scale, image.height * scale)
+            upscaled = image.resize(new_size, Image.Resampling.LANCZOS)
+            upscaled = upscaled.filter(ImageFilter.UnsharpMask(radius=1.5, percent=100, threshold=2))
+            return upscaled
+
+        except Exception as e:
+            print(f"⚠️ Upscale error: {e}")
+            return image
+
+    def cleanup(self):
+        """Cleanup and free model memory."""
+        import gc
+        self._upsampler = None
+        self._initialized = False
+        gc.collect()
 
 
 # Singleton instance

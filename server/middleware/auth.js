@@ -24,6 +24,15 @@ export const protect = async (req, res, next) => {
             return res.status(401).json({ error: 'User not found' });
         }
 
+        // Check guest expiration
+        if (req.user.isGuest && req.user.guestExpiresAt && req.user.guestExpiresAt < new Date()) {
+            return res.status(401).json({
+                error: 'Guest session expired',
+                code: 'GUEST_EXPIRED',
+                message: 'Create an account to continue using the marketplace'
+            });
+        }
+
         next();
     } catch (error) {
         console.error('Auth middleware error:', error);

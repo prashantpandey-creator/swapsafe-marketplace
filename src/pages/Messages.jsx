@@ -56,7 +56,17 @@ function Messages() {
         }
     }, [location.state])
 
-    const selectedConversation = conversations.find(c => c.id === (conversationId || 'new')) || conversations[0]
+    // Track selected conversation
+    const [selectedId, setSelectedId] = useState(conversationId || conversations[0]?.id)
+
+    // Update selectedId when conversationId from URL changes
+    useEffect(() => {
+        if (conversationId) {
+            setSelectedId(conversationId)
+        }
+    }, [conversationId])
+
+    const selectedConversation = conversations.find(c => c.id === selectedId) || conversations[0]
 
     const [messages, setMessages] = useState([
         { id: 1, sender: 'other', text: 'Hi, is this item still available?', time: '10:30 AM' },
@@ -117,12 +127,7 @@ function Messages() {
                             <div
                                 key={conv.id}
                                 className={`conversation-item ${conv === selectedConversation ? 'active' : ''} ${conv.unread ? 'unread' : ''}`}
-                                onClick={() => {
-                                    // In real app, navigate to /messages/:id
-                                    // Here we just force re-render/select for demo
-                                    // Ideally we should use state for selectedId instead of purely URL if we want smooth switching without route change
-                                    // But for now, let's keep it simple.
-                                }}
+                                onClick={() => setSelectedId(conv.id)}
                             >
                                 <img src={conv.user.avatar} alt={conv.user.name} className="avatar" />
                                 <div className="conv-info">

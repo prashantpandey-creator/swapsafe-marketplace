@@ -2,6 +2,7 @@
 import express from 'express';
 import { protect } from '../middleware/auth.js';
 import Listing from '../models/Listing.js';
+import Job from '../models/Job.js';
 
 const router = express.Router();
 
@@ -152,5 +153,43 @@ router.get('/queue-stats', protect, async (req, res) => {
         res.status(500).json({ error: 'Failed to get queue stats' });
     }
 });
+
+/**
+ * @route   GET /api/jobs/:id
+ * @desc    Get job status by ID (for listing creation, etc.)
+ * @access  Private
+ */
+router.get('/:id', protect, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Find job in MongoDB
+        const job = await Job.findOne({ jobId: id });
+
+        if (!job) {
+            return res.status(404).json({ error: 'Job not found' });
+        }
+
+        // Security: Only allow user to view their own jobs
+        if (job.userId.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+
+        res.json({
+            jobId: job.jobId,
+            status: job.status,
+            progress: job.progress,
+            result: job.result,
+            error: job.error,
+            queuePosition: job.queuePosition,
+            estimatedWaitMs: job.estimatedWaitMs,
+            createdAt: job.createdAt
+        });
+    } catch (error) {
+        console.error('Get job error:', error);
+        res.status(500).json({ error: 'Failed to get job status' });
+    }
+});
+
 
 export default router;

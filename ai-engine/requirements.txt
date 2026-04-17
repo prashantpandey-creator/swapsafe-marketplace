@@ -4,15 +4,16 @@ python-multipart==0.0.6
 torch; sys_platform != 'darwin'
 torch --index-url https://download.pytorch.org/whl/nightly/cpu; sys_platform == 'darwin'
 numpy
-numpy
 rembg
 pillow
 hf_transfer
 huggingface_hub
 python-dotenv
 aiofiles
+aiohttp
 requests
 psutil
+groq
 
 # SOTA Vision (IC-Light & BiRefNet)
 diffusers>=0.28.0
@@ -23,3 +24,17 @@ einops
 scikit-image
 filelock
 kornia
+opencv-python  # For depth map processing
+
+# Agent Search Tools
+duckduckgo-search>=5.0.0
+ddgs>=1.0.0
+googlesearch-python>=1.2.0
+
+# Plan A: Fully Local Pipeline
+basicsr>=1.4.2  # For Real-ESRGAN
+realesrgan>=0.3.0  # Upscaling engine
+scipy  # For image processing utilities
+
+# Plan A: Enhanced — LaMa Inpainting for hands/clutter removal
+simple-lama-inpainting>=0.1.0

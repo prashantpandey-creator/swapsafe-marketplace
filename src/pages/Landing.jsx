@@ -4,8 +4,6 @@ import { Search, Shield, Users, Zap, ArrowRight, Award, Box, Sparkles } from 'lu
 import { Link, useNavigate } from 'react-router-dom';
 import { listingsAPI } from '../services/api';
 import ProductCard from '../components/common/ProductCard';
-import SpiralBackground from '../components/common/SpiralBackground';
-
 const Landing = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
@@ -37,11 +35,6 @@ const Landing = () => {
         <div className="min-h-screen overflow-x-hidden">
             {/* Hero Section */}
             <section className="relative min-h-[90vh] flex items-center justify-center pt-20">
-                {/* Global Background */}
-                <div className="absolute inset-0 z-0">
-                    <SpiralBackground />
-                </div>
-
                 <div className="container mx-auto px-4 relative z-10 text-center">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}

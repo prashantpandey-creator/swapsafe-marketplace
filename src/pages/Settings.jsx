@@ -14,7 +14,7 @@ function Settings() {
     const [formData, setFormData] = useState({
         name: user?.name || '',
         email: user?.email || '',
-        bio: 'Explorer of the unknown. Keeper of artifacts.',
+        bio: user?.bio || 'Explorer of the unknown. Keeper of artifacts.',
         notifications: {
             email: true,
             push: false,
@@ -22,13 +22,82 @@ function Settings() {
         }
     })
 
+    const [passwordData, setPasswordData] = useState({
+        current: '',
+        new: '',
+        confirm: ''
+    })
+
+    const [passwordError, setPasswordError] = useState('')
+
     const handleSave = async () => {
         setIsLoading(true)
-        // Simulate API Call
-        await new Promise(r => setTimeout(r, 1000))
-        setIsLoading(false)
-        setSuccessMsg('Changes saved successfully!')
-        setTimeout(() => setSuccessMsg(''), 3000)
+        try {
+            // Call real API
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('swapsafe_token')}`
+                },
+                body: JSON.stringify({
+                    name: formData.name,
+                    bio: formData.bio
+                })
+            })
+
+            if (!response.ok) throw new Error('Failed to save')
+
+            setSuccessMsg('Changes saved successfully!')
+            setTimeout(() => setSuccessMsg(''), 3000)
+        } catch (error) {
+            setSuccessMsg('Error saving changes. Please try again.')
+            setTimeout(() => setSuccessMsg(''), 3000)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handlePasswordChange = async () => {
+        setPasswordError('')
+
+        if (passwordData.new !== passwordData.confirm) {
+            setPasswordError('New passwords do not match')
+            return
+        }
+
+        if (passwordData.new.length < 6) {
+            setPasswordError('Password must be at least 6 characters')
+            return
+        }
+
+        setIsLoading(true)
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/password`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('swapsafe_token')}`
+                },
+                body: JSON.stringify({
+                    currentPassword: passwordData.current,
+                    newPassword: passwordData.new
+                })
+            })
+
+            if (!response.ok) {
+                const data = await response.json()
+                throw new Error(data.error || 'Failed to change password')
+            }
+
+            setPasswordData({ current: '', new: '', confirm: '' })
+            setSuccessMsg('Password changed successfully!')
+            setTimeout(() => setSuccessMsg(''), 3000)
+        } catch (error) {
+            setPasswordError(error.message)
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     const tabs = [
@@ -52,8 +121,8 @@ function Settings() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${activeTab === tab.id
-                                        ? 'bg-legion-gold text-legion-bg font-bold shadow-lg shadow-legion-gold/20'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    ? 'bg-legion-gold text-legion-bg font-bold shadow-lg shadow-legion-gold/20'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
                                     }`}
                             >
                                 <tab.icon size={18} />
@@ -133,8 +202,9 @@ function Settings() {
                                                 value={formData.bio}
                                                 onChange={e => setFormData({ ...formData, bio: e.target.value })}
                                                 className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:border-legion-gold outline-none transition-colors text-white resize-none"
+                                                maxLength={150}
                                             />
-                                            <p className="text-xs text-slate-500 mt-2 text-right">0/150 characters</p>
+                                            <p className="text-xs text-slate-500 mt-2 text-right">{formData.bio.length}/150 characters</p>
                                         </div>
                                     </div>
                                 </div>
@@ -153,22 +223,73 @@ function Settings() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 gap-6">
-                                        <div className="form-group">
-                                            <label className="block text-sm text-slate-400 mb-2">Current Password</label>
-                                            <div className="relative">
-                                                <Lock className="absolute left-3 top-3.5 text-slate-500" size={18} />
-                                                <input type="password" placeholder="••••••••" className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-3 outline-none focus:border-legion-gold text-white" />
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h2 className="text-xl font-bold mb-4">Change Password</h2>
+                                            {passwordError && (
+                                                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4 text-red-400 text-sm">
+                                                    {passwordError}
+                                                </div>
+                                            )}
+                                            <div className="space-y-4">
+                                                <div className="form-group">
+                                                    <label className="block text-sm text-slate-400 mb-2">Current Password</label>
+                                                    <input
+                                                        type="password"
+                                                        value={passwordData.current}
+                                                        onChange={e => setPasswordData({ ...passwordData, current: e.target.value })}
+                                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:border-legion-gold outline-none transition-colors text-white"
+                                                    />
+                                                </div>
+                                                <div className="form-group">
+                                                    <label className="block text-sm text-slate-400 mb-2">New Password</label>
+                                                    <input
+                                                        type="password"
+                                                        value={passwordData.new}
+                                                        onChange={e => setPasswordData({ ...passwordData, new: e.target.value })}
+                                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:border-legion-gold outline-none transition-colors text-white"
+                                                    />
+                                                </div>
+                                                <div className="form-group">
+                                                    <label className="block text-sm text-slate-400 mb-2">Confirm New Password</label>
+                                                    <input
+                                                        type="password"
+                                                        value={passwordData.confirm}
+                                                        onChange={e => setPasswordData({ ...passwordData, confirm: e.target.value })}
+                                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:border-legion-gold outline-none transition-colors text-white"
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={handlePasswordChange}
+                                                    disabled={isLoading || !passwordData.current || !passwordData.new || !passwordData.confirm}
+                                                    className="btn btn-primary"
+                                                >
+                                                    {isLoading ? 'Changing...' : 'Change Password'}
+                                                </button>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-6">
-                                            <div className="form-group">
-                                                <label className="block text-sm text-slate-400 mb-2">New Password</label>
-                                                <input type="password" placeholder="Min 8 chars" className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 outline-none focus:border-legion-gold text-white" />
-                                            </div>
-                                            <div className="form-group">
-                                                <label className="block text-sm text-slate-400 mb-2">Confirm New Password</label>
-                                                <input type="password" placeholder="Repeat password" className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 outline-none focus:border-legion-gold text-white" />
+
+                                        {/* Delete Account Section */}
+                                        <div className="mt-8 pt-8 border-t border-red-500/20">
+                                            <h2 className="text-xl font-bold mb-4 text-red-400">Danger Zone</h2>
+                                            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                                <h4 className="font-bold text-white mb-2">Delete Account</h4>
+                                                <p className="text-sm text-gray-300 mb-4">
+                                                    Permanently delete your account and all associated data. This action cannot be undone.
+                                                </p>
+                                                <button
+                                                    onClick={() => {
+                                                        if (window.confirm('Are you absolutely sure? This cannot be undone!')) {
+                                                            if (window.confirm('Last chance! Delete your account permanently?')) {
+                                                                // TODO: Implement delete account API call
+                                                                alert('Account deletion will be implemented in production.')
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="btn bg-red-600 hover:bg-red-700 text-white border-red-600"
+                                                >
+                                                    Delete My Account
+                                                </button>
                                             </div>
                                         </div>
                                     </div>

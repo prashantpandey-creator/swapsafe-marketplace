@@ -10,12 +10,14 @@ dotenv.config();
 import authRoutes from './routes/auth.js';
 import listingRoutes from './routes/listings.js';
 import aiRoutes from './routes/ai.js';
+import adminRoutes from './routes/admin.js';
 import shieldRoutes from './routes/shield.js';
 import paymentRoutes from './routes/payment.js';
 import uploadRoutes from './routes/upload.js';
 import jobRoutes from './routes/jobs.js';
 import priceRoutes from './routes/price.js';
 import productRoutes from './routes/products.js';
+import passwordRoutes from './routes/password.js';
 
 const app = express();
 
@@ -67,12 +69,14 @@ connectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/admin', adminRoutes); // Mount Admin Routes
 app.use('/api/shield', shieldRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/price', priceRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/auth', passwordRoutes); // Password change uses /api/auth/password
 
 // Health check
 app.get('/api/health', (req, res) => {

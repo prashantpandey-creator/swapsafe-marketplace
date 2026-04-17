@@ -36,10 +36,28 @@ class ShowcaseService:
     Creates professional e-commerce showcase photos with clean backgrounds.
     """
     
+    
     def __init__(self):
-        self.remove_bg, self.rembg_session = get_rembg()
-        self.upscale_service = get_upscale_service()
-        print("📸 Showcase Service initialized")
+        self._rembg_session = None
+        self._remove_bg_func = None
+        self.upscale_service = get_upscale_service() # This one seems fine (just import check)
+        print("📸 Showcase Service initialized (Lazy Loading)")
+
+    @property
+    def rembg_session(self):
+        if self._rembg_session is None:
+            print("⏳ Lazy Loading rembg model...")
+            remove, session = get_rembg()
+            self._remove_bg_func = remove
+            self._rembg_session = session
+            print("✅ rembg model loaded")
+        return self._rembg_session
+
+    @property
+    def remove_bg(self):
+        if self._remove_bg_func is None:
+            _ = self.rembg_session # Trigger load
+        return self._remove_bg_func
     
     async def create_showcase(
         self, 
@@ -63,41 +81,54 @@ class ShowcaseService:
         start = time.time()
         
         try:
-            # Step 1: Remove background
-            print("   ✂️ Step A: Removing background...")
+            # Step 1: Remove background (Updated to use BiRefNet)
+            print("   ✂️ Step A: Removing background (BiRefNet)...")
             step_start = time.time()
-            if self.remove_bg and self.rembg_session:
-                print(f"      Using rembg (isnet-general-use) for: '{product_hint or 'Product'}'...")
-                fg_bytes = self.remove_bg(image_bytes, session=self.rembg_session)
-                fg_image = Image.open(io.BytesIO(fg_bytes)).convert("RGBA")
-                print(f"      ✅ Background removed in {time.time()-step_start:.2f}s")
+            
+            from app.services.birefnet_service import birefnet_service
+            from starlette.concurrency import run_in_threadpool
+            
+            # Use BiRefNet in a threadpool to avoid blocking event loop
+            input_pil = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+            fg_image_pil = await run_in_threadpool(birefnet_service.remove_background, input_pil)
+            fg_image = fg_image_pil.convert("RGBA")
+            
+            print(f"      ✅ Background removed in {time.time()-step_start:.2f}s")
                 
-                # Step 1.5: Upscale for better quality (NEW)
-                if apply_upscale and self.upscale_service:
-                    print("   🔬 Step A.5: Upscaling for quality...")
-                    upscale_start = time.time()
-                    # Save fg to bytes, upscale, reload
-                    fg_buffer = io.BytesIO()
-                    fg_rgb = fg_image.convert("RGB")
-                    fg_rgb.save(fg_buffer, format="PNG")
-                    fg_buffer.seek(0)
-                    upscale_result = await self.upscale_service.upscale_image(
-                        fg_buffer.getvalue(),
-                        target_size=output_size,
-                        enhance_colors=True
-                    )
-                    # Reload the upscaled image and restore alpha
-                    upscaled_data = upscale_result.get("image_data", "")
-                    if upscaled_data.startswith("data:"):
-                        upscaled_data = upscaled_data.split(",", 1)[1]
-                    upscaled_rgb = Image.open(io.BytesIO(base64.b64decode(upscaled_data))).convert("RGB")
-                    # TODO: Preserve alpha from original - for now just use RGB
-                    fg_image = upscaled_rgb.convert("RGBA")
-                    print(f"      ✅ Upscaled in {time.time()-upscale_start:.2f}s")
-            else:
-                # Fallback: just use original image
-                print("      ⚠️ rembg not available, using original")
-                fg_image = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
+            # Step 1.5: Upscale for better quality (NEW)
+            if apply_upscale and self.upscale_service and background != "transparent":
+                print("   🔬 Step A.5: Upscaling for quality...")
+                upscale_start = time.time()
+                # Preserve alpha before upscaling (Real-ESRGAN works on RGB)
+                alpha_mask = fg_image.split()[-1]
+                # Save fg to bytes, upscale, reload
+                fg_buffer = io.BytesIO()
+                # Composite onto a light matte to avoid dark edge halos
+                matte_color = (255, 255, 255) if background != "gradient" else (248, 248, 248)
+                fg_rgb = Image.new("RGB", fg_image.size, matte_color)
+                fg_rgb.paste(fg_image, mask=alpha_mask)
+                fg_rgb.save(fg_buffer, format="PNG")
+                fg_buffer.seek(0)
+                
+                # Upscale service is likely async or should be checked too
+                # Assuming it is async based on 'await' usage in original code
+                upscale_result = await self.upscale_service.upscale_image(
+                    fg_buffer.getvalue(),
+                    target_size=output_size,
+                    enhance_colors=True
+                )
+                
+                # Reload the upscaled image and restore alpha
+                upscaled_data = upscale_result.get("image_data", "")
+                if upscaled_data.startswith("data:"):
+                    upscaled_data = upscaled_data.split(",", 1)[1]
+                upscaled_rgb = Image.open(io.BytesIO(base64.b64decode(upscaled_data))).convert("RGB")
+                # Restore alpha at upscaled size to avoid black backgrounds
+                alpha_up = alpha_mask.resize(upscaled_rgb.size, Image.Resampling.LANCZOS)
+                alpha_up = alpha_up.filter(ImageFilter.GaussianBlur(radius=0.5))
+                fg_image = upscaled_rgb.convert("RGBA")
+                fg_image.putalpha(alpha_up)
+                print(f"      ✅ Upscaled in {time.time()-upscale_start:.2f}s")
             
             # Step 2: Create background
             print(f"   🎨 Step B: Creating {background} background...")

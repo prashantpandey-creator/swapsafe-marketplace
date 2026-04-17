@@ -13,7 +13,12 @@ class StockImageService:
         Searches for a high-quality product image with a white background.
         Returns dict with image_url and base64 data.
         """
-        query = f"{product_name} white background product photography studio"
+        # If the query already contains "view" or "profile", leave it. Otherwise default to e-commerce style
+        if "view" in product_name.lower() or "profile" in product_name.lower():
+             query = f"{product_name} product online shopping"
+        else:
+             query = f"{product_name} white background product online shopping"
+        
         print(f"🔎 Searching for stock image: '{query}'")
         
         try:
@@ -57,6 +62,27 @@ class StockImageService:
         except Exception as e:
             print(f"❌ Stock search failed: {e}")
             return None
+
+    def search_web(self, query: str) -> str:
+        """
+        Performs a text search and returns a summary string of top results.
+        Useful for price checking.
+        """
+        print(f"🔎 Web Search: '{query}'")
+        try:
+            with DDGS() as ddgs:
+                results = list(ddgs.text(query, region="in-en", max_results=4))
+                
+            if not results:
+                return ""
+            
+            # Combine snippets
+            context = "\n".join([f"- {r.get('title', '')}: {r.get('body', '')}" for r in results])
+            return context
+            
+        except Exception as e:
+            print(f"❌ Web search failed: {e}")
+            return ""
 
 # Singleton
 stock_service = StockImageService()

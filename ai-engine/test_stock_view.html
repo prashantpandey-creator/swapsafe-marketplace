@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Studio - Stock View Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 50px;
+            background: #f0f0f0;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        img {
+            max-width: 500px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        code {
+            background: #eee;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>📸 Stock View Test</h1>
+        <p>This image is loaded directly from: <code>/api/v1/studio/stock_view</code></p>
+
+        <!-- The Image Source points to our API -->
+        <img src="http://localhost:8000/api/v1/studio/stock_view?product_name=JBL%20Soundbar"
+            alt="Loading Stock Image..." onerror="this.src=''; this.alt='❌ Image Load Failed. Is Server Running?';">
+
+        <br><br>
+        <button onclick="window.location.reload()">🔄 Refresh Image</button>
+    </div>
+</body>
+
+</html>

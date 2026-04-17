@@ -1,15 +1,31 @@
-import { useLocation } from 'react-router-dom';
-import InteractiveMandala from './InteractiveMandala';
+import SpiralBackground from '../common/SpiralBackground';
+import EsotericBackground from './EsotericBackground';
+import MysticalBackground from './MysticalBackground';
+import VoidBackground from './VoidBackground';
+import MinimalBackground from './MinimalBackground';
+import PsychedelicBackground from './PsychedelicBackground';
+import LynchBackground from './LynchBackground';
 
 const BackgroundManager = ({ currentTheme }) => {
-    const location = useLocation();
-
-    // STRICT: Only show on Home Page AND Classic Theme
-    if (location.pathname !== '/' || currentTheme !== 'classic') {
-        return null; // Minimal, Esoteric, Mystical all hide the mandala
+    // Each theme has its own canvas background
+    switch (currentTheme) {
+        case 'classic':
+            return <SpiralBackground />;
+        case 'esoteric':
+            return <EsotericBackground />;
+        case 'mystical':
+            return <MysticalBackground />;
+        case 'void':
+            return <VoidBackground />;
+        case 'minimal':
+            return <MinimalBackground />;
+        case 'psychedelic':
+            return <PsychedelicBackground />;
+        case 'lynch':
+            return <LynchBackground />;
+        default:
+            return null;
     }
-
-    return <InteractiveMandala variant="home" />;
 };
 
 export default BackgroundManager;

@@ -1,0 +1,2 @@
+Load Error: ByteDance/SDXL-Lightning-4step is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'
+If this is a private repository, make sure to pass a token having permission to this repo with `token` or log in with `hf auth login`.

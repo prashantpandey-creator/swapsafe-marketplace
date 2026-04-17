@@ -23,6 +23,7 @@ function Checkout() {
     const [isProcessing, setIsProcessing] = useState(false)
     const [orderComplete, setOrderComplete] = useState(false)
     const [placedOrderId, setPlacedOrderId] = useState(null)
+    const [razorpayKey, setRazorpayKey] = useState(null)
 
     // Meetup details
     const [meetupDate, setMeetupDate] = useState('')
@@ -74,7 +75,17 @@ function Checkout() {
             setLoading(false)
         }
 
+        const loadPaymentConfig = async () => {
+            try {
+                const config = await paymentAPI.getConfig()
+                setRazorpayKey(config.keyId)
+            } catch (err) {
+                console.error('Failed to load payment config:', err)
+            }
+        }
+
         loadProducts()
+        loadPaymentConfig()
     }, [id, isAuthenticated, navigate, isCartCheckout, cartItems])
 
     // Calculate totals
@@ -109,19 +120,95 @@ function Checkout() {
     const handlePayment = async () => {
         setIsProcessing(true)
         try {
-            let orderResult;
-            // Simulate processing
-            await new Promise(resolve => setTimeout(resolve, 2000))
-            orderResult = { id: `ORD-${Date.now()}` }
+            const listingId = products[0]._id || products[0].id
+            const deliveryAddress = deliveryMethod === 'delivery' ? shippingAddress : null
 
-            setPlacedOrderId(orderResult.id)
-            if (isCartCheckout) clearCart()
-            setOrderComplete(true)
+            if (paymentMethod === 'credits') {
+                // Credit Payment Flow
+                const result = await paymentAPI.createCreditOrder({
+                    listingId,
+                    deliveryMethod,
+                    deliveryAddress
+                })
+
+                if (result.success) {
+                    setPlacedOrderId(result.order.orderId)
+                    if (isCartCheckout) clearCart()
+                    setOrderComplete(true)
+                } else {
+                    throw new Error(result.message || 'Payment failed')
+                }
+            } else {
+                // Razorpay Payment Flow
+                if (!razorpayKey) {
+                    throw new Error('Payment gateway not available')
+                }
+
+                const orderData = await paymentAPI.createOrder({
+                    listingId,
+                    deliveryMethod,
+                    deliveryAddress
+                })
+
+                const options = {
+                    key: razorpayKey,
+                    amount: orderData.order.amount,
+                    currency: orderData.order.currency,
+                    name: 'Guardian Market',
+                    description: products[0].title,
+                    order_id: orderData.order.razorpayOrderId,
+                    handler: async function (response) {
+                        try {
+                            const verification = await paymentAPI.verifyPayment({
+                                razorpayOrderId: response.razorpay_order_id,
+                                razorpayPaymentId: response.razorpay_payment_id,
+                                razorpaySignature: response.razorpay_signature,
+                                orderId: orderData.order.id
+                            })
+
+                            if (verification.success) {
+                                setPlacedOrderId(verification.order.orderId)
+                                if (isCartCheckout) clearCart()
+                                setOrderComplete(true)
+                            } else {
+                                throw new Error('Payment verification failed')
+                            }
+                        } catch (err) {
+                            alert(err.message || 'Payment verification failed')
+                        } finally {
+                            setIsProcessing(false)
+                        }
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            setIsProcessing(false)
+                        }
+                    },
+                    prefill: {
+                        name: user?.name,
+                        email: user?.email,
+                        contact: user?.phone || ''
+                    },
+                    theme: {
+                        color: '#D4AF37'
+                    }
+                }
+
+                const rzp = new window.Razorpay(options)
+                rzp.on('payment.failed', function (response) {
+                    alert('Payment failed: ' + response.error.description)
+                    setIsProcessing(false)
+                })
+                rzp.open()
+                return // Don't reset isProcessing here, it's handled in handler/ondismiss
+            }
         } catch (error) {
             console.error("Payment failed", error)
             alert(error.message || "Payment failed. Please try again.")
         } finally {
-            setIsProcessing(false)
+            if (paymentMethod === 'credits') {
+                setIsProcessing(false)
+            }
         }
     }
 
@@ -215,10 +302,10 @@ function Checkout() {
                         {/* Step 1: Review */}
                         {step === 1 && (
                             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                                <div className="bg-legion-card border border-white/10 rounded-2xl p-6">
+                                <div className="checkout-section glass-panel border border-white/10 rounded-2xl p-6">
                                     <h2 className="text-xl font-bold text-white mb-6">Order Items</h2>
                                     {products.map((product, idx) => (
-                                        <div key={idx} className="glass-panel rounded-2xl p-4 flex gap-4 items-center shadow-lg shadow-black/20 mb-4 border border-white/5 bg-black/20">
+                                        <div key={idx} className="product-review-card glass-panel rounded-2xl p-4 flex gap-4 items-center shadow-lg shadow-black/20 mb-4 border border-white/5 bg-black/20">
                                             <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-[#222] border border-white/5">
                                                 <img src={product.images?.[0] || product.image} alt={product.title} className="w-full h-full object-cover" />
                                             </div>
@@ -267,7 +354,7 @@ function Checkout() {
                         {/* Step 2: Delivery Details */}
                         {step === 2 && (
                             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                                <div className="bg-legion-card border border-white/10 rounded-2xl p-6">
+                                <div className="checkout-section glass-panel border border-white/10 rounded-2xl p-6">
                                     <h2 className="text-xl font-bold text-white mb-6">
                                         {deliveryMethod === 'meetup' ? 'Schedule Meetup' : 'Shipping Address'}
                                     </h2>
@@ -323,7 +410,7 @@ function Checkout() {
                         {/* Step 3: Payment */}
                         {step === 3 && (
                             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                                <div className="bg-legion-card border border-white/10 rounded-2xl p-6">
+                                <div className="checkout-section glass-panel border border-white/10 rounded-2xl p-6">
                                     <h2 className="text-xl font-bold text-white mb-6">Payment Method</h2>
 
                                     <div className="space-y-4">

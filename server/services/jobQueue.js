@@ -4,6 +4,9 @@
 import { Queue, Worker, QueueEvents } from 'bullmq';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
+import { v4 as uuidv4 } from 'uuid';
+import Listing from '../models/Listing.js';
+import Job from '../models/Job.js';
 
 // Redis connection config - defaults to localhost for development
 const REDIS_CONFIG = {
@@ -13,35 +16,66 @@ const REDIS_CONFIG = {
     maxRetriesPerRequest: null
 };
 
+const USE_REDIS = process.env.USE_REDIS !== 'false';
+
 // Python AI Engine URL
 const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8000/api/v1/studio';
+
+// Mock Queue for fallback when Redis is disabled
+class MockQueue {
+    constructor(name) { this.name = name; }
+    async add(name, data) {
+        console.warn(`⚠️ Redis disabled: Job ${name} skipped`);
+        return { id: `mock-${Date.now()}` };
+    }
+    async getJob() { return null; }
+    async getWaitingCount() { return 0; }
+    async getActiveCount() { return 0; }
+}
 
 // ============ QUEUES ============
 
 // Queue for 3D model generation jobs
-export const modelGenerationQueue = new Queue('model-generation', {
-    connection: REDIS_CONFIG,
-    defaultJobOptions: {
-        attempts: 3,
-        backoff: {
-            type: 'exponential',
-            delay: 2000
-        },
-        removeOnComplete: { count: 100 },  // Keep last 100 completed jobs
-        removeOnFail: { count: 50 }        // Keep last 50 failed jobs
-    }
-});
+export const modelGenerationQueue = USE_REDIS
+    ? new Queue('model-generation', {
+        connection: REDIS_CONFIG,
+        defaultJobOptions: {
+            attempts: 3,
+            backoff: {
+                type: 'exponential',
+                delay: 2000
+            },
+            removeOnComplete: { count: 100 },  // Keep last 100 completed jobs
+            removeOnFail: { count: 50 }        // Keep last 50 failed jobs
+        }
+    })
+    : new MockQueue('model-generation');
 
 // Queue for 2D image generation jobs  
-export const imageGenerationQueue = new Queue('image-generation', {
-    connection: REDIS_CONFIG,
-    defaultJobOptions: {
-        attempts: 2,
-        backoff: { type: 'fixed', delay: 3000 },
-        removeOnComplete: { count: 100 },
-        removeOnFail: { count: 50 }
-    }
-});
+export const imageGenerationQueue = USE_REDIS
+    ? new Queue('image-generation', {
+        connection: REDIS_CONFIG,
+        defaultJobOptions: {
+            attempts: 2,
+            backoff: { type: 'fixed', delay: 3000 },
+            removeOnComplete: { count: 100 },
+            removeOnFail: { count: 50 }
+        }
+    })
+    : new MockQueue('image-generation');
+
+// Queue for listing creation
+export const listingCreationQueue = USE_REDIS
+    ? new Queue('listing-creation', {
+        connection: REDIS_CONFIG,
+        defaultJobOptions: {
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 2000 },
+            removeOnComplete: { count: 100 },
+            removeOnFail: { count: 50 }
+        }
+    })
+    : new MockQueue('listing-creation');
 
 // ============ JOB SUBMISSION ============
 
@@ -96,6 +130,53 @@ export async function submit2DGenerationJob(jobData) {
 }
 
 /**
+ * Submit a listing creation job to the queue
+ * @param {string} userId - User ID creating the listing
+ * @param {object} listingData - Listing data with images, title, description, etc.
+ * @returns {object} Job info with jobId, status, estimatedWaitMs
+ */
+export async function submitListingCreationJob(userId, listingData) {
+    const jobId = uuidv4();
+
+    try {
+        // Get current queue size
+        const queueCount = await listingCreationQueue.getWaitingCount();
+
+        // Create job record in MongoDB
+        const jobRecord = await Job.create({
+            jobId,
+            type: 'listing_creation',
+            userId,
+            status: 'queued',
+            data: listingData,
+            queuePosition: queueCount,
+            estimatedWaitMs: queueCount * 15000 // 15s per job estimate
+        });
+
+        // Add to BullMQ queue
+        await listingCreationQueue.add('create-listing', {
+            jobId,
+            userId,
+            listingData
+        }, {
+            jobId // Use same ID for BullMQ job
+        });
+
+        console.log(`📦 Queued listing creation job: ${jobId} (position: ${queueCount})`);
+
+        return {
+            jobId,
+            status: 'queued',
+            queuePosition: jobRecord.queuePosition,
+            estimatedWaitMs: jobRecord.estimatedWaitMs
+        };
+    } catch (error) {
+        console.error('Listing job submission error:', error);
+        throw error;
+    }
+}
+
+/**
  * Get job status by ID
  */
 export async function getJobStatus(jobId, queueType = '3d') {
@@ -134,6 +215,8 @@ async function getEstimatedWaitTime(queue) {
 // Workers are started separately to allow scaling independently
 
 export function start3DWorker() {
+    if (!USE_REDIS) return { on: () => { } };
+
     const worker = new Worker('model-generation', async (job) => {
         console.log(`🔧 Processing 3D job: ${job.id}`);
 
@@ -214,6 +297,8 @@ export function start3DWorker() {
 }
 
 export function start2DWorker() {
+    if (!USE_REDIS) return { on: () => { } };
+
     const worker = new Worker('image-generation', async (job) => {
         console.log(`🎨 Processing 2D job: ${job.id}`);
 
@@ -256,9 +341,114 @@ export function start2DWorker() {
     return worker;
 }
 
+// Worker for listing creation
+export function startListingCreationWorker() {
+    if (!USE_REDIS) return { on: () => { } };
+
+    const worker = new Worker('listing-creation', async (job) => {
+        const { jobId, userId, listingData } = job.data;
+
+        console.log(`📝 Processing listing creation job: ${jobId}`);
+
+        try {
+            // Update to active with 10% progress
+            await Job.findOneAndUpdate(
+                { jobId },
+                {
+                    status: 'active',
+                    startedAt: new Date(),
+                    progress: 10
+                }
+            );
+            await job.updateProgress(10);
+
+            // Step 1: Process images (40% progress)
+            let processedImages = [];
+            if (listingData.images && listingData.images.length > 0) {
+                // Images are already URLs or base64
+                processedImages = listingData.images;
+            }
+
+            await Job.findOneAndUpdate({ jobId }, { progress: 50 });
+            await job.updateProgress(50);
+
+            // Step 2: AI analysis placeholder (30% progress)
+            const aiTags = ['user-listed'];
+            const aiVerified = false;
+
+            await Job.findOneAndUpdate({ jobId }, { progress: 80 });
+            await job.updateProgress(80);
+
+            // Step 3: Create listing in DB (20% progress)
+            const listing = await Listing.create({
+                title: listingData.title,
+                description: listingData.description,
+                price: parseFloat(listingData.price),
+                category: listingData.category,
+                condition: listingData.condition,
+                images: processedImages,
+                location: listingData.location || { city: 'Unknown', state: 'IN' },
+                seller: userId,
+                aiVerified,
+                aiTags,
+                status: 'active'
+            });
+
+            await Job.findOneAndUpdate({ jobId }, { progress: 90 });
+            await job.updateProgress(90);
+
+            // Mark complete
+            await Job.findOneAndUpdate(
+                { jobId },
+                {
+                    status: 'completed',
+                    progress: 100,
+                    result: { listingId: listing._id.toString() },
+                    completedAt: new Date()
+                }
+            );
+
+            console.log(`✅ Listing creation job ${jobId} completed - Listing ${listing._id}`);
+
+            return { listingId: listing._id.toString() };
+
+        } catch (error) {
+            console.error(`❌ Listing job ${jobId} failed:`, error);
+
+            await Job.findOneAndUpdate(
+                { jobId },
+                {
+                    status: 'failed',
+                    error: error.message,
+                    completedAt: new Date()
+                }
+            );
+
+            throw error;
+        }
+    }, {
+        connection: REDIS_CONFIG,
+        concurrency: 5 // Process 5 listings concurrently
+    });
+
+    worker.on('completed', (job) => {
+        console.log(`✅ Listing worker completed job ${job.id}`);
+    });
+
+    worker.on('failed', (job, err) => {
+        console.error(`❌ Listing worker failed job ${job?.id}:`, err.message);
+    });
+
+    console.log('🚀 Listing creation worker started');
+
+    return worker;
+}
+
 // ============ QUEUE EVENTS (for monitoring) ============
 
 export function setupQueueEvents() {
+    if (!USE_REDIS) return { on: () => { } };
+
     const events = new QueueEvents('model-generation', { connection: REDIS_CONFIG });
 
     events.on('completed', ({ jobId, returnvalue }) => {
@@ -277,10 +467,13 @@ export function setupQueueEvents() {
 export default {
     modelGenerationQueue,
     imageGenerationQueue,
+    listingCreationQueue,
     submit3DGenerationJob,
     submit2DGenerationJob,
+    submitListingCreationJob,
     getJobStatus,
     start3DWorker,
     start2DWorker,
+    startListingCreationWorker,
     setupQueueEvents
 };

@@ -1,0 +1,29 @@
+[
+  {
+    "filename": "guitar taylor academy 114e.jpg",
+    "safe_name": "guitar_taylor_academy_114e",
+    "original": "guitar_taylor_academy_114e_original.jpg",
+    "result": "guitar_taylor_academy_114e_birefnet.png",
+    "process_time": 8.83,
+    "original_size": "720x960",
+    "status": "success"
+  },
+  {
+    "filename": "oundbar 4.jpg",
+    "safe_name": "oundbar_4",
+    "original": "oundbar_4_original.jpg",
+    "result": "oundbar_4_birefnet.png",
+    "process_time": 1.76,
+    "original_size": "960x720",
+    "status": "success"
+  },
+  {
+    "filename": "soundbar 3.jpg",
+    "safe_name": "soundbar_3",
+    "original": "soundbar_3_original.jpg",
+    "result": "soundbar_3_birefnet.png",
+    "process_time": 1.73,
+    "original_size": "720x960",
+    "status": "success"
+  }
+]

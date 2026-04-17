@@ -18,4 +18,4 @@ fi
 
 # Run the server
 # --reload enables hot-reloading for development
-uvicorn main:app --reload --port 8000
+uvicorn main:app --reload --port 8001

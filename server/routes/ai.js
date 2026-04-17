@@ -272,7 +272,7 @@ router.post('/chat', async (req, res) => {
 router.post('/generate-3d', protect, async (req, res) => {
     console.log('🚀 AI Proxy: Received 3D generation request');
 
-    const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8000/api/v1/studio';
+    const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8001/api/v1/studio';
 
     try {
         // Option 1: Simple URL-based approach (existing behavior for backward compat)
@@ -351,173 +351,205 @@ router.post('/remove-background', protect, async (req, res) => {
     }
 });
 
+import multer from 'multer';
+const upload = multer({ storage: multer.memoryStorage() });
+
 // @route   POST /api/ai/enhance-photo
 // @desc    Proxy to Python AI Engine for photo enhancement (background removal + white BG)
-//          Now with product reference image lookup for smarter enhancement
-// @access  Public (no auth for quick sell flow)
-router.post('/enhance-photo', async (req, res) => {
+//          Now with product reference image lookup and Multi-Photo Context support
+// @access  Public
+router.post('/enhance-photo', upload.fields([
+    { name: 'file', maxCount: 1 },
+    { name: 'secondary_files', maxCount: 10 }
+]), async (req, res) => {
     console.log('');
     console.log('═══════════════════════════════════════════════════════════');
-    console.log('🎨 ENHANCE-PHOTO REQUEST RECEIVED');
+    console.log('🎨 ENHANCE-PHOTO REQUEST RECEIVED (Multipart)');
     console.log('═══════════════════════════════════════════════════════════');
 
     const startTime = Date.now();
-    const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8000';
-    console.log('🌐 AI Engine URL:', AI_ENGINE_URL);
+    // Use configured URL or default to 8001
+    const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8001';
 
     try {
-        // Check if we have file data in base64 format from frontend
-        const { imageData, productName, fileName, brand, model, category } = req.body;
+        const { productName, brand, model, category, mode } = req.body;
+        const primaryFile = req.files['file'] ? req.files['file'][0] : null;
+        const secondaryFiles = req.files['secondary_files'] || [];
 
-        console.log('📥 Request received:');
+        console.log('📥 Request context:');
+        console.log('   - Mode:', mode || 'fast');
         console.log('   - productName:', productName || '(none)');
         console.log('   - brand:', brand || '(none)');
         console.log('   - model:', model || '(none)');
-        console.log('   - category:', category || '(none)');
-        console.log('   - fileName:', fileName || '(none)');
-        console.log('   - imageData length:', imageData ? `${imageData.length} chars` : 'MISSING');
+        console.log('   - Primary File:', primaryFile ? primaryFile.originalname : 'MISSING');
+        console.log('   - Secondary Files:', secondaryFiles.length);
 
-        if (!imageData) {
-            console.log('❌ FAILED: No imageData in request');
-            return res.status(400).json({
-                error: 'Image data is required',
-                hint: 'Send base64 image data in imageData field'
-            });
+        if (!primaryFile) {
+            return res.status(400).json({ error: 'Primary image file is required' });
         }
 
-        console.log('');
-        console.log('🔍 Step 1: ProductDatabase lookup...');
-
-        // =======================================
-        // NEW: Reference Image Lookup
-        // =======================================
+        // 1. Reference Image Lookup
         let referenceImageUrl = null;
         let productMatch = null;
 
         if (brand && model) {
             try {
-                // Import ProductDatabase dynamically
                 const ProductDatabase = (await import('../models/ProductDatabase.js')).default;
-
-                // Look up product in database
                 productMatch = await ProductDatabase.findOne({
                     brand: new RegExp(`^${brand}$`, 'i'),
                     model: new RegExp(`^${model}$`, 'i')
                 }).select('referenceImages specifications').lean();
 
                 if (productMatch?.referenceImages) {
-                    // Prefer hero image, fall back to front
-                    referenceImageUrl = productMatch.referenceImages.hero
-                        || productMatch.referenceImages.front
-                        || null;
-
-                    if (referenceImageUrl) {
-                        console.log(`✅ Found reference image for ${brand} ${model}`);
-                    }
-                } else {
-                    console.log(`⚠️ No reference images for ${brand} ${model} - using context only`);
+                    referenceImageUrl = productMatch.referenceImages.hero || productMatch.referenceImages.front || null;
                 }
             } catch (dbError) {
                 console.warn('📦 ProductDatabase lookup failed:', dbError.message);
-                // Continue without reference - degrade gracefully
             }
         }
 
-        // Convert base64 to buffer
-        const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
-        const imageBuffer = Buffer.from(base64Data, 'base64');
-
-        // Create FormData to send to Python engine
+        // 2. Prepare FormData for Python Engine
         const FormData = (await import('form-data')).default;
         const formData = new FormData();
-        formData.append('file', imageBuffer, {
-            filename: fileName || 'image.jpg',
-            contentType: 'image/jpeg'
+
+        // Append primary file
+        formData.append('file', primaryFile.buffer, {
+            filename: primaryFile.originalname,
+            contentType: primaryFile.mimetype
         });
 
-        // Pass product context
-        if (productName) {
-            formData.append('product_name', productName);
-        }
+        // Append secondary files for Multi-Photo Context
+        secondaryFiles.forEach(sFile => {
+            formData.append('secondary_files', sFile.buffer, {
+                filename: sFile.originalname,
+                contentType: sFile.mimetype
+            });
+        });
 
-        // Pass reference image URL if found
-        if (referenceImageUrl) {
-            formData.append('reference_image_url', referenceImageUrl);
-            formData.append('has_exact_match', 'true');
-        } else {
-            formData.append('has_exact_match', 'false');
-        }
+        formData.append('product_name', productName || '');
+        formData.append('reference_image_url', referenceImageUrl || '');
+        formData.append('has_exact_match', referenceImageUrl ? 'true' : 'false');
+        formData.append('category', category || '');
+        formData.append('mode', mode || 'fast');
+        formData.append('return_binary', 'false'); // Force JSON response for Node.js parsing
 
-        // Pass category for styling hints
-        if (category) {
-            formData.append('category', category);
-        }
-
-        // Proxy to Python AI Engine
-        console.log('');
-        console.log('📤 Step 3: Sending to Python AI Engine...');
-        console.log('   - URL:', `${AI_ENGINE_URL}/api/v1/studio/enhance`);
-        console.log('   - Sending FormData with file + metadata');
-
-        const proxyStartTime = Date.now();
+        // 3. Proxy to AI Engine with Fallback
+        console.log('📤 Forwarding to AI Engine:', `${AI_ENGINE_URL}/api/v1/studio/enhance`);
         const fetch = (await import('node-fetch')).default;
-        const response = await fetch(`${AI_ENGINE_URL}/api/v1/studio/enhance`, {
+
+        try {
+            const proxyResponse = await fetch(`${AI_ENGINE_URL}/api/v1/studio/enhance`, {
+                method: 'POST',
+                body: formData,
+                headers: formData.getHeaders()
+            });
+
+            if (!proxyResponse.ok) {
+                const errorText = await proxyResponse.text();
+                throw new Error(`AI Engine error: ${errorText}`);
+            }
+
+            // debug: read text first to log failures
+            const responseText = await proxyResponse.text();
+            let result;
+
+            try {
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('❌ Failed to parse Python response:', responseText.substring(0, 200) + '...');
+                throw new Error(`Invalid JSON from AI Engine: ${responseText.substring(0, 100)}`);
+            }
+
+            const totalElapsed = Date.now() - startTime;
+
+            console.log(`✅ SUCCESS - Response in ${totalElapsed}ms`);
+            console.log('═══════════════════════════════════════════════════════════');
+
+            return res.json({
+                success: true,
+                status: 'success',
+                image_data: result.image_data,
+                enhanced: true,
+                product_matched: !!productMatch,
+                reference_used: !!referenceImageUrl,
+                processing_time_ms: totalElapsed
+            });
+
+        } catch (proxyError) {
+            console.warn('⚠️ AI Engine Proxy Failed:', proxyError.message);
+
+            // FALLBACK DISABLED FOR DEBUGGING
+            // if (mode === 'fast' || proxyError.code === 'ECONNREFUSED') {
+            //     console.log('🔄 Engaging Fast Mode Fallback (Passthrough)');
+            //     ...
+            // }
+
+            throw proxyError; // Re-throw to show real error
+
+            throw proxyError; // Re-throw for Pro mode errors if not connection related
+        }
+
+    } catch (error) {
+        console.log('💥 Proxy Error:', error.message);
+        res.status(500).json({ error: 'Enhancement failed', message: error.message });
+    }
+});
+
+// @route   POST /api/ai/analyze-image
+// @desc    Proxy to Python AI Engine for product analysis (Gemini)
+// @access  Public
+router.post('/analyze-image', upload.single('file'), async (req, res) => {
+    console.log('');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🧠 ANALYZE-IMAGE REQUEST RECEIVED');
+    console.log('═══════════════════════════════════════════════════════════');
+
+    const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8001';
+    console.log('🔗 API Router using AI Engine at:', AI_ENGINE_URL);
+
+    try {
+        console.log('HEADERS:', req.headers['content-type']);
+        if (req.file) {
+            console.log('📁 File received:', req.file.originalname, req.file.mimetype, req.file.size);
+        } else {
+            console.error('❌ NO FILE RECEIVED in req.file');
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'Image file is required' });
+        }
+
+        const FormData = (await import('form-data')).default;
+        const formData = new FormData();
+        formData.append('image', req.file.buffer, {
+            filename: req.file.originalname,
+            contentType: req.file.mimetype
+        });
+
+        const fetch = (await import('node-fetch')).default;
+        // NOTE: brain router is mounted at /api/v1/brain
+        const targetUrl = `${AI_ENGINE_URL}/api/v1/brain/analyze`;
+        console.log('📤 Forwarding to AI Engine:', targetUrl);
+
+        const response = await fetch(targetUrl, {
             method: 'POST',
             body: formData,
             headers: formData.getHeaders()
         });
 
-        const proxyElapsed = Date.now() - proxyStartTime;
-        console.log(`📥 Python response in ${proxyElapsed}ms`);
-        console.log('   - Status:', response.status, response.statusText);
-
         if (!response.ok) {
             const errorText = await response.text();
-            console.log('❌ Python error response:', errorText);
-            throw new Error(`AI Engine returned ${response.status}: ${errorText}`);
+            console.error('❌ Python Backend Error:', response.status, errorText);
+            throw new Error(`AI Engine error: ${errorText}`);
         }
 
         const result = await response.json();
-
-        const totalElapsed = Date.now() - startTime;
-        console.log('');
-        console.log('✅ ENHANCEMENT SUCCESSFUL');
-        console.log('   - image_data length:', result.image_data?.length || 0, 'chars');
-        console.log('   - Total time:', totalElapsed, 'ms');
-        console.log('═══════════════════════════════════════════════════════════');
-        console.log('');
-
-        res.json({
-            success: true,
-            status: 'success',
-            image_data: result.image_data,
-            original_size: result.original_size,
-            enhanced: true,
-            product_matched: !!productMatch,
-            reference_used: !!referenceImageUrl
-        });
+        console.log('✅ Analysis Complete:', result.status || 'Success');
+        res.json(result);
 
     } catch (error) {
-        console.log('');
-        console.log('💥 ENHANCEMENT FAILED');
-        console.log('   - Error:', error.message);
-        console.log('═══════════════════════════════════════════════════════════');
-        console.log('');
-
-        if (error.code === 'ECONNREFUSED' || error.message.includes('ECONNREFUSED')) {
-            return res.status(503).json({
-                error: 'AI Engine is not running',
-                code: 'AI_ENGINE_OFFLINE',
-                hint: 'Start the Python AI engine or check Cloudflare tunnel'
-            });
-        }
-
-        // Return graceful fallback
-        res.status(500).json({
-            error: 'Enhancement failed',
-            message: error.message,
-            fallback: 'Use original image'
-        });
+        console.error('💥 Analysis Failed:', error.message);
+        res.status(500).json({ error: 'Analysis failed', message: error.message });
     }
 });
 
@@ -530,7 +562,7 @@ router.post('/fetch-stock', async (req, res) => {
     console.log('🔍 FETCH-STOCK REQUEST RECEIVED');
     console.log('═══════════════════════════════════════════════════════════');
 
-    const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8000';
+    const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8001';
     console.log('🌐 AI Engine URL:', AI_ENGINE_URL);
 
     try {
@@ -541,11 +573,16 @@ router.post('/fetch-stock', async (req, res) => {
             return res.status(400).json({ error: 'Product name is required' });
         }
 
+        const FormData = (await import('form-data')).default;
+        const formData = new FormData();
+        formData.append('product_name', productName);
+        formData.append('return_binary', 'false'); // matches studio.py expectation
+
         const fetch = (await import('node-fetch')).default;
         const response = await fetch(`${AI_ENGINE_URL}/api/v1/studio/fetch_stock`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ product_name: productName })
+            body: formData,
+            headers: formData.getHeaders()
         });
 
         if (!response.ok) {
@@ -568,6 +605,42 @@ router.post('/fetch-stock', async (req, res) => {
             });
         }
         res.status(500).json({ error: 'Failed to fetch stock photo' });
+    }
+});
+
+// @route   POST /api/ai/refine-listing
+// @desc    Refine listing details (Price + Stock Image) based on updated title
+// @access  Public
+router.post('/refine-listing', async (req, res) => {
+    const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8001';
+
+    try {
+        const { productName, condition, conditionReport } = req.body;
+
+        if (!productName) return res.status(400).json({ error: 'Product name required' });
+
+        const FormData = (await import('form-data')).default;
+        const formData = new FormData();
+        formData.append('product_name', productName);
+        formData.append('condition', condition || 'good');
+        formData.append('condition_report', conditionReport || 'normal wear');
+        formData.append('return_binary', 'false');
+
+        const fetch = (await import('node-fetch')).default;
+        const response = await fetch(`${AI_ENGINE_URL}/api/v1/studio/refine_listing`, {
+            method: 'POST',
+            body: formData,
+            headers: formData.getHeaders()
+        });
+
+        if (!response.ok) throw new Error('AI Engine Error');
+
+        const result = await response.json();
+        res.json(result);
+
+    } catch (error) {
+        console.error('Refinement failed:', error);
+        res.status(500).json({ error: 'Refinement failed' });
     }
 });
 

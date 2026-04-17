@@ -1,0 +1,14 @@
+models/
+venv/
+__pycache__/
+*.pyc
+debug_runs/
+*.png
+*.jpg
+*.log
+workflow_*.json
+nodes.json
+object_info.json
+*.bak
+/*.py
+!/main.py

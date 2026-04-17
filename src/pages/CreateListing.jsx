@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Upload, Sparkles, X, DollarSign, Tag, MapPin, Loader, CheckCircle, ChevronRight, Zap, TrendingUp, Package } from 'lucide-react';
+import { Camera, Upload, Sparkles, X, Loader, TrendingUp, Package, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AIEngineStatusBadge } from '../components/ai/AIEngineStatus';
 import { useAuth } from '../context/AuthContext';
-import { listingsAPI, aiAPI, uploadImage } from '../services/api';
+import { listingsAPI, aiAPI, uploadImage, jobsAPI } from '../services/api';
 
 // Simplified Categories for Guardian Marketplace
 const CATEGORIES = [
@@ -25,9 +25,28 @@ const CONDITIONS = [
 
 const CreateListing = () => {
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, isAuthenticated, isLoading } = useAuth();
     const fileInputRef = useRef(null);
     const cameraInputRef = useRef(null);
+
+    // Auth guard: redirect to login if not authenticated
+    useEffect(() => {
+        if (!isLoading && !isAuthenticated) {
+            navigate('/login', { state: { from: '/sell/classic', message: 'Please log in to create a listing' } });
+        }
+    }, [isLoading, isAuthenticated, navigate]);
+
+    // Show loading while checking auth
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[var(--void-deep)]">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--legion-gold)] mx-auto"></div>
+                    <p className="text-gray-400 mt-4">Loading...</p>
+                </div>
+            </div>
+        );
+    }
 
     // Image State
     const [productImage, setProductImage] = useState(null);
@@ -47,10 +66,47 @@ const CreateListing = () => {
         price: '',
         location: { city: '', state: '' }
     });
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
+
+    // Async Job State
+    const [jobId, setJobId] = useState(null);
+    const [jobStatus, setJobStatus] = useState(null);
+    const [jobProgress, setJobProgress] = useState(0);
 
     // UI State
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
+
+    // Poll for job status
+    useEffect(() => {
+        let interval;
+        if (jobId && jobStatus !== 'completed' && jobStatus !== 'failed') {
+            interval = setInterval(async () => {
+                try {
+                    const status = await jobsAPI.getStatus(jobId);
+                    setJobStatus(status.status);
+                    setJobProgress(status.progress || 0);
+
+                    if (status.status === 'completed') {
+                        clearInterval(interval);
+                        navigate('/my-listings', { state: { success: true } });
+                    }
+
+                    if (status.status === 'failed') {
+                        clearInterval(interval);
+                        setError(status.error || 'Listing creation failed');
+                        setIsSubmitting(false); // Use isSubmitting for loading state
+                        setJobId(null);
+                    }
+                } catch (err) {
+                    console.error('Polling error:', err);
+                }
+            }, 2000);
+        }
+        return () => clearInterval(interval);
+    }, [jobId, jobStatus, navigate]);
 
     // Handle Image Upload
     const handleImageUpload = async (e) => {
@@ -152,6 +208,7 @@ const CreateListing = () => {
         if (!validateForm()) return;
 
         setIsSubmitting(true);
+        setError(''); // Clear previous errors
 
         try {
             // Upload image to Cloudinary
@@ -175,14 +232,24 @@ const CreateListing = () => {
                 location: formData.location
             };
 
-            await listingsAPI.create(listingData);
-            navigate('/my-listings', { state: { success: true } });
+            console.log('Submitting listing data:', listingData);
+            const response = await listingsAPI.create(listingData);
 
-        } catch (error) {
-            console.error('Create listing error:', error);
-            setErrors({ submit: error.message || 'Failed to create listing. Please try again.' });
-        } finally {
-            setIsSubmitting(false);
+            // Handle async response
+            if (response.jobId) {
+                setJobId(response.jobId);
+                setJobStatus(response.status);
+                setJobProgress(0);
+                // Don't navigate yet, wait for polling
+            } else {
+                // Fallback for sync
+                navigate('/my-listings', { state: { success: true } });
+            }
+
+        } catch (err) {
+            console.error('Submission error:', err);
+            setError(err.message || 'Failed to create listing');
+            setIsSubmitting(false); // Use isSubmitting for loading state
         }
     };
 
@@ -218,7 +285,7 @@ const CreateListing = () => {
                                 : 'border-white/20 bg-white/5 hover:border-[var(--legion-gold)] hover:bg-white/10 cursor-pointer'
                             }
                             ${errors.image ? 'border-red-500/50' : ''}
-                        `}
+`}
                         onClick={() => !productImage && cameraInputRef.current?.click()}
                     >
                         {productImage ? (
@@ -353,7 +420,7 @@ const CreateListing = () => {
                                 placeholder="What are you selling?"
                                 className={`w-full bg-white/5 border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--legion-gold)] transition-colors
                                     ${errors.title ? 'border-red-500/50' : 'border-white/10'}
-                                `}
+`}
                             />
                             {errors.title && <p className="text-red-400 text-xs mt-1">{errors.title}</p>}
                         </div>
@@ -372,7 +439,7 @@ const CreateListing = () => {
                                                 ? 'bg-[var(--legion-gold)] text-black font-semibold'
                                                 : 'bg-white/5 text-gray-400 hover:bg-white/10'
                                             }
-                                        `}
+`}
                                     >
                                         <span className="text-lg block mb-1">{cat.icon}</span>
                                         <span className="text-[10px]">{cat.name}</span>
@@ -396,7 +463,7 @@ const CreateListing = () => {
                                                 ? 'bg-[var(--legion-gold)]/20 border-[var(--legion-gold)] border text-white'
                                                 : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
                                             }
-                                        `}
+`}
                                     >
                                         <span className="font-medium text-sm block">{cond.label}</span>
                                         <span className="text-[10px] text-gray-500">{cond.desc}</span>
@@ -417,11 +484,11 @@ const CreateListing = () => {
                                     placeholder="0"
                                     className={`w-full bg-white/5 border rounded-lg pl-10 pr-4 py-3 text-white text-xl font-bold placeholder-gray-600 focus:outline-none focus:border-[var(--legion-gold)] transition-colors
                                         ${errors.price ? 'border-red-500/50' : 'border-white/10'}
-                                    `}
+`}
                                 />
                             </div>
                             {priceEstimate && formData.price && (
-                                <p className={`text-xs mt-2 ${parseFloat(formData.price) < priceEstimate.suggested * 0.8 ? 'text-yellow-400' : 'text-green-400'}`}>
+                                <p className={`text-xs mt-2 ${parseFloat(formData.price) < priceEstimate.suggested * 0.8 ? 'text-yellow-400' : 'text-green-400'} `}>
                                     {parseFloat(formData.price) < priceEstimate.suggested * 0.8
                                         ? '⚠️ Price is below recommended range'
                                         : parseFloat(formData.price) > priceEstimate.suggested * 1.2
@@ -456,7 +523,7 @@ const CreateListing = () => {
                                     placeholder="Mumbai"
                                     className={`w-full bg-white/5 border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--legion-gold)] transition-colors
                                         ${errors.city ? 'border-red-500/50' : 'border-white/10'}
-                                    `}
+`}
                                 />
                             </div>
                             <div>
@@ -468,7 +535,7 @@ const CreateListing = () => {
                                     placeholder="Maharashtra"
                                     className={`w-full bg-white/5 border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--legion-gold)] transition-colors
                                         ${errors.state ? 'border-red-500/50' : 'border-white/10'}
-                                    `}
+`}
                                 />
                             </div>
                         </div>
@@ -495,7 +562,7 @@ const CreateListing = () => {
                                 ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                                 : 'bg-[var(--legion-gold)] text-black hover:shadow-[0_0_30px_rgba(212,175,55,0.4)]'
                             }
-                        `}
+`}
                     >
                         {isSubmitting ? (
                             <>

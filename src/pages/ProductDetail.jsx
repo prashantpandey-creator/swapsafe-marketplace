@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Shield, Check, MapPin, MessageSquare, ShoppingBag, Heart, Share2, AlertTriangle, Package, Calendar, Flag } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
+import { useWishlist } from '../context/WishlistContext'
 import { listingsAPI, shieldAPI } from '../services/api'
 import { formatPrice, getTimeAgo, getConditionColor, conditions } from '../data/mockData'
 import GuardianBadge from '../components/trust/GuardianBadge'
@@ -15,6 +16,7 @@ function ProductDetail() {
     const navigate = useNavigate()
     const { isAuthenticated, user } = useAuth()
     const { addToCart, isInCart } = useCart()
+    const { isInWishlist, toggleWishlist } = useWishlist()
 
     const [product, setProduct] = useState(null)
     const [selectedImage, setSelectedImage] = useState(0)
@@ -143,8 +145,11 @@ function ProductDetail() {
                                 )}
                             </div>
 
-                            <button className="absolute top-4 right-4 p-2 bg-black/40 backdrop-blur-md rounded-full text-white/70 hover:text-red-500 hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100">
-                                <Heart size={20} />
+                            <button
+                                onClick={() => toggleWishlist(product)}
+                                className="absolute top-4 right-4 p-2 bg-black/40 backdrop-blur-md rounded-full text-white/70 hover:text-red-500 hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100"
+                            >
+                                <Heart size={20} fill={isInWishlist(product?.id || product?._id) ? 'currentColor' : 'none'} className={isInWishlist(product?.id || product?._id) ? 'text-red-500' : ''} />
                             </button>
                         </div>
 
@@ -165,7 +170,7 @@ function ProductDetail() {
                         )}
 
                         {/* Description Block */}
-                        <div className="bg-legion-card border border-white/10 rounded-2xl p-6 md:p-8 mt-8">
+                        <div className="glass-panel border border-white/10 rounded-2xl p-6 md:p-8 mt-8">
                             <h3 className="text-xl font-bold text-white mb-4">Description</h3>
                             <div className="prose prose-invert max-w-none text-gray-300 whitespace-pre-line">
                                 {description}
@@ -209,7 +214,7 @@ function ProductDetail() {
                         </div>
 
                         {/* Price Card */}
-                        <div className="bg-legion-card border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                        <div className="glass-panel border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden">
                             {/* Background Glow */}
                             <div className="absolute top-0 right-0 w-32 h-32 bg-legion-gold/5 blur-[50px] rounded-full pointer-events-none"></div>
 
@@ -289,7 +294,7 @@ function ProductDetail() {
                         </div>
 
                         {/* Seller Card */}
-                        <div className="bg-legion-card border border-white/10 rounded-2xl p-6">
+                        <div className="glass-panel border border-white/10 rounded-2xl p-6">
                             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Seller Information</h3>
                             <Link to={`/profile/${safeSeller._id || safeSeller.id}`} className="flex items-center gap-4 group">
                                 <div className="relative">

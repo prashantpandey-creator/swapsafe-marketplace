@@ -14,13 +14,8 @@
     align-items: start;
 }
 
-/* Glass Panels */
-.glass-panel {
-    background: var(--glass-base);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-glass);
-}
+/* Glass Panels - Now using global .glass-panel */
+.product-detail-section {}
 
 /* Gallery Section */
 .product-gallery {
@@ -103,6 +98,7 @@
     font-weight: 800;
     line-height: 1.2;
     background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 0.75rem;
@@ -169,6 +165,7 @@
     font-feature-settings: "tnum";
     letter-spacing: -1px;
     background: linear-gradient(135deg, var(--guardian-gold) 0%, #fcd34d 100%);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }

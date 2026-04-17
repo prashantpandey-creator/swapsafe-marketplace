@@ -10,7 +10,7 @@
     align-items: center;
     overflow: hidden;
     padding: var(--space-20) 0;
-    background: var(--bg-primary);
+    background: transparent;
     /* Deep Void */
     color: var(--text-primary);
 }
@@ -171,6 +171,7 @@
     font-weight: 700;
     color: var(--text-primary);
     background: var(--gradient-hero);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
