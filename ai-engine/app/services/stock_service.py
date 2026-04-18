@@ -13,55 +13,65 @@ class StockImageService:
         Searches for a high-quality product image with a white background.
         Returns dict with image_url and base64 data.
         """
-        # If the query already contains "view" or "profile", leave it. Otherwise default to e-commerce style
-        if "view" in product_name.lower() or "profile" in product_name.lower():
-             query = f"{product_name} product online shopping"
-        else:
-             query = f"{product_name} white background product online shopping"
+        # Primary and Fallback queries
+        queries = [
+            f"{product_name} white background product online shopping",
+            f"{product_name} high quality official stock image",
+            f"{product_name} product amazon india"
+        ]
         
-        print(f"🔎 Searching for stock image: '{query}'")
-        
-        try:
-            with DDGS() as ddgs:
-                # Get up to 5 results to find a valid one
-                results = list(ddgs.images(
-                    query,
-                    region="wt-wt",
-                    safesearch="on",
-                    size="Large",
-                    max_results=5
-                ))
+        for idx, query in enumerate(queries):
+            print(f"🔎 [Try {idx+1}] Searching for stock image: '{query}'")
             
-            if not results:
-                print("⚠️ No stock images found.")
-                return None
+            try:
+                # Add random delay to avoid bot detection
+                import time
+                if idx > 0: time.sleep(1)
                 
-            # Try to download the first valid image
-            for result in results:
-                image_url = result.get("image")
-                if not image_url:
+                with DDGS() as ddgs:
+                    results = list(ddgs.images(
+                        query,
+                        region="wt-wt",
+                        safesearch="on",
+                        size="Large",
+                        max_results=5
+                    ))
+                
+                if not results:
+                    print(f"   ⚠️ No results for query {idx+1}. Trying next...")
                     continue
                     
-                print(f"   ⬇️ Downloading: {image_url}")
-                try:
-                    # Download image (with timeout)
-                    response = requests.get(image_url, timeout=5, headers={"User-Agent": "Mozilla/5.0"})
-                    if response.status_code == 200:
-                        image_data = base64.b64encode(response.content).decode('utf-8')
-                        return {
-                            "source": "stock_search",
-                            "image_url": image_url,
-                            "image_data": f"data:image/jpeg;base64,{image_data}"
+                # Try to download the first valid image
+                for result in results:
+                    image_url = result.get("image")
+                    if not image_url:
+                        continue
+                        
+                    print(f"   ⬇️ Downloading: {image_url}")
+                    try:
+                        # Use a more realistic User-Agent
+                        headers = {
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
                         }
-                except Exception as e:
-                    print(f"      ⚠️ Failed to download {image_url}: {e}")
-                    continue
-            
-            return None
-
-        except Exception as e:
-            print(f"❌ Stock search failed: {e}")
-            return None
+                        response = requests.get(image_url, timeout=7, headers=headers)
+                        if response.status_code == 200:
+                            image_data = base64.b64encode(response.content).decode('utf-8')
+                            return {
+                                "source": "stock_search",
+                                "query_used": query,
+                                "image_url": image_url,
+                                "image_data": f"data:image/jpeg;base64,{image_data}"
+                            }
+                    except Exception as download_error:
+                        print(f"      ⚠️ Download failed: {download_error}")
+                        continue
+                
+            except Exception as search_error:
+                print(f"   ❌ Search attempt {idx+1} failed: {search_error}")
+                continue
+        
+        print("❌ Final: No stock images found after all attempts.")
+        return None
 
     def search_web(self, query: str) -> str:
         """
