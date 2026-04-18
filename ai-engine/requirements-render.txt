@@ -1,18 +1,21 @@
+# ─── Core API ───────────────────────────────────────────────
 fastapi==0.109.0
 uvicorn==0.27.0
 python-multipart==0.0.6
-torch --index-url https://download.pytorch.org/whl/cpu
-numpy
-rembg
-pillow
 python-dotenv
 aiofiles
 aiohttp
 requests
 psutil
-groq
-duckduckgo-search>=5.0.0
-ddgs>=1.0.0
-googlesearch-python>=1.2.0
-scikit-image
+
+# ─── Image Processing ────────────────────────────────────────
+pillow
+numpy
+onnxruntime          # rembg uses onnxruntime (NOT torch)
+rembg[cpu]           # background removal — lightweight CPU variant
 opencv-python-headless
+
+# ─── AI / Search ─────────────────────────────────────────────
+groq                 # price estimation (API calls only)
+duckduckgo-search>=5.0.0   # stock image search
+googlesearch-python>=1.2.0

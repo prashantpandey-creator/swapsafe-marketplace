@@ -1,7 +1,14 @@
-import torch
 import os
 import psutil
 from functools import lru_cache
+
+# torch is optional — only available in local/GPU environments
+try:
+    import torch
+    _TORCH_AVAILABLE = True
+except ImportError:
+    torch = None
+    _TORCH_AVAILABLE = False
 
 class Settings:
     PROJECT_NAME: str = "Guardian AI Engine"
@@ -21,18 +28,20 @@ def get_settings():
 class DeviceConfig:
     """
     Intelligent hardware selector for the 'Edge-First' architecture.
-    Prioritizes Apple Silicon (MPS) > CUDA > CPU.
+    Falls back gracefully to CPU string when torch is not installed.
     """
     @staticmethod
-    def get_device() -> torch.device:
+    def get_device():
+        if not _TORCH_AVAILABLE:
+            return "cpu"
         if torch.cuda.is_available():
             print("🚀 Device: NVIDIA CUDA Detected")
             return torch.device("cuda")
         elif torch.backends.mps.is_available():
-            print("🍎 Device: Apple Silicon (MPS) Detected - Running on Mac GPU")
+            print("🍎 Device: Apple Silicon (MPS) Detected")
             return torch.device("mps")
         else:
-            print("🐢 Device: CPU Fallback (Performance will be slow)")
+            print("🐢 Device: CPU Fallback")
             return torch.device("cpu")
 
     @staticmethod
@@ -48,14 +57,20 @@ class DeviceConfig:
 class DeviceProfile:
     """
     Hardware detection for pipeline selection.
-    Used to determine whether to use Clean & Enhance (local) or FLUX regeneration (cloud).
     """
     @staticmethod
     def get_profile() -> dict:
-        """
-        Detect device and return profile for pipeline selection.
-        Returns dict with keys: device, vram_gb, dtype, recommendation
-        """
+        mem_gb = round(psutil.virtual_memory().total / (1024**3), 1)
+
+        if not _TORCH_AVAILABLE:
+            return {
+                "device": "cpu",
+                "vram_gb": mem_gb,
+                "dtype": "float32",
+                "recommendation": "cpu-fallback",
+                "device_name": "CPU (no torch)"
+            }
+
         if torch.cuda.is_available():
             vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024**3)
             return {
@@ -66,19 +81,17 @@ class DeviceProfile:
                 "device_name": torch.cuda.get_device_name(0)
             }
         elif torch.backends.mps.is_available():
-            mem = psutil.virtual_memory().total / (1024**3)
             return {
                 "device": "mps",
-                "vram_gb": round(mem, 1),
+                "vram_gb": mem_gb,
                 "dtype": torch.float32,
                 "recommendation": "clean-enhance",
                 "device_name": "Apple Silicon (MPS)"
             }
         else:
-            mem = psutil.virtual_memory().total / (1024**3)
             return {
                 "device": "cpu",
-                "vram_gb": round(mem, 1),
+                "vram_gb": mem_gb,
                 "dtype": torch.float32,
                 "recommendation": "cpu-fallback",
                 "device_name": "CPU"
