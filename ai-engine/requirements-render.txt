@@ -17,5 +17,6 @@ opencv-python-headless
 
 # ─── AI / Search ─────────────────────────────────────────────
 groq                 # price estimation (API calls only)
+google-genai         # gemini flash analysis
 duckduckgo-search>=5.0.0   # stock image search
 googlesearch-python>=1.2.0
