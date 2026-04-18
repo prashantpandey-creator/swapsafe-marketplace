@@ -3,17 +3,25 @@ BiRefNet Service - State of the Art Background Removal (2024)
 Uses the BiRefNet model from HuggingFace for pixel-perfect background removal.
 FIXED: Correct mask extraction using .sigmoid() as per official docs.
 """
-import torch
+try:
+    import torch
+    from torchvision import transforms
+except ImportError:
+    torch = None
+    transforms = None
+
 import numpy as np
 from PIL import Image
 from io import BytesIO
-from torchvision import transforms
 import os
 
 class BiRefNetService:
     def __init__(self):
         self.model = None
-        self.device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
+        if torch:
+            self.device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
+        else:
+            self.device = "cpu"
         self.transform = None
         
     def load_model(self, variant: str = "massive"):
@@ -32,6 +40,11 @@ class BiRefNetService:
         model_id = variants.get(variant, variants["massive"])
         print(f"⚡ Loading BiRefNet ({variant}) - SOTA Background Removal...")
         
+        if not torch:
+            print("⚠️ No torch available. Forcing rembg fallback.")
+            self.model = "rembg"
+            return
+            
         try:
             from transformers import AutoModelForImageSegmentation
             
