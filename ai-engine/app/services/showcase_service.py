@@ -12,11 +12,12 @@ import base64
 def get_rembg():
     try:
         from rembg import remove, new_session
-        # Pre-load the general use model (better for products)
+        # On CPU-only servers (Render), u2netp is ~10x faster than standard models
+        print("💡 Initializing High-Speed Background Removal (u2netp)...")
         try:
-            session = new_session(model_name="isnet-general-use")
-        except:
-            print("⚠️ Failed to load isnet-general-use, falling back to default u2net")
+            session = new_session(model_name="u2netp")
+        except Exception as e:
+            print(f"⚠️ Failed to load u2netp ({e}), falling back to default")
             session = new_session()
         return remove, session
     except ImportError as e:
