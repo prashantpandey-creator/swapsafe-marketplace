@@ -1,10 +1,15 @@
 from PIL import Image
-import torch
-from app.config import DeviceConfig
 import io
-import torch
-from app.config import DeviceConfig
-import io
+
+try:
+    import torch
+    from app.config import DeviceConfig
+except ImportError:
+    torch = None
+    # Mock DeviceConfig if missing
+    class DeviceConfig:
+        @staticmethod
+        def get_device(): return "cpu"
 
 class VisionService:
     def __init__(self):
@@ -17,6 +22,10 @@ class VisionService:
         if self.model:
             return
         
+        if not torch:
+            print("⚠️ VisionService: No torch available. Skipping model load.")
+            return
+
         print(f"👁️ Loading CLIPSeg ({self.model_id})...")
         try:
             from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation

@@ -13,7 +13,11 @@ def get_rembg():
     try:
         from rembg import remove, new_session
         # Pre-load the general use model (better for products)
-        session = new_session(model_name="isnet-general-use")
+        try:
+            session = new_session(model_name="isnet-general-use")
+        except:
+            print("⚠️ Failed to load isnet-general-use, falling back to default u2net")
+            session = new_session()
         return remove, session
     except ImportError as e:
         print(f"⚠️ rembg not installed. Error: {e}")
