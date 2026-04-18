@@ -38,14 +38,10 @@ app.add_middleware(
 
 from app.routers import studio
 
-# Brain router requires torch/GPU services (turbo, qwen, SDXL).
-# Only mount it when running locally with full GPU stack.
-try:
-    from app.routers import brain
-    app.include_router(brain.router, prefix="/api/v1/brain", tags=["brain"])
-    print("🧠 Brain router loaded (GPU mode)")
-except Exception as e:
-    print(f"⚠️  Brain router skipped (no GPU/torch): {e}")
+from app.routers import brain
+app.include_router(brain.router, prefix="/api/v1/brain", tags=["brain"])
+print("🧠 Brain router loaded (Graceful fallback active)")
+
 
 app.include_router(studio.router, prefix="/api/v1/studio", tags=["studio"])
 

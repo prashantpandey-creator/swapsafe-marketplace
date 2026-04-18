@@ -2,8 +2,14 @@ from fastapi import APIRouter, File, UploadFile, Form, HTTPException
 from typing import Optional
 from app.services.central_brain import CentralBrainService
 from app.services.haggle_service import HaggleService, HaggleState
-from app.services.turbo_service import turbo_service
-from app.services.qwen_service import qwen_service
+try:
+    from app.services.turbo_service import turbo_service
+    from app.services.qwen_service import qwen_service
+except Exception as e:
+    print(f"⚠️  Brain missing GPU services (no torch): {e}")
+    turbo_service = None
+    qwen_service = None
+
 from app.services.gemini_analysis_service import gemini_analysis_service
 from app.services.stock_service import stock_service
 import logging
@@ -126,7 +132,6 @@ async def edit_image_smart(
 @router.post("/unload")
 async def unload_resources(target: str = "all"):
     import gc
-    import torch
     status = []
     
     if target in ["sdxl", "all"]:
@@ -142,16 +147,20 @@ async def unload_resources(target: str = "all"):
             status.append("Qwen Unloaded")
 
     gc.collect()
-    if torch.cuda.is_available(): torch.cuda.empty_cache()
-    if torch.backends.mps.is_available(): torch.mps.empty_cache()
+    try:
+        import torch
+        if torch.cuda.is_available(): torch.cuda.empty_cache()
+        if torch.backends.mps.is_available(): torch.mps.empty_cache()
+    except ImportError:
+        pass
     
     return {"message": "Memory Cleared", "details": status}   
 
 @router.get("/status")
 async def get_brain_status():
     return {
-        "sdxl_loaded": turbo_service.pipeline is not None,
-        "qwen_loaded": qwen_service.pipeline is not None
+        "sdxl_loaded": turbo_service is not None and getattr(turbo_service, 'pipeline', None) is not None,
+        "qwen_loaded": qwen_service is not None and getattr(qwen_service, 'pipeline', None) is not None
     }
 
 # --- 5. Analysis & Stock Services ---
