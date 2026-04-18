@@ -8,10 +8,17 @@ Manages:
 import asyncio
 from typing import Dict, Any, List
 from .showcase_service import showcase_service
-from .triposr_service import triposr_service
-from .vision_service import vision_service
-from .upscale_service import upscale_service
 from .stock_service import stock_service
+
+try:
+    from .triposr_service import triposr_service
+    from .vision_service import vision_service
+    from .upscale_service import upscale_service
+except Exception as e:
+    print(f"⚠️  GPU services skipped (no torch): {e}")
+    triposr_service = None
+    vision_service = None
+    upscale_service = None
 
 class AiPipelineService:
     """

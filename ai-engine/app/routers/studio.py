@@ -5,7 +5,6 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from typing import List, Optional
 from app.services.ai_pipeline import pipeline_service
 from app.services.stock_service import stock_service
-from app.services.local_pipeline import local_pipeline
 from pydantic import BaseModel
 from PIL import Image
 from io import BytesIO
@@ -33,6 +32,7 @@ async def process_local_plan_a(file: UploadFile = File(...)):
 
         print(f"📥 Processing uploaded image: {image.size}")
 
+        from app.services.local_pipeline import local_pipeline
         # Run Plan A pipeline (synchronous)
         result_image, metadata = local_pipeline.process(image)
 
