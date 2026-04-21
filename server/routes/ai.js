@@ -485,8 +485,6 @@ router.post('/enhance-photo', upload.fields([
             // }
 
             throw proxyError; // Re-throw to show real error
-
-            throw proxyError; // Re-throw for Pro mode errors if not connection related
         }
 
     } catch (error) {

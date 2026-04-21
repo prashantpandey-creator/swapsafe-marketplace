@@ -141,7 +141,7 @@ router.post('/create-credit-order', protect, async (req, res) => {
 
         // 3. Check Balance
         if (buyer.credits < totalAmount) {
-            return res.status(400).json({ error: `nsufficient credits. Required: ${totalAmount}, Available: ${buyer.credits}` });
+            return res.status(400).json({ error: `Insufficient credits. Required: ${totalAmount}, Available: ${buyer.credits}` });
         }
 
         // 4. Process "Transaction" (Deduct from Buyer, Hold in Escrow)
@@ -368,14 +368,12 @@ router.post('/confirm-delivery', protect, async (req, res) => {
         // Update listing status
         await Listing.findByIdAndUpdate(order.listing, { status: 'sold' });
 
-        // Update seller stats
+        // Update seller stats and credit their account with the funds
         await User.findByIdAndUpdate(order.seller, {
-            $inc: { totalSales: 1 }
-        });
-
-        // Update buyer stats
-        await User.findByIdAndUpdate(order.buyer, {
-            $inc: { totalPurchases: 1 }
+            $inc: { 
+                totalSales: 1,
+                credits: order.commission.sellerAmount 
+            }
         });
 
         res.json({

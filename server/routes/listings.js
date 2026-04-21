@@ -106,7 +106,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
 // @route   POST /api/listings
 // @desc    Create new listing
 // @access  Private
-router.post('/', protect, async (req, res) => {
+router.post('/', protect, upload.array('images', 10), async (req, res) => {
     try {
         const {
             title,
@@ -115,7 +115,6 @@ router.post('/', protect, async (req, res) => {
             condition,
             price,
             originalPrice,
-            images,
             location,
             deliveryOptions,
             estimatedPrice,
@@ -123,9 +122,25 @@ router.post('/', protect, async (req, res) => {
         } = req.body;
 
         // Validate required fields
-        if (!title || !description || !category || !condition || !price || !location) {
+        if (!title || !description || !category || !condition || !price) {
             return res.status(400).json({ error: 'Please provide all required fields' });
         }
+
+        // Parse JSON strings if FormData sent them as strings
+        let parsedLocation = location;
+        if (typeof location === 'string') {
+            try { parsedLocation = JSON.parse(location); } catch (e) {}
+        }
+
+        let parsedDelivery = deliveryOptions;
+        if (typeof deliveryOptions === 'string') {
+            try { parsedDelivery = JSON.parse(deliveryOptions); } catch (e) {}
+        }
+        
+        // Handle images (uploaded or direct JSON)
+        const images = req.files && req.files.length > 0
+            ? req.files.map(f => `data:${f.mimetype};base64,${f.buffer.toString('base64')}`)
+            : (req.body.images || []);
 
         const listing = await Listing.create({
             seller: req.user._id,
@@ -135,9 +150,9 @@ router.post('/', protect, async (req, res) => {
             condition,
             price,
             originalPrice: originalPrice || 0,
-            images: images || [],
-            location,
-            deliveryOptions: deliveryOptions || { meetup: true, shipping: false },
+            images,
+            location: parsedLocation,
+            deliveryOptions: parsedDelivery || { meetup: true, shipping: false },
             estimatedPrice: estimatedPrice || { value: 0, confidence: 0, reasoning: '' },
             retailPrice: retailPrice || { value: 0, source: '' }
         });
@@ -197,42 +212,7 @@ router.put('/:id', protect, async (req, res) => {
     }
 });
 
-// @route   POST /api/listings
-// @desc    Create a new listing (Async via Job Queue)
-// @access  Private
-router.post('/', protect, upload.array('images', 10), async (req, res) => {
-    try {
-        // Import dynamically to avoid circular dependencies if any
-        const { submitListingCreationJob } = await import('../services/jobQueue.js');
 
-        // Process images - map to buffer/base64 or just pass metadata if using cloud storage direct upload
-        // For now assuming we pass the file buffers or objects to the worker
-        // In a real production env with massive scale, we'd upload to S3 presigned URLs on client
-        // But for this hybrid approach, we'll pass the data to the worker
-
-        const listingData = {
-            ...req.body,
-            images: req.files && req.files.length > 0
-                ? req.files.map(f => `data:${f.mimetype};base64,${f.buffer.toString('base64')}`)
-                : []
-        };
-
-        // Submit to queue
-        const jobInfo = await submitListingCreationJob(req.user._id, listingData);
-
-        res.status(202).json({
-            success: true,
-            message: 'Listing creation started',
-            jobId: jobInfo.jobId,
-            status: jobInfo.status,
-            estimatedWaitMs: jobInfo.estimatedWaitMs
-        });
-
-    } catch (error) {
-        console.error('Create listing error:', error);
-        res.status(500).json({ error: 'Failed to create listing' });
-    }
-});
 
 // @route   DELETE /api/listings/:id
 // @desc    Delete listing
@@ -262,6 +242,24 @@ router.delete('/:id', protect, async (req, res) => {
     }
 });
 
+// @route   GET /api/listings/my/all
+// @desc    Get current user's listings (all statuses)
+// @access  Private
+router.get('/my/all', protect, async (req, res) => {
+    try {
+        const listings = await Listing.find({ seller: req.user._id })
+            .sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            listings
+        });
+    } catch (error) {
+        console.error('Get my listings error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // @route   GET /api/listings/user/:userId
 // @desc    Get listings by user
 // @access  Public
@@ -280,24 +278,6 @@ router.get('/user/:userId', async (req, res) => {
         });
     } catch (error) {
         console.error('Get user listings error:', error);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
-// @route   GET /api/listings/my/all
-// @desc    Get current user's listings (all statuses)
-// @access  Private
-router.get('/my/all', protect, async (req, res) => {
-    try {
-        const listings = await Listing.find({ seller: req.user._id })
-            .sort({ createdAt: -1 });
-
-        res.json({
-            success: true,
-            listings
-        });
-    } catch (error) {
-        console.error('Get my listings error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });

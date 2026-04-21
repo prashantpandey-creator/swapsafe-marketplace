@@ -184,21 +184,26 @@ export const aiAPI = {
     },
 
     analyzeImage: async (imageBlob) => {
-        // Mock implementation for demo - in real app, send to backend/Gemini
-        console.log('🧠 Analyzing image with Gemini Vision...');
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate processing
-
-        // Return mock data for a "detected" item
-        return {
-            title: "Sony WH-1000XM4 Wireless Noise Cancelling Headphones",
-            category: "electronics",
-            condition: "like-new",
-            estimatedPrice: 18500,
-            originalPrice: 24990,
-            confidence: 94,
-            features: ["Noise Cancellation", "30hr Battery", "Black"],
-            reasoning: "Image matches Sony XM4 design. Earcups show minimal wear. Accessories included."
-        };
+        const formData = new FormData();
+        formData.append('file', imageBlob);
+        
+        // Use direct fetch so we can easily pass FormData without json-encoding logic
+        const response = await fetch(`${API_URL}/ai/analyze-image`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                ...(getToken() && { Authorization: `Bearer ${getToken()}` })
+            }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to analyze image');
+        }
+        
+        const data = await response.json();
+        // The backend returns { status: "success", analysis: { ... } }
+        return data.analysis || data;
     },
 
     generate3D: async (imageUrl) => {

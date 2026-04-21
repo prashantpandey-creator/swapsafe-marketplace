@@ -163,10 +163,13 @@ class BiRefNetService:
         return Image.fromarray(result.astype(np.uint8))
     
     def _rembg_remove(self, image: Image.Image) -> Image.Image:
-        """Fallback using rembg library"""
-        print("⚠️ Using rembg fallback...")
-        from rembg import remove
-        return remove(image)
+        """Fallback using rembg library with lightweight memory-safe model"""
+        print("⚠️ Using rembg fallback (u2netp)...")
+        from rembg import remove, new_session
+        if not hasattr(self, '_rembg_session'):
+            print("💡 Loading lightweight u2netp model to prevent Render OOM...")
+            self._rembg_session = new_session("u2netp")
+        return remove(image, session=self._rembg_session)
     
     def remove_and_place_on_white(self, image: Image.Image) -> Image.Image:
         """

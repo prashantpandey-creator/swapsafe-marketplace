@@ -54,7 +54,7 @@ const userSchema = new mongoose.Schema({
     // E-Wallet Balance
     credits: {
         type: Number,
-        default: 50000 // Default high balance for testing as requested
+        default: 0 
     },
     // Guest System
     isGuest: {

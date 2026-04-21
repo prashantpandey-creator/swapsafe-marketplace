@@ -8,6 +8,7 @@ import { protect } from '../middleware/auth.js';
 import { calculateTrustScore, analyzeListing, analyzeMessage } from '../services/legionShield.js';
 import User from '../models/User.js';
 import Listing from '../models/Listing.js';
+import Report from '../models/Report.js';
 
 const router = express.Router();
 
@@ -171,14 +172,18 @@ router.post('/report', protect, async (req, res) => {
         }
 
         // In production, save to a Reports collection
-        // For now, just log it
-        console.log('🚨 REPORT RECEIVED:', {
+        const report = await Report.create({
             reportedBy: req.user._id,
             type,
             targetId,
             reason,
-            details,
-            timestamp: new Date()
+            details
+        });
+
+        console.log('🚨 REPORT SAVED:', {
+            reportId: report._id,
+            type,
+            targetId
         });
 
         res.json({
