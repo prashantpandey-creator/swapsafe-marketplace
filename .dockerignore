@@ -1,0 +1,10 @@
+node_modules
+server/node_modules
+ai-engine/venv
+ai-engine/__pycache__
+ai-engine/static/*
+ai-engine/models/*
+.git
+.env
+*.log
+dist

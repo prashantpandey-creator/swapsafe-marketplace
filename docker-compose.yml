@@ -1,0 +1,90 @@
+version: "3.8"
+
+services:
+  # ── MongoDB ──────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: mongosh --eval "db.runCommand('ping').ok" --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis (job queue) ────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend API (Express + Node.js) ──────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file: ./server/.env
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongo:27017/swapsafe
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - USE_REDIS=true
+      - AI_ENGINE_URL=http://ai-engine:8001
+      - CLIENT_URL=http://204.168.176.229:3001
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ── AI Engine (FastAPI + Python) ─────────────────────────────
+  ai-engine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ai-engine
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    env_file: ./ai-engine/.env
+    environment:
+      - DEVICE=cpu
+      - CLIENT_URL=http://204.168.176.229:3001
+    volumes:
+      - ai_models:/app/models
+      - ai_static:/app/static
+
+  # ── Frontend (React, served by nginx) ────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        - VITE_API_URL=http://204.168.176.229:5000/api
+        - VITE_AI_ENGINE_URL=http://204.168.176.229:8001
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:
+  redis_data:
+  ai_models:
+  ai_static:
