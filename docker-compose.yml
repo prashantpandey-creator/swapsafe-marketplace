@@ -36,12 +36,13 @@ services:
 
   # ── Backend API (Express + Node.js) ──────────────────────────
   backend:
+    container_name: swapsafe-backend
     build:
       context: .
       dockerfile: docker/Dockerfile.backend
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5000:5000"        # localhost-only (frontend/proxy reach it internally)
+      - "127.0.0.1:5000:5000"
     env_file: ./server/.env
     environment:
       - NODE_ENV=production
@@ -61,6 +62,7 @@ services:
 
   # ── AI Engine (FastAPI + Python) ─────────────────────────────
   ai-engine:
+    container_name: swapsafe-ai-engine
     build:
       context: .
       dockerfile: docker/Dockerfile.ai-engine
@@ -78,6 +80,7 @@ services:
   # ── Frontend (React, served by nginx) ────────────────────────
   # The ONLY service intentionally published to the public internet.
   frontend:
+    container_name: swapsafe-frontend
     build:
       context: .
       dockerfile: docker/Dockerfile.frontend
