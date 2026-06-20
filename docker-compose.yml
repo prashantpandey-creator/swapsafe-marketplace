@@ -1,30 +1,35 @@
-version: "3.8"
-
 services:
   # ── MongoDB ──────────────────────────────────────────────────
+  # Bound to localhost only + root auth. NEVER expose 27017 to 0.0.0.0
+  # (an authless internet-facing Mongo was wiped by a ransom bot — see SECURITY.md).
   mongo:
     image: mongo:7
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"      # localhost-only
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
     volumes:
       - mongo_data:/data/db
     healthcheck:
-      test: mongosh --eval "db.runCommand('ping').ok" --quiet
+      test: mongosh -u "$$MONGO_INITDB_ROOT_USERNAME" -p "$$MONGO_INITDB_ROOT_PASSWORD" --quiet --eval "db.runCommand(\"ping\").ok"
       interval: 10s
       timeout: 5s
       retries: 5
 
   # ── Redis (job queue) ────────────────────────────────────────
+  # Bound to localhost only + requirepass. NEVER expose 6379 to 0.0.0.0.
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"        # localhost-only
     volumes:
       - redis_data:/data
     healthcheck:
-      test: redis-cli ping
+      test: redis-cli -a "$$REDIS_PASSWORD" ping
       interval: 10s
       timeout: 5s
       retries: 5
@@ -36,17 +41,18 @@ services:
       dockerfile: docker/Dockerfile.backend
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"        # localhost-only (frontend/proxy reach it internally)
     env_file: ./server/.env
     environment:
       - NODE_ENV=production
       - PORT=5000
-      - MONGODB_URI=mongodb://mongo:27017/swapsafe
+      - MONGODB_URI=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo:27017/swapsafe?authSource=admin
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - USE_REDIS=true
       - AI_ENGINE_URL=http://ai-engine:8001
-      - CLIENT_URL=http://204.168.176.229:3001
+      - CLIENT_URL=http://204.168.176.229:3010
     depends_on:
       mongo:
         condition: service_healthy
@@ -60,16 +66,17 @@ services:
       dockerfile: docker/Dockerfile.ai-engine
     restart: unless-stopped
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"        # localhost-only
     env_file: ./ai-engine/.env
     environment:
       - DEVICE=cpu
-      - CLIENT_URL=http://204.168.176.229:3001
+      - CLIENT_URL=http://204.168.176.229:3010
     volumes:
       - ai_models:/app/models
       - ai_static:/app/static
 
   # ── Frontend (React, served by nginx) ────────────────────────
+  # The ONLY service intentionally published to the public internet.
   frontend:
     build:
       context: .
@@ -79,7 +86,7 @@ services:
         - VITE_AI_ENGINE_URL=http://204.168.176.229:8001
     restart: unless-stopped
     ports:
-      - "3001:80"
+      - "3010:80"                    # only public service
     depends_on:
       - backend
 

@@ -4,6 +4,9 @@ set -e
 # ── SwapSafe Marketplace — Hetzner One-Shot Setup ────────────
 # Run this on your Hetzner VPS (204.168.176.229):
 #   curl -sSL https://raw.githubusercontent.com/prashantpandey-creator/swapsafe-marketplace/claude/local-dev-setup-rKx44/setup-hetzner.sh | bash
+#
+# SECURITY: Only the frontend (port 3010) is published to the public internet.
+# Mongo/Redis/backend/ai-engine bind to 127.0.0.1 and run with auth. See SECURITY.md.
 
 echo "========================================="
 echo "  SwapSafe Marketplace — Hetzner Setup"
@@ -50,16 +53,30 @@ if [ -z "$GROQ_KEY" ]; then
     echo "  You'll need to edit server/.env and ai-engine/.env manually."
 fi
 
-# Generate a random JWT secret
+# Generate secrets
 JWT_SECRET=$(openssl rand -hex 32)
+MONGO_USER=swapsafe
+MONGO_PASS=$(openssl rand -hex 24)
+REDIS_PASS=$(openssl rand -hex 24)
 
-# ── 3. Create server/.env ────────────────────────────────────
+# ── 3. Create env files ──────────────────────────────────────
 echo ""
 echo "[3/5] Creating environment files..."
 
+# Root .env — read by docker-compose for ${MONGO_*}/${REDIS_PASSWORD} substitution
+cat > .env << ENVEOF
+MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASS}
+REDIS_PASSWORD=${REDIS_PASS}
+ENVEOF
+chmod 600 .env
+
 cat > server/.env << ENVEOF
-MONGODB_URI=mongodb://mongo:27017/swapsafe
+MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASS}@mongo:27017/swapsafe?authSource=admin
 JWT_SECRET=${JWT_SECRET}
+MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASS}
+REDIS_PASSWORD=${REDIS_PASS}
 GROQ_API_KEY=${GROQ_KEY}
 GEMINI_API_KEY=${GEMINI_KEY}
 OPENAI_API_KEY=
@@ -70,12 +87,12 @@ RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
 PORT=5000
 AI_ENGINE_URL=http://ai-engine:8001
-CLIENT_URL=http://204.168.176.229:3001
+CLIENT_URL=http://204.168.176.229:3010
 REDIS_HOST=redis
 REDIS_PORT=6379
 USE_REDIS=true
 ENVEOF
-
+chmod 600 server/.env
 echo "  Created server/.env"
 
 # ── 4. Create ai-engine/.env ────────────────────────────────
@@ -84,9 +101,9 @@ DEVICE=cpu
 MODEL_PATH=./models
 GROQ_API_KEY=${GROQ_KEY}
 GEMINI_API_KEY=${GEMINI_KEY}
-CLIENT_URL=http://204.168.176.229:3001
+CLIENT_URL=http://204.168.176.229:3010
 ENVEOF
-
+chmod 600 ai-engine/.env
 echo "  Created ai-engine/.env"
 
 # ── 5. Build and launch ─────────────────────────────────────
@@ -103,9 +120,9 @@ echo "========================================="
 echo "  SwapSafe is starting up!"
 echo "========================================="
 echo ""
-echo "  Frontend:   http://204.168.176.229:3001"
-echo "  Backend:    http://204.168.176.229:5000"
-echo "  AI Engine:  http://204.168.176.229:8001"
+echo "  Public:     http://204.168.176.229:3010   (frontend only)"
+echo "  Internal:   backend :5000 / ai-engine :8001 / mongo :27017 / redis :6379"
+echo "              (all bound to 127.0.0.1 — not reachable from the internet)"
 echo ""
 echo "  Check status:  docker compose ps"
 echo "  View logs:     docker compose logs -f"
