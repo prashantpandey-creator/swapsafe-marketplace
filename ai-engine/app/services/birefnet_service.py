@@ -163,10 +163,13 @@ class BiRefNetService:
         return Image.fromarray(result.astype(np.uint8))
     
     def _rembg_remove(self, image: Image.Image) -> Image.Image:
-        """Fallback using rembg library"""
-        print("⚠️ Using rembg fallback...")
-        from rembg import remove
-        return remove(image)
+        """Fallback using rembg library (u2netp — fast 4MB model)"""
+        print("⚠️ Using rembg fallback (u2netp)...")
+        from rembg import remove, new_session
+        import os
+        # u2netp is ~4MB and ~10x faster than u2net on CPU-only VPS
+        session = new_session(model_name="u2netp", providers=["CPUExecutionProvider"])
+        return remove(image, session=session)
     
     def remove_and_place_on_white(self, image: Image.Image) -> Image.Image:
         """
