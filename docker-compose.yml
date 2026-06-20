@@ -96,6 +96,18 @@ services:
       - coolify
     depends_on:
       - backend
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - traefik.http.routers.swapsafe.entrypoints=https
+      - traefik.http.routers.swapsafe.rule=Host(`swapsafe.store`) || Host(`www.swapsafe.store`)
+      - traefik.http.routers.swapsafe.tls=true
+      - traefik.http.routers.swapsafe.tls.certresolver=letsencrypt
+      - traefik.http.services.swapsafe.loadbalancer.server.port=80
+      - traefik.http.routers.swapsafe-http.entrypoints=http
+      - traefik.http.routers.swapsafe-http.rule=Host(`swapsafe.store`) || Host(`www.swapsafe.store`)
+      - traefik.http.routers.swapsafe-http.middlewares=swapsafe-redirect
+      - traefik.http.middlewares.swapsafe-redirect.redirectscheme.scheme=https
 
 networks:
   coolify:
