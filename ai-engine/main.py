@@ -85,8 +85,9 @@ async def startup_event():
             from starlette.concurrency import run_in_threadpool
             from app.services.birefnet_service import birefnet_service
             from PIL import Image
-            tiny = Image.new("RGB", (10, 10), (128, 128, 128))
-            await run_in_threadpool(birefnet_service._rembg_remove, tiny)
+            # Use a realistic size so onnxruntime JIT-compiles at the right input shape
+            warmup_img = Image.new("RGB", (512, 512), (128, 128, 128))
+            await run_in_threadpool(birefnet_service._rembg_remove, warmup_img)
             print("🚀 rembg u2netp session warmed up")
         except Exception as e:
             print(f"⚠️ rembg warmup failed (non-fatal): {e}")
