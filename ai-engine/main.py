@@ -78,6 +78,21 @@ async def startup_event():
     
     asyncio.create_task(self_ping())
 
+    # Warm up the rembg u2netp session so the first real request doesn't pay the load cost
+    async def warmup_rembg():
+        await asyncio.sleep(5)  # let uvicorn fully start first
+        try:
+            from starlette.concurrency import run_in_threadpool
+            from app.services.birefnet_service import birefnet_service
+            from PIL import Image
+            tiny = Image.new("RGB", (10, 10), (128, 128, 128))
+            await run_in_threadpool(birefnet_service._rembg_remove, tiny)
+            print("🚀 rembg u2netp session warmed up")
+        except Exception as e:
+            print(f"⚠️ rembg warmup failed (non-fatal): {e}")
+
+    asyncio.create_task(warmup_rembg())
+
 @app.get("/")
 def read_root():
     return {

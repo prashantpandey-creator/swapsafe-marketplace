@@ -18,6 +18,7 @@ import os
 class BiRefNetService:
     def __init__(self):
         self.model = None
+        self._rembg_session = None  # cached u2netp session
         if torch:
             self.device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
         else:
@@ -163,13 +164,14 @@ class BiRefNetService:
         return Image.fromarray(result.astype(np.uint8))
     
     def _rembg_remove(self, image: Image.Image) -> Image.Image:
-        """Fallback using rembg library (u2netp — fast 4MB model)"""
+        """Fallback using rembg library (u2netp — fast 4MB model, session cached)"""
         print("⚠️ Using rembg fallback (u2netp)...")
         from rembg import remove, new_session
-        import os
-        # u2netp is ~4MB and ~10x faster than u2net on CPU-only VPS
-        session = new_session(model_name="u2netp", providers=["CPUExecutionProvider"])
-        return remove(image, session=session)
+        if self._rembg_session is None:
+            print("⏳ Loading u2netp session (first call)...")
+            self._rembg_session = new_session(model_name="u2netp", providers=["CPUExecutionProvider"])
+            print("✅ u2netp session ready")
+        return remove(image, session=self._rembg_session)
     
     def remove_and_place_on_white(self, image: Image.Image) -> Image.Image:
         """
