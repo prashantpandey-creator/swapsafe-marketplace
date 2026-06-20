@@ -86,15 +86,23 @@ class ShowcaseService:
         start = time.time()
         
         try:
-            # Step 1: Remove background (Updated to use BiRefNet)
-            print("   ✂️ Step A: Removing background (BiRefNet)...")
-            step_start = time.time()
-            
             from app.services.birefnet_service import birefnet_service
+            from app.services.enhance_service import enhance_service
             from starlette.concurrency import run_in_threadpool
-            
+
+            # Step 0: Pre-enhance raw photo (CLAHE + denoise + sharpen)
+            # Applied before bg removal so rembg works on a cleaner image
+            print("   🌟 Step 0: Pre-enhancing photo (CLAHE/denoise/sharpen)...")
+            step_start = time.time()
+            enhanced_bytes = await run_in_threadpool(enhance_service.enhance_product, image_bytes)
+            print(f"      ✅ Pre-enhanced in {time.time()-step_start:.2f}s")
+
+            # Step 1: Remove background
+            print("   ✂️ Step A: Removing background (BiRefNet/rembg)...")
+            step_start = time.time()
+
             # Use BiRefNet in a threadpool to avoid blocking event loop
-            input_pil = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+            input_pil = Image.open(io.BytesIO(enhanced_bytes)).convert("RGB")
             fg_image_pil = await run_in_threadpool(birefnet_service.remove_background, input_pil)
             fg_image = fg_image_pil.convert("RGBA")
             

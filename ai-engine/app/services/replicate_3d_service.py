@@ -6,6 +6,8 @@ import os
 import asyncio
 import aiohttp
 import uuid
+import json
+from datetime import date
 from typing import Optional
 from PIL import Image
 from io import BytesIO
@@ -23,9 +25,13 @@ class Replicate3DService:
     - GLB file downloading and caching
     """
 
+    # File used to persist today's spend across requests (survives in-process restarts)
+    _SPEND_FILE = "/app/models/.replicate_spend.json"
+
     def __init__(self):
         self.api_token = os.getenv("REPLICATE_API_TOKEN")
         self.cost_per_call = float(os.getenv("REPLICATE_COST_PER_CALL", "0.05"))
+        self.daily_cap = float(os.getenv("REPLICATE_DAILY_CAP_USD", "10.0"))
         self.timeout = 60  # Max 60 seconds per call
         self.max_retries = 3
         self.retry_delay = 2  # Start with 2 seconds
@@ -34,6 +40,29 @@ class Replicate3DService:
             print(f"🔑 Replicate API token found ({len(self.api_token)} chars)")
         else:
             print("⚠️  REPLICATE_API_TOKEN not set. 3D reconstruction will be skipped.")
+
+    def _get_today_spend(self) -> float:
+        """Return cumulative Replicate spend for today in USD."""
+        try:
+            with open(self._SPEND_FILE) as f:
+                data = json.load(f)
+            if data.get("date") == str(date.today()):
+                return float(data.get("spend", 0.0))
+        except Exception:
+            pass
+        return 0.0
+
+    def _record_spend(self, amount: float):
+        """Increment today's spend record by amount."""
+        today = str(date.today())
+        spend = self._get_today_spend() + amount
+        try:
+            os.makedirs(os.path.dirname(self._SPEND_FILE), exist_ok=True)
+            with open(self._SPEND_FILE, "w") as f:
+                json.dump({"date": today, "spend": spend}, f)
+        except Exception as e:
+            print(f"⚠️ Could not write spend record: {e}")
+        print(f"💰 Replicate today's spend: ${spend:.3f} / ${self.daily_cap:.2f} cap")
 
     async def validate_token(self) -> bool:
         """
@@ -88,6 +117,12 @@ class Replicate3DService:
             print("❌ Replicate API token not configured. Skipping 3D reconstruction.")
             return None
 
+        # Enforce daily spend cap
+        today_spend = self._get_today_spend()
+        if today_spend + self.cost_per_call > self.daily_cap:
+            print(f"🚫 Replicate daily cap reached (${today_spend:.3f} spent, cap ${self.daily_cap:.2f}). Skipping.")
+            return None
+
         # Convert PIL image to PNG bytes
         buffer = BytesIO()
         # Convert RGBA to RGB if needed
@@ -106,7 +141,10 @@ class Replicate3DService:
         # Retry loop
         for attempt in range(self.max_retries):
             try:
-                return await self._call_replicate_api(image_bytes, foreground_ratio)
+                result = await self._call_replicate_api(image_bytes, foreground_ratio)
+                if result:
+                    self._record_spend(self.cost_per_call)
+                return result
             except asyncio.TimeoutError:
                 if attempt < self.max_retries - 1:
                     wait_time = self.retry_delay * (2 ** attempt)

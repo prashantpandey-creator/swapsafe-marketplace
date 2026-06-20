@@ -13,6 +13,13 @@ COPY ai-engine/ ./
 
 RUN mkdir -p static models
 
+# Pre-bake rembg models so the first request doesn't trigger a 175MB+ download
+# and cause a 504 timeout through the nginx proxy.
+# u2net (175MB) = quality default; u2netp (4MB) = fast path used in showcase_service
+ENV U2NET_HOME=/app/models
+RUN python -c "from rembg import new_session; new_session('u2net'); print('u2net pre-baked')"
+RUN python -c "from rembg import new_session; new_session('u2netp'); print('u2netp pre-baked')"
+
 EXPOSE 8001
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]

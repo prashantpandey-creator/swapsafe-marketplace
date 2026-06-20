@@ -363,65 +363,19 @@ async def enhance_product(
         content = await file.read()
         input_image = Image.open(io.BytesIO(content)).convert("RGB")
         
-        # 1. Context Aggregation
-        context_description = f"authentic {product_name}" if product_name else "product"
-        
         # SOTA MODE (VisionService with Identity Lock)
+        # Both fast and pro run the same CPU-safe pipeline (CLAHE + rembg + white composite).
+        # Pro relighting via Replicate IC-Light is planned but not yet wired — when it is,
+        # this block becomes the IC-Light branch and fast stays CPU-only.
+        print(f"⚡ Running {'Pro' if mode == 'pro' else 'Fast'} Enhancement Pipeline (CLAHE + rembg + white bg)...")
+        result = await pipeline_service.enhance_product_image(
+            image_bytes=content,
+            product_name=product_name,
+            reference_url=reference_image_url if has_exact_match.lower() == 'true' else None,
+            category=category
+        )
         if mode == 'pro':
-            print("✨ Running Enterprise SOTA Pipeline (Amazon-Style)...")
-            
-            # Scenario Router
-            workflow_case = "1. Image-Only"
-            reference_style_image = None
-            
-            # Scenario 3: Visual Context (Stock Proxy)
-            if reference_image_url and has_exact_match.lower() == 'true':
-                workflow_case = "3. Visual-Context (Stock)"
-                print(f"🔗 Scenario 3 ACTIVE: Using reference style from {reference_image_url}")
-                # In a full v3 implementation, we would download and pass this to VisionService
-                # For now, we use the name-infused prompt with "Amazon-style" keywords
-                lighting_prompt = f"{product_name or 'product'}, matching official stock catalog style, high-key lighting"
-            
-            # Scenario 2: Semantic Context (Name)
-            elif product_name:
-                workflow_case = "2. Semantic-Context (Name)"
-                print(f"📝 Scenario 2 ACTIVE: Name-Infused Context for {product_name}")
-                lighting_prompt = f"{product_name}, professional commercial studio setup"
-            
-            # Scenario 1: Zero Context (Image Only)
-            else:
-                workflow_case = "1. Zero-Context (Image Only)"
-                print("⚡ Scenario 1 ACTIVE: Generic Commercial Context")
-                lighting_prompt = "commercial product photography"
-
-            print(f"🏗️  Executing Workflow: {workflow_case}")
-            
-            # Execution with VisionService (Amazon-Style prompt is appended in VisionService)
-            relit_image = vision_service.relight_product(
-                input_image, 
-                prompt=lighting_prompt,
-                debug_prefix=debug_id
-            )            # Convert back to Base64
-            output_buffer = io.BytesIO()
-            relit_image.save(output_buffer, format="PNG")
-            img_str = base64.b64encode(output_buffer.getvalue()).decode("utf-8")
-            
-            result = {
-                "status": "success",
-                "image_data": f"data:image/png;base64,{img_str}",
-                "original_image_data": f"data:image/jpeg;base64,{base64.b64encode(content).decode('utf-8')}",
-                "dimensions": relit_image.size
-            }
-            
-        else:
-            # LEGACY MODE
-            print("⚡ Running Fast Enhancement Pipeline...")
-            result = await pipeline_service.enhance_product_image(
-                image_bytes=content,
-                product_name=product_name,
-                reference_url=reference_image_url if has_exact_match.lower() == 'true' else None,
-                category=category
-            )
+            result["pro_note"] = "IC-Light relighting coming soon — using studio-clean pipeline for now."
         
         elapsed = time.time() - start_time
         print(f"✅ ENHANCEMENT COMPLETE in {elapsed:.2f}s")
