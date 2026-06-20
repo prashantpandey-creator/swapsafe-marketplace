@@ -80,7 +80,7 @@ async def startup_event():
 
     # Warm up the rembg u2netp session so the first real request doesn't pay the load cost
     async def warmup_rembg():
-        await asyncio.sleep(5)  # let uvicorn fully start first
+        await asyncio.sleep(30)  # let uvicorn fully start + give slack for slow machines
         try:
             from starlette.concurrency import run_in_threadpool
             from app.services.birefnet_service import birefnet_service
