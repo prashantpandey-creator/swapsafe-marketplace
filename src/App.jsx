@@ -70,12 +70,15 @@ function PublicOnlyRoute({ children }) {
 }
 
 function App() {
-    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'esoteric')
+    const [theme, setTheme] = useState(() => {
+        // Two themes only: 'white' (professional, default) and 'lynch' (creative).
+        // Migrate any legacy theme value to 'white'.
+        const stored = localStorage.getItem('theme')
+        return stored === 'lynch' || stored === 'white' ? stored : 'white'
+    })
 
     const toggleTheme = () => {
-        const themes = ['classic', 'esoteric', 'mystical', 'void', 'minimal', 'psychedelic', 'lynch']
-        const currentIndex = themes.indexOf(theme)
-        const newTheme = themes[(currentIndex + 1) % themes.length]
+        const newTheme = theme === 'white' ? 'lynch' : 'white'
         setTheme(newTheme)
         localStorage.setItem('theme', newTheme)
     }

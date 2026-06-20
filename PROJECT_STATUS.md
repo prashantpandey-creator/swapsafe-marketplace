@@ -21,8 +21,21 @@
 |-------------|-----|
 | Production Frontend | https://swapsafe-marketplace.vercel.app |
 | Production Backend | https://swapsafe-backend.onrender.com |
-| AI Engine Tunnel | https://focusing-combining-accessing-professional.trycloudflare.com |
+| AI Engine (Render) | https://swapsafe-ai-engine.onrender.com *(check Render dashboard for exact URL)* |
 | GitHub Repo | https://github.com/prashantpandey-creator/swapsafe-marketplace |
+
+---
+
+## Render Infrastructure
+
+| Resource | Value |
+|----------|-------|
+| Backend Service ID | `srv-d5u3odvpm1nc73d9cf60` |
+| AI Engine Service ID | *(to be created)* |
+| Render Outbound IP #1 | `74.220.52.0/24` |
+| Render Outbound IP #2 | `74.220.60.0/24` |
+
+> **Important:** The Outbound IPs above must be whitelisted in **MongoDB Atlas → Network Access** to allow the Render backend and AI engine to connect to the database.
 
 ---
 

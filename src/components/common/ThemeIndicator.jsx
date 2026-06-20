@@ -6,36 +6,21 @@ const ThemeIndicator = ({ theme, onToggle }) => {
     const timeoutRef = useRef(null);
 
     const themeNames = {
-        classic: 'Classic - Sacred Geometry',
-        esoteric: 'Esoteric - Hindu Mystical',
-        mystical: 'Mystical - Ethereal Cyan',
-        void: 'Void - Deep Black',
-        minimal: 'Minimal - Clean Gray',
-        psychedelic: 'Psychedelic - Neon Purple',
+        white: 'Studio - Clean & Modern',
         lynch: 'Lynch - Surreal Crimson'
     };
 
     const themeColors = {
-        classic: '#D4AF37',
-        esoteric: '#FF9933',
-        mystical: '#22D3EE',
-        void: '#EF4444',
-        minimal: '#6366F1',
-        psychedelic: '#bf00ff',
+        white: '#B08C78',
         lynch: '#B22222'
     };
 
     const themeIcons = {
-        classic: '🌀',
-        esoteric: '🕉️',
-        mystical: '✨',
-        void: '⚫',
-        minimal: '⚪',
-        psychedelic: '⚡',
+        white: '🤍',
         lynch: '🦉'
     };
 
-    const color = themeColors[theme] || '#ffffff';
+    const color = themeColors[theme] || '#B08C78';
 
     const handleMouseEnter = () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
