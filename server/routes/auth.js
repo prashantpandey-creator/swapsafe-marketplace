@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
+import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User.js';
 import { protect } from '../middleware/auth.js';
 
@@ -107,6 +108,78 @@ router.post('/login', authLimiter, async (req, res) => {
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ error: 'Server error during login' });
+    }
+});
+
+// @route   POST /api/auth/google
+// @access  Public
+router.post('/google', authLimiter, async (req, res) => {
+    try {
+        const { credential } = req.body;
+        if (!credential) {
+            return res.status(400).json({ error: 'Google credential is required' });
+        }
+
+        const clientId = process.env.GOOGLE_CLIENT_ID;
+        if (!clientId) {
+            return res.status(500).json({ error: 'Google auth not configured on server' });
+        }
+
+        const client = new OAuth2Client(clientId);
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: clientId,
+        });
+        const payload = ticket.getPayload();
+        const { sub: googleId, email, name, picture } = payload;
+
+        let user = await User.findOne({ googleId });
+
+        if (!user) {
+            user = await User.findOne({ email });
+            if (user) {
+                user.googleId = googleId;
+                if (picture && !user.avatar) user.avatar = picture;
+                await user.save();
+            } else {
+                user = await User.create({
+                    name,
+                    email,
+                    googleId,
+                    avatar: picture || '',
+                    password: (await import('crypto')).randomBytes(32).toString('hex'),
+                    isVerified: true,
+                });
+            }
+        }
+
+        if (user.isBanned) {
+            return res.status(403).json({ error: 'This account has been suspended' });
+        }
+
+        const token = generateToken(user._id);
+
+        res.json({
+            success: true,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                avatar: user.getAvatar(),
+                phone: user.phone,
+                location: user.location,
+                isVerified: user.isVerified,
+                rating: user.rating,
+                totalSales: user.totalSales,
+                credits: user.credits,
+                trustLevel: user.trustLevel,
+                createdAt: user.createdAt,
+            },
+            token,
+        });
+    } catch (error) {
+        console.error('Google auth error:', error);
+        res.status(401).json({ error: 'Invalid Google credential' });
     }
 });
 

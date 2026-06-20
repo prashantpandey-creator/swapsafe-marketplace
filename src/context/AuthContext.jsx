@@ -131,6 +131,21 @@ export function AuthProvider({ children }) {
         }
     }
 
+    const googleLogin = async (credential) => {
+        dispatch({ type: 'AUTH_START' })
+
+        try {
+            const data = await authAPI.googleLogin(credential)
+            localStorage.setItem('swapsafe_user', JSON.stringify(data.user))
+            dispatch({ type: 'AUTH_SUCCESS', payload: data.user })
+            return { success: true }
+        } catch (error) {
+            const errorMessage = error.message || 'Google sign-in failed'
+            dispatch({ type: 'AUTH_ERROR', payload: errorMessage })
+            return { success: false, error: errorMessage }
+        }
+    }
+
     const updateProfile = async (updates) => {
         try {
             const data = await authAPI.updateProfile(updates)
@@ -155,6 +170,7 @@ export function AuthProvider({ children }) {
             ...state,
             login,
             loginAsGuest,
+            googleLogin,
             register,
             logout,
             updateProfile,

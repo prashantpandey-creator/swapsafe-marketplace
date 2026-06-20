@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff, UserPlus, Check } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import GoogleSignInButton from '../components/common/GoogleSignInButton'
 import logoV2 from '../assets/buyers_legion_logo_v2.png'
 import './Auth.css'
 
@@ -84,6 +85,17 @@ function Register() {
                         </Link>
                         <h1 className="auth-title">Create account</h1>
                         <p className="auth-subtitle">Join India's most trusted marketplace</p>
+                    </div>
+
+                    <GoogleSignInButton
+                        onSuccess={() => navigate('/shop-setup')}
+                        onError={(err) => setFormError(err)}
+                    />
+
+                    <div className="auth-divider-row">
+                        <span className="auth-divider-line" />
+                        <span className="auth-divider-text">or sign up with email</span>
+                        <span className="auth-divider-line" />
                     </div>
 
                     {formError && (

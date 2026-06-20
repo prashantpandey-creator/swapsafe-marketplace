@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff, LogIn, Ghost } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import GoogleSignInButton from '../components/common/GoogleSignInButton'
 import logoV2 from '../assets/buyers_legion_logo_v2.png'
 import './Auth.css'
 
@@ -135,6 +136,11 @@ function Login() {
                         <span className="auth-divider-text">or</span>
                         <span className="auth-divider-line" />
                     </div>
+
+                    <GoogleSignInButton
+                        onSuccess={() => navigate(from, { replace: true })}
+                        onError={(err) => setFormError(err)}
+                    />
 
                     <button type="button" className="auth-btn-ghost" onClick={handleGuest} disabled={guestLoading}>
                         {guestLoading

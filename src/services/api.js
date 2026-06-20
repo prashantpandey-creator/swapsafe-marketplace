@@ -81,6 +81,19 @@ export const authAPI = {
         return data;
     },
 
+    googleLogin: async (credential) => {
+        const data = await apiRequest('/auth/google', {
+            method: 'POST',
+            body: JSON.stringify({ credential })
+        });
+
+        if (data.token) {
+            localStorage.setItem('swapsafe_token', data.token);
+        }
+
+        return data;
+    },
+
     logout: async () => {
         try {
             await apiRequest('/auth/logout', { method: 'POST' });
