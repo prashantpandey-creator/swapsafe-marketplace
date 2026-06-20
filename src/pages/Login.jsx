@@ -1,22 +1,28 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { Eye, EyeOff, LogIn, Ghost } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import logoV2 from '../assets/buyers_legion_logo_v2.png'
 import './Auth.css'
-import logo from '../assets/buyers_legion_logo.png'
 
 function Login() {
     const navigate = useNavigate()
     const location = useLocation()
-    const { login, loginAsGuest, isLoading, error } = useAuth()
+    const { login, loginAsGuest, isLoading, error, clearError } = useAuth()
 
-    const [formData, setFormData] = useState({
-        email: '',
-        password: ''
-    })
+    const [formData, setFormData] = useState({ email: '', password: '' })
     const [formError, setFormError] = useState('')
     const [showPassword, setShowPassword] = useState(false)
+    const [guestLoading, setGuestLoading] = useState(false)
 
-    const from = location.state?.from || '/'
+    const from = location.state?.from?.pathname || '/'
+
+    const handleChange = (e) => {
+        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
+        if (formError) setFormError('')
+        if (error) clearError()
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -35,130 +41,115 @@ function Login() {
         }
     }
 
+    const handleGuest = async () => {
+        setGuestLoading(true)
+        const result = await loginAsGuest()
+        setGuestLoading(false)
+        if (result.success) navigate(from, { replace: true })
+    }
+
+    const displayError = formError || error
+
     return (
         <div className="auth-page">
-            <div className="auth-container">
+            <motion.div
+                className="auth-container"
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
                 <div className="auth-card">
                     <div className="auth-header">
-                        <Link to="/" className="auth-logo">
-                            <img
-                                src={logo}
-                                alt="Buyers Legion"
-                                className="w-12 h-12 object-contain drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]"
-                            />
-                            <span>BUYERS<span className="text-legion-gold">LEGION</span></span>
+                        <Link to="/" className="auth-logo-link">
+                            <img src={logoV2} alt="Buyers Legion" className="auth-logo-img" />
+                            <div className="auth-logo-text">
+                                <span className="auth-logo-top">BUYERS</span>
+                                <span className="auth-logo-bottom">LEGION</span>
+                            </div>
                         </Link>
-                        <h1>Welcome Back</h1>
-                        <p>Log in to continue buying and selling</p>
+                        <h1 className="auth-title">Welcome back</h1>
+                        <p className="auth-subtitle">Sign in to your account</p>
                     </div>
 
-                    <form className="auth-form" onSubmit={handleSubmit}>
-                        {(formError || error) && (
-                            <div className="form-error-banner">
-                                {formError || error}
-                            </div>
-                        )}
+                    {displayError && (
+                        <motion.div
+                            className="auth-error"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                        >
+                            {displayError}
+                        </motion.div>
+                    )}
 
-                        <div className="form-group">
-                            <label className="form-label">Email</label>
+                    <form className="auth-form" onSubmit={handleSubmit} noValidate>
+                        <div className="auth-field">
+                            <label className="auth-label">Email</label>
                             <input
                                 type="email"
-                                className="form-input"
+                                name="email"
+                                className="auth-input"
                                 placeholder="you@example.com"
                                 value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                onChange={handleChange}
+                                autoComplete="email"
+                                autoFocus
                             />
                         </div>
 
-                        <div className="form-group">
-                            <label className="form-label">Password</label>
-                            <div className="password-input-wrapper" style={{ position: 'relative' }}>
+                        <div className="auth-field">
+                            <div className="auth-label-row">
+                                <label className="auth-label">Password</label>
+                                <Link to="/forgot-password" className="auth-link-sm">Forgot password?</Link>
+                            </div>
+                            <div className="auth-input-wrap">
                                 <input
-                                    type={showPassword ? "text" : "password"}
-                                    className="form-input"
+                                    type={showPassword ? 'text' : 'password'}
+                                    name="password"
+                                    className="auth-input"
                                     placeholder="Enter your password"
                                     value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    onChange={handleChange}
+                                    autoComplete="current-password"
                                 />
                                 <button
                                     type="button"
-                                    className="password-toggle"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    style={{
-                                        position: 'absolute',
-                                        right: '10px',
-                                        top: '50%',
-                                        transform: 'translateY(-50%)',
-                                        background: 'none',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        color: '#6b7280'
-                                    }}
+                                    className="auth-eye-btn"
+                                    onClick={() => setShowPassword(v => !v)}
+                                    tabIndex={-1}
                                 >
-                                    {showPassword ? (
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                                            <line x1="1" y1="1" x2="23" y2="23" />
-                                        </svg>
-                                    ) : (
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                            <circle cx="12" cy="12" r="3" />
-                                        </svg>
-                                    )}
+                                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                                 </button>
                             </div>
                         </div>
 
-                        <div className="form-row-between">
-                            <label className="form-checkbox">
-                                <input type="checkbox" />
-                                <span>Remember me</span>
-                            </label>
-                        </div>
-
-                        <button type="submit" className="btn btn-primary btn-lg w-full" disabled={isLoading}>
-                            {isLoading ? 'Logging in...' : 'Log In'}
+                        <button type="submit" className="auth-btn-primary" disabled={isLoading}>
+                            {isLoading
+                                ? <span className="auth-spinner" />
+                                : <><LogIn size={16} /> Sign In</>
+                            }
                         </button>
                     </form>
 
-                    <div className="auth-divider">
-                        {/* Guest Login Button */}
-                        <button
-                            type="button"
-                            onClick={() => {
-                                loginAsGuest()
-                                navigate(from, { replace: true })
-                            }}
-                            className="btn btn-lg w-full"
-                            style={{
-                                background: 'linear-gradient(135deg, #374151 0%, #1f2937 100%)',
-                                color: 'white',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                marginTop: '1rem'
-                            }}
-                        >
-                            🎭 Continue as Guest
-                        </button>
-                        <p style={{
-                            textAlign: 'center',
-                            color: '#6b7280',
-                            fontSize: '0.75rem',
-                            marginTop: '0.5rem'
-                        }}>
-                            Full access to all features • No account needed
-                        </p>
-
-                        <p className="auth-footer">
-                            Don't have an account? <Link to="/register">Sign up</Link>
-                        </p>
-
-                        <p className="demo-credentials">
-                            <strong>Demo:</strong> prashant@buyerslegion.com / Legion@123
-                        </p>
+                    <div className="auth-divider-row">
+                        <span className="auth-divider-line" />
+                        <span className="auth-divider-text">or</span>
+                        <span className="auth-divider-line" />
                     </div>
+
+                    <button type="button" className="auth-btn-ghost" onClick={handleGuest} disabled={guestLoading}>
+                        {guestLoading
+                            ? <span className="auth-spinner" />
+                            : <><Ghost size={16} /> Continue as Guest</>
+                        }
+                    </button>
+                    <p className="auth-guest-note">7-day session · no account needed</p>
+
+                    <p className="auth-footer-text">
+                        Don't have an account?{' '}
+                        <Link to="/register" className="auth-link">Create one</Link>
+                    </p>
                 </div>
-            </div>
+            </motion.div>
         </div>
     )
 }

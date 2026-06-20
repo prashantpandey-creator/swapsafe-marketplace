@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import { WishlistProvider } from './context/WishlistContext'
 import { ToastProvider } from './context/ToastContext'
+import { useAuth } from './context/AuthContext'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import Header from './components/layout/Header'
 import Footer from './components/layout/Footer'
@@ -30,26 +31,55 @@ import ThreeDStudio from './pages/ThreeDStudio'
 import SwapSafeShield from './pages/SwapSafeShield'
 import MarketingStudio from './pages/MarketingStudio'
 import Dashboard from './pages/Dashboard'
-
 import BackgroundManager from './components/layout/BackgroundManager'
 import ServerWaker from './components/common/ServerWaker'
 
+// Redirects unauthenticated users to /login, preserving intended destination
+function ProtectedRoute({ children }) {
+    const { isAuthenticated, isLoading } = useAuth()
+    const location = useLocation()
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="w-8 h-8 border-2 border-[var(--legion-gold)] border-t-transparent rounded-full animate-spin" />
+            </div>
+        )
+    }
+
+    if (!isAuthenticated) {
+        return <Navigate to="/login" state={{ from: location }} replace />
+    }
+
+    return children
+}
+
+// Redirects already-authenticated users away from login/register
+function PublicOnlyRoute({ children }) {
+    const { isAuthenticated, isLoading } = useAuth()
+
+    if (isLoading) return null
+
+    if (isAuthenticated) {
+        return <Navigate to="/" replace />
+    }
+
+    return children
+}
+
 function App() {
-    // Theme State (Default to 'esoteric')
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'esoteric')
 
     const toggleTheme = () => {
         const themes = ['classic', 'esoteric', 'mystical', 'void', 'minimal', 'psychedelic', 'lynch']
         const currentIndex = themes.indexOf(theme)
         const newTheme = themes[(currentIndex + 1) % themes.length]
-
         setTheme(newTheme)
         localStorage.setItem('theme', newTheme)
     }
 
-    // Apply theme to body
     useEffect(() => {
-        document.body.className = '' // Clear existing
+        document.body.className = ''
         document.body.classList.add(`theme-${theme}`)
     }, [theme])
 
@@ -66,6 +96,7 @@ function App() {
                                     <Header currentTheme={theme} toggleTheme={toggleTheme} />
                                     <main className="main-content" style={{ paddingTop: '80px' }}>
                                         <Routes>
+                                            {/* Public routes */}
                                             <Route path="/" element={<Landing />} />
                                             <Route path="/browse" element={<Browse />} />
                                             <Route path="/search" element={<Browse />} />
@@ -74,23 +105,27 @@ function App() {
                                             <Route path="/sell" element={<SellLanding />} />
                                             <Route path="/sell/quick" element={<QuickSell />} />
                                             <Route path="/sell/studio" element={<StudioMode />} />
-                                            <Route path="/sell/classic" element={<CreateListing />} />
                                             <Route path="/profile/:id" element={<Profile />} />
-                                            <Route path="/messages" element={<Messages />} />
-                                            <Route path="/messages/:conversationId" element={<Messages />} />
                                             <Route path="/cart" element={<Cart />} />
-                                            <Route path="/checkout/:id" element={<Checkout />} />
-                                            <Route path="/login" element={<Login />} />
-                                            <Route path="/register" element={<Register />} />
-                                            <Route path="/shop-setup" element={<ShopSetup />} />
-                                            <Route path="/my-listings" element={<MyListings />} />
-                                            <Route path="/tracker/:orderId" element={<TrackOrder />} />
-                                            <Route path="/settings" element={<Settings />} />
-                                            <Route path="/edit-listing/:id" element={<EditListing />} />
                                             <Route path="/studio" element={<ThreeDStudio />} />
                                             <Route path="/studio/marketing" element={<MarketingStudio />} />
                                             <Route path="/shield" element={<SwapSafeShield />} />
-                                            <Route path="/dashboard" element={<Dashboard />} />
+
+                                            {/* Auth routes — redirect away if already logged in */}
+                                            <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+                                            <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+
+                                            {/* Protected routes — require login */}
+                                            <Route path="/sell/classic" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
+                                            <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+                                            <Route path="/messages/:conversationId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+                                            <Route path="/checkout/:id" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+                                            <Route path="/shop-setup" element={<ProtectedRoute><ShopSetup /></ProtectedRoute>} />
+                                            <Route path="/my-listings" element={<ProtectedRoute><MyListings /></ProtectedRoute>} />
+                                            <Route path="/tracker/:orderId" element={<ProtectedRoute><TrackOrder /></ProtectedRoute>} />
+                                            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                                            <Route path="/edit-listing/:id" element={<ProtectedRoute><EditListing /></ProtectedRoute>} />
+                                            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                                         </Routes>
                                     </main>
                                     <Footer />

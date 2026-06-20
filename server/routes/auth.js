@@ -1,47 +1,43 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 import User from '../models/User.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Generate JWT token
+// 10 attempts per 15 min per IP — applies to login + register + guest
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: 'Too many attempts. Please try again in 15 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, {
-        expiresIn: '30d'
-    });
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
 // @route   POST /api/auth/register
-// @desc    Register a new user
 // @access  Public
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
     try {
         const { name, email, password } = req.body;
 
-        // Validate input
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'Please provide all required fields' });
         }
-
         if (password.length < 6) {
             return res.status(400).json({ error: 'Password must be at least 6 characters' });
         }
 
-        // Check if user exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ error: 'User already exists with this email' });
+            return res.status(400).json({ error: 'An account with this email already exists' });
         }
 
-        // Create user
-        const user = await User.create({
-            name,
-            email,
-            password
-        });
-
-        // Generate token
+        const user = await User.create({ name, email, password });
         const token = generateToken(user._id);
 
         res.status(201).json({
@@ -52,6 +48,8 @@ router.post('/register', async (req, res) => {
                 email: user.email,
                 avatar: user.getAvatar(),
                 isVerified: user.isVerified,
+                credits: user.credits,
+                trustLevel: user.trustLevel,
                 createdAt: user.createdAt
             },
             token
@@ -63,32 +61,29 @@ router.post('/register', async (req, res) => {
 });
 
 // @route   POST /api/auth/login
-// @desc    Authenticate user & get token
 // @access  Public
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Validate input
         if (!email || !password) {
             return res.status(400).json({ error: 'Please provide email and password' });
         }
 
-        // Find user and include password for comparison
         const user = await User.findOne({ email }).select('+password');
-
         if (!user) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
-        // Check password
-        const isMatch = await user.comparePassword(password);
+        if (user.isBanned) {
+            return res.status(403).json({ error: 'This account has been suspended' });
+        }
 
+        const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
-        // Generate token
         const token = generateToken(user._id);
 
         res.json({
@@ -98,9 +93,13 @@ router.post('/login', async (req, res) => {
                 name: user.name,
                 email: user.email,
                 avatar: user.getAvatar(),
+                phone: user.phone,
+                location: user.location,
                 isVerified: user.isVerified,
                 rating: user.rating,
                 totalSales: user.totalSales,
+                credits: user.credits,
+                trustLevel: user.trustLevel,
                 createdAt: user.createdAt
             },
             token
@@ -111,24 +110,27 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// @route   POST /api/auth/logout
+// @access  Private
+router.post('/logout', protect, async (req, res) => {
+    res.json({ success: true, message: 'Logged out successfully' });
+});
+
 // @route   POST /api/auth/guest
-// @desc    Create temporary guest account with JWT
 // @access  Public
-router.post('/guest', async (req, res) => {
+router.post('/guest', authLimiter, async (req, res) => {
     try {
         const crypto = await import('crypto');
 
-        // Create temporary guest user with 7-day expiration
         const guestUser = await User.create({
             name: `Guest${Date.now()}`,
             email: `guest_${crypto.randomUUID()}@temp.buyerslegion.com`,
-            password: crypto.randomBytes(32).toString('hex'), // random, unrecoverable
+            password: crypto.randomBytes(32).toString('hex'),
             isGuest: true,
-            guestExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+            guestExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             accountStatus: 'temporary'
         });
 
-        // Generate token with 7-day expiry
         const token = jwt.sign(
             { id: guestUser._id, isGuest: true },
             process.env.JWT_SECRET,
@@ -156,7 +158,6 @@ router.post('/guest', async (req, res) => {
 });
 
 // @route   GET /api/auth/me
-// @desc    Get current user profile
 // @access  Private
 router.get('/me', protect, async (req, res) => {
     try {
@@ -175,6 +176,9 @@ router.get('/me', protect, async (req, res) => {
                 rating: user.rating,
                 totalSales: user.totalSales,
                 totalPurchases: user.totalPurchases,
+                credits: user.credits,
+                trustLevel: user.trustLevel,
+                isGuest: user.isGuest,
                 createdAt: user.createdAt
             }
         });
@@ -185,12 +189,10 @@ router.get('/me', protect, async (req, res) => {
 });
 
 // @route   PUT /api/auth/profile
-// @desc    Update user profile
 // @access  Private
 router.put('/profile', protect, async (req, res) => {
     try {
         const { name, phone, location, avatar } = req.body;
-
         const user = await User.findById(req.user._id);
 
         if (name) user.name = name;
@@ -209,7 +211,9 @@ router.put('/profile', protect, async (req, res) => {
                 avatar: user.getAvatar(),
                 phone: user.phone,
                 location: user.location,
-                isVerified: user.isVerified
+                isVerified: user.isVerified,
+                credits: user.credits,
+                trustLevel: user.trustLevel,
             }
         });
     } catch (error) {

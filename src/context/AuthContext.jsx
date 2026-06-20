@@ -109,9 +109,8 @@ export function AuthProvider({ children }) {
         }
     }
 
-    const logout = () => {
-        authAPI.logout()
-        localStorage.removeItem('swapsafe_user')
+    const logout = async () => {
+        await authAPI.logout()
         dispatch({ type: 'LOGOUT' })
     }
 

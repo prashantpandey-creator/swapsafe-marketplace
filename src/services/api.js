@@ -81,7 +81,12 @@ export const authAPI = {
         return data;
     },
 
-    logout: () => {
+    logout: async () => {
+        try {
+            await apiRequest('/auth/logout', { method: 'POST' });
+        } catch (_) {
+            // best-effort — always clear locally regardless
+        }
         localStorage.removeItem('swapsafe_token');
         localStorage.removeItem('swapsafe_user');
     },
