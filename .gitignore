@@ -6,3 +6,9 @@ dist
 **/.env
 ai-engine/venv/
 ai-lab/
+
+# Local test artifacts
+test_render_env/
+ai_logs.json
+backend_logs.json
+test_input.jpg

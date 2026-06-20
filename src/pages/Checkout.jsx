@@ -64,9 +64,8 @@ function Checkout() {
                     if (item) {
                         setProducts([item])
                     } else {
-                        const { mockListings } = await import('../data/mockData')
-                        const found = mockListings.find(l => l.id === id)
-                        if (found) setProducts([found])
+                        // No real listing found — do NOT fall back to demo data.
+                        console.warn('Listing not found for checkout:', id)
                     }
                 } catch (err) {
                     console.error("Error loading product", err)

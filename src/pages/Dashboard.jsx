@@ -3,7 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ProductCard from '../components/common/ProductCard'
 import { listingsAPI, paymentAPI } from '../services/api'
-import { mockTransactions, formatPrice } from '../data/mockData'
+import { formatPrice } from '../data/mockData'
 import './Dashboard.css'
 
 function Dashboard() {
@@ -16,9 +16,6 @@ function Dashboard() {
     const [myOrders, setMyOrders] = useState([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState(null)
-
-    // Mock for Transactions (Phase 2 done via API now, but leaving var for safety if render needs it)
-    // const userTransactions = mockTransactions 
 
     useEffect(() => {
         if (isAuthenticated) {
