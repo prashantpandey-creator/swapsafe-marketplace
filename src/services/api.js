@@ -201,23 +201,6 @@ export const aiAPI = {
         });
     },
 
-    analyzeImage: async (imageBlob) => {
-        // Mock implementation for demo - in real app, send to backend/Gemini
-        console.log('🧠 Analyzing image with Gemini Vision...');
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate processing
-
-        // Return mock data for a "detected" item
-        return {
-            title: "Sony WH-1000XM4 Wireless Noise Cancelling Headphones",
-            category: "electronics",
-            condition: "like-new",
-            estimatedPrice: 18500,
-            originalPrice: 24990,
-            confidence: 94,
-            features: ["Noise Cancellation", "30hr Battery", "Black"],
-            reasoning: "Image matches Sony XM4 design. Earcups show minimal wear. Accessories included."
-        };
-    },
 
     generate3D: async (imageUrl) => {
         return await apiRequest('/ai/generate-3d', {
