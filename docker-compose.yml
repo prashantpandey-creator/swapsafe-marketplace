@@ -82,8 +82,8 @@ services:
       context: .
       dockerfile: docker/Dockerfile.frontend
       args:
-        - VITE_API_URL=http://204.168.176.229:5000/api
-        - VITE_AI_ENGINE_URL=http://204.168.176.229:8001
+        - VITE_API_URL=/api
+        - VITE_AI_ENGINE_URL=/ai
     restart: unless-stopped
     ports:
       - "3010:80"                    # only public service

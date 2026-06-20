@@ -98,37 +98,21 @@ app.listen(PORT, () => {
     startKeepAlive();
 });
 
-// ============================================================
-// 🫀 KEEP-ALIVE PINGER — Prevents Render free tier cold starts
-// Pings backend + AI engine every 14 min (Render sleeps at 15)
-// ============================================================
-
+// Keep-alive pinger — only useful on Render's free tier (sleeps at 15 min idle).
+// Disabled on Docker/Hetzner where the service runs via restart:unless-stopped.
 function startKeepAlive() {
+    if (process.env.NODE_ENV === 'production') return;
+
     const TARGETS = [
-        { name: 'Backend',   url: 'https://swapsafe-backend.onrender.com/api/health' },
         { name: 'AI Engine', url: `${process.env.AI_ENGINE_URL || 'http://localhost:8001'}/health` },
     ];
-
-    const INTERVAL_MS = 14 * 60 * 1000; // 14 minutes
 
     function ping({ name, url }) {
         const lib = url.startsWith('https') ? https : http;
         lib.get(url, (res) => {
-            console.log(`❤️  [KeepAlive] ${name}: ${res.statusCode}`);
-        }).on('error', (err) => {
-            console.warn(`⚠️  [KeepAlive] ${name} unreachable: ${err.message}`);
-        });
+            console.log(`[KeepAlive] ${name}: ${res.statusCode}`);
+        }).on('error', () => {});
     }
 
-    // Stagger initial pings 5s after startup
-    setTimeout(() => {
-        TARGETS.forEach((t, i) => setTimeout(() => ping(t), i * 2000));
-    }, 5000);
-
-    // Then ping every 14 minutes
-    setInterval(() => {
-        TARGETS.forEach((t, i) => setTimeout(() => ping(t), i * 2000));
-    }, INTERVAL_MS);
-
-    console.log(`❤️  Keep-alive pinger started (every 14 min)`);
+    setInterval(() => TARGETS.forEach(ping), 14 * 60 * 1000);
 }

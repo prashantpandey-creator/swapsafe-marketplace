@@ -31,6 +31,8 @@ import ThreeDStudio from './pages/ThreeDStudio'
 import SwapSafeShield from './pages/SwapSafeShield'
 import MarketingStudio from './pages/MarketingStudio'
 import Dashboard from './pages/Dashboard'
+import ForgotPassword from './pages/ForgotPassword'
+import Legal from './pages/Legal'
 import BackgroundManager from './components/layout/BackgroundManager'
 import ServerWaker from './components/common/ServerWaker'
 
@@ -114,6 +116,9 @@ function App() {
                                             {/* Auth routes — redirect away if already logged in */}
                                             <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
                                             <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+                                            <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
+                                            <Route path="/terms" element={<Legal />} />
+                                            <Route path="/privacy" element={<Legal />} />
 
                                             {/* Protected routes — require login */}
                                             <Route path="/sell/classic" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
