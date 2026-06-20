@@ -52,7 +52,7 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - USE_REDIS=true
       - AI_ENGINE_URL=http://ai-engine:8001
-      - CLIENT_URL=http://204.168.176.229:3010
+      - CLIENT_URL=https://swapsafe.store
     depends_on:
       mongo:
         condition: service_healthy
@@ -70,7 +70,7 @@ services:
     env_file: ./ai-engine/.env
     environment:
       - DEVICE=cpu
-      - CLIENT_URL=http://204.168.176.229:3010
+      - CLIENT_URL=https://swapsafe.store
     volumes:
       - ai_models:/app/models
       - ai_static:/app/static
@@ -87,9 +87,16 @@ services:
         - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     restart: unless-stopped
     ports:
-      - "3010:80"                    # only public service
+      - "3010:80"
+    networks:
+      - default
+      - coolify
     depends_on:
       - backend
+
+networks:
+  coolify:
+    external: true
 
 volumes:
   mongo_data:
