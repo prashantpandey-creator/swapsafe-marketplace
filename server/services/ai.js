@@ -190,25 +190,38 @@ export async function analyzeImages(images, prompt, options = {}) {
 async function analyzeWithGemini(images, prompt, options) {
     if (!geminiVision) throw new Error('Gemini not initialized');
 
+    // Mime types Gemini accepts for inline image data.
+    const SUPPORTED_MIME = ['image/png', 'image/jpeg', 'image/webp', 'image/heic', 'image/heif'];
+
     // Convert images to Gemini format
     const imageParts = await Promise.all(
         images.slice(0, 4).map(async (img) => {
-            // Handle base64 or URL
+            // Handle base64 data URIs
             if (img.startsWith('data:')) {
                 const [meta, data] = img.split(',');
-                const mimeType = meta.match(/data:(.*);/)[1];
-                return {
-                    inlineData: { data, mimeType }
-                };
-            } else {
-                // Fetch URL and convert to base64
-                const response = await fetch(img);
-                const buffer = await response.arrayBuffer();
-                const base64 = Buffer.from(buffer).toString('base64');
-                return {
-                    inlineData: { data: base64, mimeType: 'image/jpeg' }
-                };
+                let mimeType = (meta.match(/data:(.*?);/) || [])[1] || 'image/jpeg';
+                if (!SUPPORTED_MIME.includes(mimeType)) mimeType = 'image/jpeg';
+                return { inlineData: { data, mimeType } };
             }
+
+            // Fetch URL and convert to base64, using the REAL content-type so
+            // Gemini doesn't reject a PNG/WebP we mislabelled as JPEG.
+            const response = await fetch(img);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch image (${response.status}) from ${img.slice(0, 80)}`);
+            }
+
+            let mimeType = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+            // Some hosts return application/octet-stream or text/* — fall back to jpeg.
+            if (!SUPPORTED_MIME.includes(mimeType)) mimeType = 'image/jpeg';
+
+            const buffer = await response.arrayBuffer();
+            if (buffer.byteLength === 0) {
+                throw new Error(`Fetched image is empty from ${img.slice(0, 80)}`);
+            }
+
+            const base64 = Buffer.from(buffer).toString('base64');
+            return { inlineData: { data: base64, mimeType } };
         })
     );
 
