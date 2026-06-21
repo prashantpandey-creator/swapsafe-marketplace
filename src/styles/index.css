@@ -552,3 +552,36 @@ body.theme-lynch .glass-panel {
 body.theme-lynch .glass-panel::before {
   background: linear-gradient(90deg, transparent, rgba(178, 34, 34, 0.15), transparent);
 }
+
+/* --- iOS Safe Area Utilities --- */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+.safe-top-padding {
+  padding-top: var(--safe-top);
+}
+
+.safe-bottom-padding {
+  padding-bottom: var(--safe-bottom);
+}
+
+.safe-bottom-margin {
+  margin-bottom: var(--safe-bottom);
+}
+
+/* Override html & body height to resolve mobile safari height bugs */
+html, body {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+/* Ensure mobile footer content is not blocked by the bottom dock */
+@media (max-width: 767px) {
+  footer {
+    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}

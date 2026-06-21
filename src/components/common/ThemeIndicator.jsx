@@ -6,21 +6,21 @@ const ThemeIndicator = ({ theme, onToggle }) => {
     const timeoutRef = useRef(null);
 
     const themeNames = {
-        white: 'Studio - Clean & Modern',
+        classic: 'Classic - Gold & Obsidian',
         lynch: 'Lynch - Surreal Crimson'
     };
 
     const themeColors = {
-        white: '#B08C78',
+        classic: '#D4AF37',
         lynch: '#B22222'
     };
 
     const themeIcons = {
-        white: '🤍',
+        classic: '👑',
         lynch: '🦉'
     };
 
-    const color = themeColors[theme] || '#B08C78';
+    const color = themeColors[theme] || '#D4AF37';
 
     const handleMouseEnter = () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);

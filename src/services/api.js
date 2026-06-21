@@ -201,6 +201,34 @@ export const aiAPI = {
         });
     },
 
+    analyzeImage: async (imageFile) => {
+        const formData = new FormData();
+        formData.append('file', imageFile);
+
+        const token = getToken();
+        const response = await fetch(`${API_URL}/ai/analyze-image`, {
+            method: 'POST',
+            headers: {
+                ...(token && { Authorization: `Bearer ${token}` })
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || 'Analysis failed');
+        }
+
+        const result = await response.json();
+        if (result.status === 'success' && result.analysis) {
+            if (result.analysis.error) {
+                throw new Error(result.analysis.error);
+            }
+            return result.analysis;
+        } else {
+            throw new Error(result.message || 'Unknown error');
+        }
+    },
 
     generate3D: async (imageUrl) => {
         return await apiRequest('/ai/generate-3d', {

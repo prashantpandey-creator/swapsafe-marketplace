@@ -69,4 +69,45 @@ router.post('/start-ai-engine', async (req, res) => {
     });
 });
 
+// 3. Seed Database (listings, users, and products)
+router.post('/seed', async (req, res) => {
+    console.log("🌱 Triggering Database Seeding...");
+    
+    const cmd1 = `node "${path.resolve(__dirname, '../seed.js')}"`;
+    const cmd2 = `node "${path.resolve(__dirname, '../scripts/seedProducts.js')}"`;
+
+    exec(cmd1, (err1, stdout1, stderr1) => {
+        if (err1) {
+            console.error(`❌ Failed to run user/listings seed: ${err1}`);
+            return res.status(500).json({ 
+                status: 'error', 
+                message: 'Failed to seed users and listings', 
+                details: stderr1 || err1.message 
+            });
+        }
+
+        console.log("✅ Users and listings seeded successfully.");
+        
+        exec(cmd2, (err2, stdout2, stderr2) => {
+            if (err2) {
+                console.error(`❌ Failed to run product catalogue seed: ${err2}`);
+                return res.json({
+                    status: 'partial_success',
+                    message: 'Users and listings seeded, but product catalogue failed',
+                    listings_output: stdout1,
+                    product_error: stderr2 || err2.message
+                });
+            }
+
+            console.log("✅ Product catalogue seeded successfully.");
+            res.json({
+                status: 'success',
+                message: 'Database seeded successfully (Users, Listings, and Product Catalogue)',
+                listings_output: stdout1,
+                product_output: stdout2
+            });
+        });
+    });
+});
+
 export default router;

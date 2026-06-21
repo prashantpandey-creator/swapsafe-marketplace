@@ -41,6 +41,7 @@ const Header = ({ currentTheme, toggleTheme }) => {
                     ${isScrolled
                         ? 'bg-[#050505]/80 backdrop-blur-xl border-white/5 py-3'
                         : 'bg-gradient-to-b from-black/80 to-transparent py-5'}`}
+                style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
             >
                 <div className="container mx-auto max-w-7xl px-6">
                     <div className="flex items-center justify-between">
@@ -187,7 +188,10 @@ const Header = ({ currentTheme, toggleTheme }) => {
             </header>
 
             {/* --- MOBILE NAV (Bottom Dock) --- */}
-            <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#0A0A0F]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 flex items-center gap-5 shadow-[0_10px_40px_rgba(0,0,0,0.5)] ring-1 ring-white/5">
+            <nav 
+                className="md:hidden fixed left-1/2 -translate-x-1/2 z-50 bg-[#0A0A0F]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 flex items-center gap-5 shadow-[0_10px_40px_rgba(0,0,0,0.5)] ring-1 ring-white/5"
+                style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+            >
                 {[
                     { path: '/', icon: Home },
                     { path: '/browse', icon: Search },

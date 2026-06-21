@@ -3,14 +3,14 @@ import WhiteBackground from './WhiteBackground';
 
 const BackgroundManager = ({ currentTheme }) => {
     // Two themes only:
-    //   'white' — professional, sleek, boho-modern (default)
-    //   'lynch' — creative David Lynch theme
+    //   'classic' — professional gold/obsidian (default, handled by body CSS)
+    //   'lynch' — creative midnight crimson theme (canvas)
     switch (currentTheme) {
         case 'lynch':
             return <LynchBackground />;
-        case 'white':
+        case 'classic':
         default:
-            return <WhiteBackground />;
+            return null; // CSS radial-gradient takes over for classic gold/obsidian theme
     }
 };
 

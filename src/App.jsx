@@ -71,14 +71,14 @@ function PublicOnlyRoute({ children }) {
 
 function App() {
     const [theme, setTheme] = useState(() => {
-        // Two themes only: 'white' (professional, default) and 'lynch' (creative).
-        // Migrate any legacy theme value to 'white'.
+        // Two themes only: 'classic' (professional gold/obsidian, default) and 'lynch' (creative midnight crimson).
+        // Migrate any legacy theme value to 'classic'.
         const stored = localStorage.getItem('theme')
-        return stored === 'lynch' || stored === 'white' ? stored : 'white'
+        return stored === 'lynch' || stored === 'classic' ? stored : 'classic'
     })
 
     const toggleTheme = () => {
-        const newTheme = theme === 'white' ? 'lynch' : 'white'
+        const newTheme = theme === 'classic' ? 'lynch' : 'classic'
         setTheme(newTheme)
         localStorage.setItem('theme', newTheme)
     }
@@ -99,7 +99,7 @@ function App() {
                                 <ServerWaker />
                                 <div className="app" style={{ position: 'relative', zIndex: 1 }}>
                                     <Header currentTheme={theme} toggleTheme={toggleTheme} />
-                                    <main className="main-content" style={{ paddingTop: '80px' }}>
+                                    <main className="main-content" style={{ paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))' }}>
                                         <Routes>
                                             {/* Public routes */}
                                             <Route path="/" element={<Landing />} />
