@@ -269,6 +269,59 @@ export const aiAPI = {
     }
 };
 
+// ============ Community / Social API ============
+
+export const communityAPI = {
+    getFeed: async ({ scope = 'global', page = 1 } = {}) => {
+        return await apiRequest(`/community/feed?scope=${scope}&page=${page}`);
+    },
+
+    createPost: async ({ text, image, listing, kind }) => {
+        return await apiRequest('/community/posts', {
+            method: 'POST',
+            body: JSON.stringify({ text, image, listing, kind })
+        });
+    },
+
+    getPost: async (id) => {
+        return await apiRequest(`/community/posts/${id}`);
+    },
+
+    likePost: async (id) => {
+        return await apiRequest(`/community/posts/${id}/like`, { method: 'POST' });
+    },
+
+    reportPost: async (id, reason = '') => {
+        return await apiRequest(`/community/posts/${id}/report`, {
+            method: 'POST',
+            body: JSON.stringify({ reason })
+        });
+    },
+
+    deletePost: async (id) => {
+        return await apiRequest(`/community/posts/${id}`, { method: 'DELETE' });
+    },
+
+    addComment: async (postId, text) => {
+        return await apiRequest(`/community/posts/${postId}/comments`, {
+            method: 'POST',
+            body: JSON.stringify({ text })
+        });
+    },
+
+    deleteComment: async (commentId) => {
+        return await apiRequest(`/community/comments/${commentId}`, { method: 'DELETE' });
+    },
+
+    toggleFollow: async (userId) => {
+        return await apiRequest(`/community/users/${userId}/follow`, { method: 'POST' });
+    },
+
+    getProfile: async (userId) => {
+        return await apiRequest(`/community/users/${userId}/profile`);
+    }
+};
+
 // ============ Payment/Order API ============
 
 export const paymentAPI = {
@@ -370,6 +423,7 @@ export default {
     ai: aiAPI,
     payment: paymentAPI,
     shield: shieldAPI,
+    community: communityAPI,
     uploadImage,
     uploadImages
 };

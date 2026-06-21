@@ -34,6 +34,8 @@ import Dashboard from './pages/Dashboard'
 import ForgotPassword from './pages/ForgotPassword'
 import Legal from './pages/Legal'
 import Community from './pages/Community'
+import PostDetail from './pages/PostDetail'
+import CommunityProfile from './pages/CommunityProfile'
 import BackgroundManager from './components/layout/BackgroundManager'
 import ServerWaker from './components/common/ServerWaker'
 
@@ -117,6 +119,8 @@ function App() {
                                             <Route path="/studio/marketing" element={<MarketingStudio />} />
                                             <Route path="/shield" element={<SwapSafeShield />} />
                                             <Route path="/community" element={<Community />} />
+                                            <Route path="/community/post/:id" element={<PostDetail />} />
+                                            <Route path="/u/:id" element={<CommunityProfile />} />
 
                                             {/* Auth routes — redirect away if already logged in */}
                                             <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />

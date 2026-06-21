@@ -20,6 +20,7 @@ import jobRoutes from './routes/jobs.js';
 import priceRoutes from './routes/price.js';
 import productRoutes from './routes/products.js';
 import passwordRoutes from './routes/password.js';
+import communityRoutes from './routes/community.js';
 
 const app = express();
 
@@ -79,6 +80,7 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/price', priceRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/auth', passwordRoutes); // Password change uses /api/auth/password
+app.use('/api/community', communityRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
