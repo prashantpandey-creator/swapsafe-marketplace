@@ -129,6 +129,13 @@ const listingSchema = new mongoose.Schema({
     // Pre-publish fraud / trust score (advisory, never blocks)
     trustScore: { type: Number, min: 0, max: 100 },
     trustBand: { type: String, enum: ['high', 'medium', 'low', 'flagged'] },
+    // Image authenticity hashes (for stolen/reused photo detection)
+    imageHashes: {
+        phash: { type: String },          // perceptual hash for exact/trivial-crop detection
+        dhash: { type: String },          // dhash alternative
+        clipEmbedding: [Number],          // 512-d CLIP embedding (for visual similarity)
+        clipComputed: { type: Date }      // when embedding was computed
+    },
 }, {
     timestamps: true
 });

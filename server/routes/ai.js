@@ -545,6 +545,38 @@ router.post('/analyze-image', upload.single('file'), async (req, res) => {
 
         const result = await response.json();
         console.log('✅ Analysis Complete:', result.status || 'Success');
+
+        // FIRE-AND-FORGET: log to TrainingPair for later fine-tuning (Move 5, Phase 3+)
+        // Never blocks the response, never fails the request.
+        if (result?.title && result?.confidence >= 0.80) {
+            const { TrainingPair } = await import('../models/TrainingPair.js');
+            try {
+                const dataUrl = req.file?.dataUrl || null; // if frontend passed a data URL
+                const imageUrl = dataUrl || `file://${req.file.originalname}`;
+
+                await TrainingPair.create({
+                    imageUrl,
+                    labels: {
+                        title: result.title,
+                        category: result.category,
+                        brand: result.brand,
+                        model: result.model,
+                        condition: result.condition,
+                        condition_report: result.condition_report,
+                        detected_view: result.detected_view,
+                        description: result.description,
+                        keywords: result.keywords,
+                    },
+                    confidence: result.confidence,
+                    provider: process.env.VISION_PROVIDER === 'gemini' ? 'gemini-flash' : 'unknown',
+                });
+                console.log('📚 TrainingPair logged (confidence:', result.confidence + ')');
+            } catch (logErr) {
+                // Silent fail — logging errors never block the listing
+                console.warn('⚠️  TrainingPair logging failed (non-fatal):', logErr.message);
+            }
+        }
+
         res.json(result);
 
     } catch (error) {
