@@ -16,15 +16,15 @@ const LYNCH_CONFIG = {
     // Performance settings
     performance: {
         particleCount: {
-            smoke: 25,
-            dust: 40,
-            sigils: 8
+            smoke: 20,
+            dust: 30,
+            sigils: 5
         },
         floorResolution: 1.0,
         enableEffects: {
             shadowFigure: true,
             chromaticAberration: true,
-            electricalInterference: true,
+            electricalInterference: false,
             roomBreathing: true,
             floorReflection: true
         }
@@ -32,36 +32,37 @@ const LYNCH_CONFIG = {
 
     // Animation speeds (per second, normalized to 60fps)
     animation: {
-        floorFlowSpeed: 0.072,        // 0.0012 per frame * 60
-        curtainSpeed: 0.36,           // 0.006 per frame * 60
-        flickerRate: 9,               // 0.15 per frame * 60
-        glitchFrequency: 0.18,        // 0.003 per frame * 60
-        breathSpeed: 0.3,             // 0.005 per frame * 60
-        pulseSpeed: 0.6               // 0.01 per frame * 60
+        floorFlowSpeed: 0.054,
+        curtainSpeed: 0.48,           // slightly faster sway
+        flickerRate: 9,
+        glitchFrequency: 0.12,
+        breathSpeed: 0.24,
+        pulseSpeed: 0.42
     },
 
     // Visual parameters
     visual: {
         curtains: {
-            widthRatio: 0.14,
-            foldCount: 16,
-            strandCount: 48,
-            highlightCount: 16,
-            shadowDepth: 0.85,
-            sheenOpacity: 0.12,
+            widthRatio: 0.26,         // wide — dominant like the photo
+            foldCount: 22,            // more folds = richer drape
+            strandCount: 72,          // denser velvet texture
+            highlightCount: 24,
+            shadowDepth: 0.92,
+            sheenOpacity: 0.18,       // more visible sheen
             colors: {
-                base: [165, 18, 18],
-                dark: [8, 1, 1],
-                highlight: [230, 70, 70],
-                shadow: [50, 5, 5]
+                base: [178, 22, 22],  // richer crimson
+                dark: [6, 0, 0],
+                highlight: [240, 80, 60],
+                shadow: [40, 3, 3]
             }
         },
         floor: {
-            startYRatio: 0.66,
+            startYRatio: 0.60,        // floor starts higher — more visible
             zigzagBands: 14,
             colors: {
-                white: [192, 188, 180],
-                black: [5, 5, 8]
+                // Warm pinkish-red zigzag like the photo
+                white: [210, 155, 140],
+                black: [80, 18, 18]
             }
         },
         light: {
@@ -70,18 +71,18 @@ const LYNCH_CONFIG = {
             surgeIntensity: 0.12
         },
         lightning: {
-            flashMinInterval: 180,     // frames between flashes (min)
-            flashMaxInterval: 420,
-            flashDecayFrames: 8,
-            intensity: 0.35,
-            color: [180, 200, 255],    // bluish white
-            tintColor: [120, 160, 220] // blue tinge for fill
+            flashMinInterval: 240,
+            flashMaxInterval: 600,
+            flashDecayFrames: 6,
+            intensity: 0.20,          // subtler flashes
+            color: [220, 160, 140],   // warm reddish flash (not blue)
+            tintColor: [180, 80, 60]
         },
         vignette: {
-            innerRadiusRatio: 0.25,
-            outerRadiusRatio: 0.7,
-            layers: 3,
-            maxOpacity: 0.04
+            innerRadiusRatio: 0.20,
+            outerRadiusRatio: 0.75,
+            layers: 4,
+            maxOpacity: 0.07          // stronger edge darkening
         }
     },
 
@@ -500,40 +501,46 @@ const LynchBackground = () => {
             const config = LYNCH_CONFIG.visual.curtains;
             const speed = LYNCH_CONFIG.animation.curtainSpeed / 60;
 
-            // Solid dark backing — full-opacity so curtains are never transparent
+            const clamp = (v) => Math.max(0, Math.min(255, Math.round(v)));
+            const [br, bg, bb] = config.colors.base;
+            const [sr, sg, sb] = config.colors.shadow;
+            const [hr, hg, hb] = config.colors.highlight;
             const [dr, dg, db] = config.colors.dark;
+
+            // Solid dark backing behind all folds
             ctx.fillStyle = `rgb(${dr}, ${dg}, ${db})`;
-            ctx.fillRect(
-                dir === 1 ? edgeX : edgeX - width,
-                0,
-                width,
-                h
-            );
+            ctx.fillRect(dir === 1 ? edgeX : edgeX - width, 0, width, h);
 
             const foldCount = config.foldCount;
 
-            for (let fold = 0; fold < foldCount; fold++) {
+            // Main drape folds — drawn back to front (outer edge first)
+            for (let fold = foldCount - 1; fold >= 0; fold--) {
                 const foldT = fold / foldCount;
-                const foldBaseX = edgeX + (foldT * width * 0.92) * dir;
-                const phase = fold * 0.9 + tick * speed;
+                // Inner folds are brighter (lit from room center)
+                const isInnerFold = dir === 1 ? fold === foldCount - 1 : fold === 0;
+                const foldBaseX = edgeX + (foldT * width * 0.94) * dir;
+                const phase = fold * 0.85 + tick * speed;
 
                 const lightInfluence = calculateLightInfluence(
-                    foldBaseX, h * 0.5, lightX, lightY, 0.5
+                    foldBaseX, h * 0.5, lightX, lightY, 0.6
                 );
 
                 ctx.beginPath();
                 ctx.moveTo(foldBaseX, 0);
 
-                for (let y = 0; y <= h; y += 4) {
-                    const anchorFactor = y / h;
-                    const gentleSway = Math.sin(y * 0.008 + phase) * (3 + anchorFactor * 8);
-                    const slowBillow = Math.sin(y * 0.003 + tick * 0.003) * (5 + anchorFactor * 12);
-                    const microMove = Math.sin(y * 0.02 + tick * 0.015 + fold * 0.5) * 2;
-                    const x = foldBaseX + (gentleSway + slowBillow + microMove) * dir;
+                // Richer billow: hanging fabric has small upper movement, big lower sway
+                for (let y = 0; y <= h; y += 3) {
+                    const af = y / h;  // anchor factor: 0 at top, 1 at bottom
+                    // Top is fixed, bottom swings freely
+                    const topPin = Math.max(0, 1 - af * 4); // clamps upper movement
+                    const sway   = Math.sin(y * 0.007 + phase) * (2 + af * 14) * (1 - topPin * 0.7);
+                    const billow = Math.sin(y * 0.0025 + tick * speed * 0.4 + fold * 0.3) * (4 + af * 22) * (1 - topPin * 0.8);
+                    const micro  = Math.sin(y * 0.018 + tick * speed * 1.2 + fold * 0.6) * 1.5 * af;
+                    const x = foldBaseX + (sway + billow + micro) * dir;
                     ctx.lineTo(x, y);
                 }
 
-                const foldWidth = (width / foldCount) * 1.1;
+                const foldWidth = (width / foldCount) * 1.15;
                 ctx.lineTo(foldBaseX + foldWidth * dir, h);
                 ctx.lineTo(foldBaseX + foldWidth * dir, 0);
                 ctx.closePath();
@@ -543,116 +550,138 @@ const LynchBackground = () => {
                     foldBaseX + foldWidth * dir, 0
                 );
 
-                // Clamp all color channel arithmetic to [0, 255]
-                const clamp = (v) => Math.max(0, Math.min(255, Math.round(v)));
-                const [br, bg, bb] = config.colors.base;
-                const [sr, sg, sb] = config.colors.shadow;
-                const [hr2, hg2, hb2] = config.colors.highlight;
+                const litBoost = 1 + lightInfluence * 0.5;
+                const edgeBright = isInnerFold ? 1.25 : 1.0;
+                const hA = Math.min(1, (0.75 + foldT * 0.2) * litBoost * edgeBright);
+                const mA = Math.min(1, (0.60 + foldT * 0.15) * litBoost);
+                const dA = Math.min(1, 0.82 * config.shadowDepth);
+                const ddA = Math.min(1, dA * 0.88);
 
-                // Light-influenced highlight brightness — strong and opaque
-                const litBoost = 1 + lightInfluence * 0.4;
-                const highlightAlpha = Math.min(1, (0.55 + foldT * 0.3) * litBoost);
-                const midAlpha = Math.min(1, (0.45 + foldT * 0.2) * litBoost);
-                const darkAlpha = Math.min(1, 0.75 * config.shadowDepth);
-                const deepAlpha = Math.min(1, darkAlpha * 0.9);
-
-                foldGrad.addColorStop(0,    `rgba(${clamp(br + 25)}, ${clamp(bg + 5)}, ${clamp(bb + 5)}, ${highlightAlpha})`);
-                foldGrad.addColorStop(0.2,  `rgba(${clamp(br - 10)}, ${bg}, ${bb}, ${midAlpha})`);
-                foldGrad.addColorStop(0.5,  `rgba(${clamp(br - 30)}, ${clamp(bg - 4)}, ${clamp(bb - 4)}, ${midAlpha * 0.85})`);
-                foldGrad.addColorStop(0.75, `rgba(${sr}, ${sg}, ${sb}, ${darkAlpha})`);
-                foldGrad.addColorStop(1,    `rgba(${clamp(sr - 8)}, ${sg}, ${sb}, ${deepAlpha})`);
+                foldGrad.addColorStop(0,    `rgba(${clamp(br + 40)}, ${clamp(bg + 8)}, ${clamp(bb + 8)}, ${hA})`);
+                foldGrad.addColorStop(0.15, `rgba(${clamp(br + 15)}, ${clamp(bg + 2)}, ${clamp(bb + 2)}, ${hA * 0.9})`);
+                foldGrad.addColorStop(0.4,  `rgba(${br}, ${bg}, ${bb}, ${mA})`);
+                foldGrad.addColorStop(0.65, `rgba(${clamp(br - 25)}, ${clamp(bg - 4)}, ${clamp(bb - 4)}, ${mA * 0.8})`);
+                foldGrad.addColorStop(0.82, `rgba(${sr}, ${sg}, ${sb}, ${dA})`);
+                foldGrad.addColorStop(1,    `rgba(${clamp(sr - 5)}, ${sg}, ${sb}, ${ddA})`);
 
                 ctx.fillStyle = foldGrad;
                 ctx.fill();
             }
 
-            // Velvet strands — subtle texture lines, kept low-alpha
+            // Dense velvet strand texture
             const strandCount = config.strandCount;
             for (let strand = 0; strand < strandCount; strand++) {
                 const strandT = strand / strandCount;
-                const strandBaseX = edgeX + (strandT * width * 0.95) * dir;
-                const phase = strand * 0.5 + tick * speed * 0.8;
+                const strandBaseX = edgeX + (strandT * width * 0.96) * dir;
+                const phase = strand * 0.45 + tick * speed * 0.75;
 
                 ctx.beginPath();
                 ctx.moveTo(strandBaseX, 0);
 
                 for (let y = 0; y <= h; y += 3) {
-                    const anchorFactor = y / h;
-                    const sway = Math.sin(y * 0.006 + phase) * (2 + anchorFactor * 5);
-                    const billow = Math.sin(y * 0.0025 + tick * 0.002) * (3 + anchorFactor * 8);
-                    const x = strandBaseX + (sway + billow) * dir;
-                    ctx.lineTo(x, y);
+                    const af = y / h;
+                    const sway   = Math.sin(y * 0.006 + phase) * (1.5 + af * 10);
+                    const billow = Math.sin(y * 0.002 + tick * speed * 0.35) * (3 + af * 16);
+                    ctx.lineTo(strandBaseX + (sway + billow) * dir, y);
                 }
 
-                const colorVar = (strand % 5) * 6;
-                const intensity = 0.08 + strandT * 0.12;
-                const [hr, hg, hb] = config.colors.highlight;
-                ctx.strokeStyle = `rgba(${Math.min(255, hr - 30 + colorVar)}, ${hg}, ${hb}, ${intensity})`;
-                ctx.lineWidth = 1 + (strand % 3) * 0.5;
+                const colorVar = (strand % 7) * 5;
+                const intensity = 0.06 + strandT * 0.14;
+                ctx.strokeStyle = `rgba(${clamp(hr - 20 + colorVar)}, ${hg}, ${hb}, ${intensity})`;
+                ctx.lineWidth = 0.8 + (strand % 3) * 0.4;
                 ctx.lineCap = 'round';
                 ctx.stroke();
             }
 
-            // Highlight (velvet sheen) strands
+            // Bright velvet sheen strands (light catching fabric peaks)
             for (let strand = 0; strand < config.highlightCount; strand++) {
                 const strandT = strand / config.highlightCount;
-                const strandBaseX = edgeX + (strandT * width * 0.9) * dir;
-                const phase = strand * 1.2 + tick * speed;
+                const strandBaseX = edgeX + (strandT * width * 0.88) * dir;
+                const phase = strand * 1.1 + tick * speed;
 
                 ctx.beginPath();
                 ctx.moveTo(strandBaseX, 0);
 
                 for (let y = 0; y <= h; y += 3) {
-                    const anchorFactor = y / h;
-                    const sway = Math.sin(y * 0.007 + phase) * (2 + anchorFactor * 6);
-                    const billow = Math.sin(y * 0.0028 + tick * 0.0025) * (4 + anchorFactor * 9);
-                    const x = strandBaseX + (sway + billow) * dir;
-                    ctx.lineTo(x, y);
+                    const af = y / h;
+                    const sway   = Math.sin(y * 0.007 + phase) * (2 + af * 12);
+                    const billow = Math.sin(y * 0.0025 + tick * speed * 0.4) * (4 + af * 18);
+                    ctx.lineTo(strandBaseX + (sway + billow) * dir, y);
                 }
 
-                const sheenOpacity = config.sheenOpacity != null ? config.sheenOpacity : 0.08;
-                const sheenIntensity = Math.min(1, (0.06 + strandT * 0.1) * (1 + sheenOpacity));
-                const [hr, hg, hb] = config.colors.highlight;
-                ctx.strokeStyle = `rgba(${hr}, ${Math.min(255, hg + (strand % 3) * 10)}, ${Math.min(255, hb + (strand % 3) * 10)}, ${sheenIntensity})`;
+                const sheenI = Math.min(1, (0.08 + strandT * 0.13) * (1 + config.sheenOpacity));
+                ctx.strokeStyle = `rgba(${hr}, ${clamp(hg + (strand % 4) * 8)}, ${clamp(hb + (strand % 4) * 8)}, ${sheenI})`;
                 ctx.lineWidth = 1;
                 ctx.stroke();
             }
 
-            // Soft vertical sheen highlight
-            const sheenOpacity = config.sheenOpacity != null ? config.sheenOpacity : 0.08;
-            if (sheenOpacity > 0) {
-                const sheenGrad = ctx.createLinearGradient(
-                    dir === 1 ? edgeX : edgeX - width, 0,
-                    dir === 1 ? edgeX + width * 0.4 : edgeX - width * 0.4, 0
-                );
-                sheenGrad.addColorStop(0, 'transparent');
-                sheenGrad.addColorStop(0.25, `rgba(255, 200, 200, ${sheenOpacity * 0.5})`);
-                sheenGrad.addColorStop(0.5, 'transparent');
-                ctx.fillStyle = sheenGrad;
-                ctx.fillRect(dir === 1 ? edgeX : edgeX - width, 0, width, h);
-            }
+            // Wide sheen wash — light bouncing off velvet
+            const sheenOpacity = config.sheenOpacity;
+            const sheenGrad = ctx.createLinearGradient(
+                dir === 1 ? edgeX : edgeX - width, 0,
+                dir === 1 ? edgeX + width * 0.5 : edgeX - width * 0.5, 0
+            );
+            sheenGrad.addColorStop(0, 'transparent');
+            sheenGrad.addColorStop(0.2, `rgba(255, 210, 200, ${sheenOpacity * 0.6})`);
+            sheenGrad.addColorStop(0.6, `rgba(220, 120, 100, ${sheenOpacity * 0.25})`);
+            sheenGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = sheenGrad;
+            ctx.fillRect(dir === 1 ? edgeX : edgeX - width, 0, width, h);
 
-            // Inner swaying edge — gives the curtain a soft irregular boundary
-            const innerEdgePoints = [];
-            for (let y = 0; y <= h; y += 2) {
-                const anchorFactor = y / h;
-                const sway = Math.sin(y * 0.008 + tick * speed) * (5 + anchorFactor * 10);
-                const billow = Math.sin(y * 0.003 + tick * 0.003) * (8 + anchorFactor * 15);
-                innerEdgePoints.push({ x: edgeX + (width + sway + billow) * dir, y });
-            }
-
+            // Top valance — draped header like a stage curtain pelmet
+            const valanceH = h * 0.12;
             ctx.beginPath();
-            innerEdgePoints.forEach((p, i) => {
-                if (i === 0) ctx.moveTo(p.x, p.y);
-                else ctx.lineTo(p.x, p.y);
-            });
-            ctx.strokeStyle = 'rgba(210, 40, 40, 0.45)';
-            ctx.lineWidth = 2;
+            ctx.moveTo(dir === 1 ? edgeX : edgeX - width, 0);
+            for (let x = 0; x <= width; x += 2) {
+                const xPos = dir === 1 ? edgeX + x : edgeX - width + x;
+                const droop = Math.sin((x / width) * Math.PI * 5 + tick * speed * 0.5) * (valanceH * 0.18) + valanceH * 0.82;
+                ctx.lineTo(xPos, droop);
+            }
+            ctx.lineTo(dir === 1 ? edgeX + width : edgeX, 0);
+            ctx.closePath();
+            const valGrad = ctx.createLinearGradient(
+                dir === 1 ? edgeX : edgeX - width, 0,
+                dir === 1 ? edgeX + width : edgeX, 0
+            );
+            valGrad.addColorStop(0,   `rgba(${clamp(br + 30)}, ${clamp(bg + 6)}, ${clamp(bb + 6)}, 0.95)`);
+            valGrad.addColorStop(0.4, `rgba(${br}, ${bg}, ${bb}, 0.90)`);
+            valGrad.addColorStop(0.8, `rgba(${sr}, ${sg}, ${sb}, 0.95)`);
+            valGrad.addColorStop(1,   `rgba(${dr}, ${dg}, ${db}, 1.0)`);
+            ctx.fillStyle = valGrad;
+            ctx.fill();
+
+            // Inner edge glow — crimson light bleeding into the room
+            const edgePoints = [];
+            for (let y = 0; y <= h; y += 2) {
+                const af = y / h;
+                const sway   = Math.sin(y * 0.008 + tick * speed) * (4 + af * 16);
+                const billow = Math.sin(y * 0.003 + tick * speed * 0.4) * (6 + af * 22);
+                edgePoints.push({ x: edgeX + (width + sway + billow) * dir, y });
+            }
+            ctx.beginPath();
+            edgePoints.forEach((p, i) => { i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y); });
+            ctx.strokeStyle = 'rgba(220, 50, 40, 0.55)';
+            ctx.lineWidth = 2.5;
             ctx.stroke();
 
-            ctx.strokeStyle = 'rgba(180, 30, 30, 0.18)';
-            ctx.lineWidth = 5;
+            ctx.strokeStyle = 'rgba(160, 20, 20, 0.22)';
+            ctx.lineWidth = 8;
             ctx.stroke();
+
+            // Ambient glow spilling from curtain edge into the room
+            const glowWidth = width * 0.35;
+            const glowGrad = ctx.createLinearGradient(
+                dir === 1 ? edgeX + width : edgeX - width, 0,
+                dir === 1 ? edgeX + width + glowWidth : edgeX - width - glowWidth, 0
+            );
+            glowGrad.addColorStop(0,   `rgba(160, 20, 20, 0.10)`);
+            glowGrad.addColorStop(0.5, `rgba(100, 10, 10, 0.04)`);
+            glowGrad.addColorStop(1,   'transparent');
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(
+                dir === 1 ? edgeX + width : edgeX - width - glowWidth,
+                0, glowWidth, h
+            );
         }
 
         // ============================================================================
@@ -1010,19 +1039,29 @@ const LynchBackground = () => {
             const pulseSpeed = LYNCH_CONFIG.animation.pulseSpeed / 60;
             const pulsePhase = (t * pulseSpeed * 0.1) % (Math.PI * 2);
             const pulseIntensity = Math.sin(pulsePhase) * 0.5 + 0.5;
-            const a0 = Math.max(0, Math.min(1, pulseIntensity * 0.015));
-            const a1 = Math.max(0, Math.min(1, pulseIntensity * 0.008));
+            // Richer red room glow — like crimson theatre lighting
+            const a0 = Math.max(0, Math.min(1, 0.04 + pulseIntensity * 0.035));
+            const a1 = Math.max(0, Math.min(1, 0.02 + pulseIntensity * 0.018));
 
             const pulseGrad = ctx.createRadialGradient(
-                w / 2, h / 2, 0,
-                w / 2, h / 2, Math.max(w, h) * 0.6
+                w / 2, h * 0.45, 0,
+                w / 2, h * 0.45, Math.max(w, h) * 0.7
             );
-            pulseGrad.addColorStop(0, `rgba(40, 10, 10, ${a0})`);
-            pulseGrad.addColorStop(0.5, `rgba(30, 5, 5, ${a1})`);
+            pulseGrad.addColorStop(0,   `rgba(120, 20, 10, ${a0})`);
+            pulseGrad.addColorStop(0.35, `rgba(80, 10, 5, ${a1})`);
+            pulseGrad.addColorStop(0.7,  `rgba(30, 3, 3, ${a1 * 0.4})`);
             pulseGrad.addColorStop(1, 'transparent');
 
             ctx.fillStyle = pulseGrad;
             ctx.fillRect(0, 0, w, h);
+
+            // Subtle warm ceiling light pool (like the photo's overhead ambience)
+            const ceilGrad = ctx.createRadialGradient(w / 2, 0, 0, w / 2, 0, h * 0.55);
+            ceilGrad.addColorStop(0,   `rgba(180, 80, 50, ${0.06 + pulseIntensity * 0.04})`);
+            ceilGrad.addColorStop(0.4, `rgba(100, 30, 20, ${0.02 + pulseIntensity * 0.015})`);
+            ceilGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = ceilGrad;
+            ctx.fillRect(0, 0, w, h * 0.6);
         }
 
         // ============================================================================
@@ -1271,11 +1310,10 @@ const LynchBackground = () => {
             const w = canvas.width;
             const h = canvas.height;
 
-            // Clear canvas fully each frame for crisp rendering
             ctx.clearRect(0, 0, w, h);
 
-            // Dark base fill
-            ctx.fillStyle = 'rgba(2, 2, 8, 1)';
+            // Deep crimson-black base — like the Lodge walls
+            ctx.fillStyle = 'rgba(4, 1, 1, 1)';
             ctx.fillRect(0, 0, w, h);
 
             // Render all layers through the layer manager
