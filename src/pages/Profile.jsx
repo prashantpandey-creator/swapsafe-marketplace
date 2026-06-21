@@ -26,7 +26,6 @@ function Profile() {
             try {
                 let userIdToFetch = id
 
-                // Handle "me" or empty ID
                 if (!id || id === 'me') {
                     if (!isAuthenticated) {
                         navigate('/login')
@@ -36,25 +35,12 @@ function Profile() {
                     setProfileUser(currentUser)
                 }
 
-                // Fetch Listings
                 const listingsResponse = await listingsAPI.getByUser(userIdToFetch)
                 setUserListings(listingsResponse.listings || [])
 
-                // If looking at someone else, we might need to fetch their public profile details
-                // (assuming listing response populates seller, or we have a getPublicProfile endpoint)
-                // For now, if we are viewing "me", we have data. 
-                // If viewing others, we rely on the listings fetching or needing a specific user endpoint.
-
                 if (userIdToFetch !== currentUser?.id) {
-                    // Since we don't have a direct 'getUser' API yet, we might rely on the first listing's seller info
-                    // OR ideally add a 'getUser' endpoint.
-                    // Fallback: If listings exist, grab seller info from first listing
                     if (listingsResponse.listings && listingsResponse.listings.length > 0) {
                         setProfileUser(listingsResponse.listings[0].seller)
-                    } else {
-                        // If no listings, we can't easily get user info without a specific API. 
-                        // Check if we requested to add getUser to text?
-                        // For now, let's assume valid ID.
                     }
                 }
 
@@ -77,7 +63,7 @@ function Profile() {
             <div className="profile-not-found container">
                 <h2>User Not Found</h2>
                 <p>We couldn't locate this profile. They might not have any active listings yet.</p>
-                <Link to="/browse" className="btn btn-primary">Browse Items</Link>
+                <Link to="/browse" className="m-btn-ghost">Browse Items</Link>
             </div>
         )
     }
@@ -85,7 +71,6 @@ function Profile() {
     return (
         <div className="profile-page">
             <div className="container">
-                {/* Profile Header */}
                 <div className="profile-header card">
                     <div className="profile-cover"></div>
                     <div className="profile-info">
@@ -143,12 +128,11 @@ function Profile() {
                     </div>
                     {isOwnProfile && (
                         <div style={{ padding: '20px', textAlign: 'right' }}>
-                            <Link to="/sell" className="btn btn-primary">Create New Listing</Link>
+                            <Link to="/sell" className="m-btn-accent">Create New Listing</Link>
                         </div>
                     )}
                 </div>
 
-                {/* Tabs */}
                 <div className="tabs">
                     <button
                         className={`tab ${activeTab === 'listings' ? 'active' : ''}`}
@@ -164,7 +148,6 @@ function Profile() {
                     </button>
                 </div>
 
-                {/* Content */}
                 <div className="profile-content">
                     {activeTab === 'listings' && (
                         <>
@@ -178,7 +161,7 @@ function Profile() {
                                 <div className="text-center py-10">
                                     <p className="text-muted">No active listings found.</p>
                                     {isOwnProfile && (
-                                        <Link to="/sell" className="btn btn-primary mt-4">Start Selling</Link>
+                                        <Link to="/sell" className="m-btn-accent mt-4">Start Selling</Link>
                                     )}
                                 </div>
                             )}

@@ -75,7 +75,7 @@ function Dashboard() {
         <div className="listing-actions-overlay absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <Link
                 to={`/edit-listing/${listing._id || listing.id}`}
-                className="p-2 bg-white/90 text-slate-800 rounded-full shadow-lg hover:bg-legion-gold transition-colors"
+                className="p-2 bg-[var(--m-surface-strong)] text-[var(--m-fg)] rounded-[var(--m-radius)] border border-[var(--m-hairline)] hover:bg-[var(--m-accent)] transition-colors"
                 title="Edit Listing"
             >
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
@@ -91,7 +91,7 @@ function Dashboard() {
                             } catch (e) { alert('Failed to update status') }
                         }
                     }}
-                    className="p-2 bg-green-500/90 text-white rounded-full shadow-lg hover:bg-green-600 transition-colors"
+                    className="p-2 bg-[var(--m-surface-strong)] text-[var(--m-fg)] rounded-[var(--m-radius)] border border-[var(--m-hairline)] hover:bg-[var(--m-accent)] transition-colors"
                     title="Mark as Sold"
                 >
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
@@ -99,7 +99,7 @@ function Dashboard() {
             )}
             <button
                 onClick={() => handleDeleteListing(listing._id || listing.id)}
-                className="p-2 bg-red-500/90 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                className="p-2 bg-[var(--m-surface-strong)] text-[var(--m-fg)] rounded-[var(--m-radius)] border border-[var(--m-hairline)] hover:bg-[var(--m-accent)] transition-colors"
                 title="Delete Listing"
             >
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -207,7 +207,7 @@ function Dashboard() {
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="empty-state card p-8 text-center text-gray-400">
+                                    <div className="empty-state card p-8 text-center" style={{color: 'var(--m-fg-muted)'}}>
                                         <p>No recent transactions.</p>
                                     </div>
                                 )}
@@ -232,7 +232,7 @@ function Dashboard() {
                                     </div>
                                 ) : (
                                     <div className="empty-state card p-12 text-center">
-                                        <p className="mb-4 text-gray-400">You haven't listed any items yet.</p>
+                                        <p className="mb-4" style={{color: 'var(--m-fg-muted)'}}>You haven't listed any items yet.</p>
                                         <Link to="/sell" className="btn btn-primary">Start Selling</Link>
                                     </div>
                                 )}
@@ -249,7 +249,7 @@ function Dashboard() {
 
                             {isLoading ? (
                                 <div className="text-center py-12">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4" style={{borderColor: 'var(--m-accent)'}}></div>
                                     <p>Loading your inventory...</p>
                                 </div>
                             ) : myListings.length > 0 ? (
@@ -263,11 +263,11 @@ function Dashboard() {
                                 </div>
                             ) : (
                                 <div className="empty-state card p-16 text-center">
-                                    <div className="bg-white/5 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <div className="w-16 h-16 rounded-[var(--m-radius)] flex items-center justify-center mx-auto mb-4" style={{background: 'var(--m-surface-strong)'}}>
                                         <span className="text-4xl">📦</span>
                                     </div>
-                                    <h3 className="text-xl font-bold mb-2">No Active Listings</h3>
-                                    <p className="text-gray-400 mb-6">Your inventory is empty. Time to change that!</p>
+                                    <h3 className="text-xl font-semibold mb-2">No Active Listings</h3>
+                                    <p className="mb-6" style={{color: 'var(--m-fg-muted)'}}>Your inventory is empty. Time to change that!</p>
                                     <Link to="/sell" className="btn btn-primary">Create Your First Listing</Link>
                                 </div>
                             )}
@@ -286,8 +286,8 @@ function Dashboard() {
                                             <img src={order.listing?.images?.[0] || 'https://via.placeholder.com/150'} alt={order.listing?.title} />
                                             <div className="txn-details">
                                                 <h4>{order.listing?.title || 'Unknown Item'}</h4>
-                                                <p className="text-xs text-gray-400">Order ID: {order.orderId || order._id}</p>
-                                                <p className="text-xs text-gray-400">Date: {new Date(order.createdAt).toLocaleDateString()}</p>
+                                                <p className="text-xs" style={{color: 'var(--m-fg-subtle)'}}>Order ID: {order.orderId || order._id}</p>
+                                                <p className="text-xs" style={{color: 'var(--m-fg-subtle)'}}>Date: {new Date(order.createdAt).toLocaleDateString()}</p>
                                             </div>
                                             <div className="txn-status">
                                                 <span className={`badge badge-${order.status === 'completed' ? 'success' : order.status === 'paid' ? 'info' : 'warning'}`}>
@@ -303,11 +303,11 @@ function Dashboard() {
                                 </div>
                             ) : (
                                 <div className="empty-state card p-16 text-center">
-                                    <div className="bg-white/5 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <div className="w-16 h-16 rounded-[var(--m-radius)] flex items-center justify-center mx-auto mb-4" style={{background: 'var(--m-surface-strong)'}}>
                                         <span className="text-4xl">🛍️</span>
                                     </div>
-                                    <h3 className="text-xl font-bold mb-2">No Orders Yet</h3>
-                                    <p className="text-gray-400 mb-6">You haven't purchased anything.</p>
+                                    <h3 className="text-xl font-semibold mb-2">No Orders Yet</h3>
+                                    <p className="mb-6" style={{color: 'var(--m-fg-muted)'}}>You haven't purchased anything.</p>
                                     <Link to="/" className="btn btn-primary">Browse Marketplace</Link>
                                 </div>
                             )}

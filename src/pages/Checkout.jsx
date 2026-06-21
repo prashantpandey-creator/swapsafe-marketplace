@@ -64,7 +64,6 @@ function Checkout() {
                     if (item) {
                         setProducts([item])
                     } else {
-                        // No real listing found — do NOT fall back to demo data.
                         console.warn('Listing not found for checkout:', id)
                     }
                 } catch (err) {
@@ -127,7 +126,6 @@ function Checkout() {
             const deliveryAddress = deliveryMethod === 'delivery' ? shippingAddress : null
 
             if (paymentMethod === 'credits') {
-                // Credit Payment Flow
                 const result = await paymentAPI.createCreditOrder({
                     listingId,
                     deliveryMethod,
@@ -142,7 +140,6 @@ function Checkout() {
                     throw new Error(result.message || 'Payment failed')
                 }
             } else {
-                // Razorpay Payment Flow
                 if (!razorpayKey) {
                     throw new Error('Payment gateway not available')
                 }
@@ -203,7 +200,7 @@ function Checkout() {
                     setIsProcessing(false)
                 })
                 rzp.open()
-                return // Don't reset isProcessing here, it's handled in handler/ondismiss
+                return
             }
         } catch (error) {
             console.error("Payment failed", error)
@@ -217,7 +214,7 @@ function Checkout() {
 
     if (loading) return (
         <div className="min-h-screen pt-24 flex items-center justify-center">
-            <Loader className="w-8 h-8 text-legion-gold animate-spin" />
+            <Loader className="w-8 h-8 animate-spin" style={{ color: 'var(--m-accent)' }} />
         </div>
     )
 
@@ -227,26 +224,27 @@ function Checkout() {
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="max-w-xl mx-auto bg-legion-card border border-green-500/20 rounded-2xl p-8 text-center"
+                    className="max-w-xl mx-auto p-8 text-center"
+                    style={{ background: 'var(--m-surface-strong)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)' }}
                 >
-                    <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(74,222,128,0.1)' }}>
                         <CheckCircle className="w-10 h-10 text-green-500" />
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Payment Successful!</h1>
-                    <p className="text-gray-400 mb-8">
-                        Your payment of <span className="text-white font-bold">{formatPrice(total)}</span> has been securely held in escrow.
+                    <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--m-fg)' }}>Payment Successful!</h1>
+                    <p className="mb-8" style={{ color: 'var(--m-fg-muted)' }}>
+                        Your payment of <span className="font-bold" style={{ color: 'var(--m-fg)' }}>{formatPrice(total)}</span> has been securely held in escrow.
                     </p>
 
-                    <div className="bg-white/5 rounded-xl p-4 mb-8 text-left">
-                        <p className="text-sm text-gray-500 mb-1">Order ID</p>
-                        <p className="text-white font-mono">{placedOrderId}</p>
+                    <div className="p-4 mb-8 text-left" style={{ background: 'var(--m-surface)', borderRadius: 'var(--m-radius)' }}>
+                        <p className="text-sm mb-1" style={{ color: 'var(--m-fg-subtle)' }}>Order ID</p>
+                        <p className="font-mono" style={{ color: 'var(--m-fg)' }}>{placedOrderId}</p>
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        <Link to={`/tracker/${placedOrderId}`} className="w-full py-4 bg-legion-gold text-black font-bold rounded-xl hover:bg-yellow-400 transition-colors">
+                        <Link to={`/tracker/${placedOrderId}`} className="m-btn-accent w-full py-4 font-bold text-center block" style={{ borderRadius: 'var(--m-radius)' }}>
                             Track Order
                         </Link>
-                        <Link to="/browse" className="w-full py-4 bg-white/5 text-white font-bold rounded-xl hover:bg-white/10 transition-colors">
+                        <Link to="/browse" className="m-btn-ghost w-full py-4 font-bold text-center block" style={{ borderRadius: 'var(--m-radius)' }}>
                             Continue Shopping
                         </Link>
                     </div>
@@ -256,29 +254,29 @@ function Checkout() {
     }
 
     return (
-        <div className="min-h-screen pt-24 pb-20 px-4 bg-legion-bg">
+        <div className="min-h-screen pt-24 pb-20 px-4">
             <div className="container mx-auto max-w-6xl">
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-8">
-                    <button onClick={() => navigate(-1)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white">
+                    <button onClick={() => navigate(-1)} className="m-iconbtn">
                         <ArrowLeft size={20} />
                     </button>
-                    <h1 className="text-2xl font-bold text-white">Secure Checkout</h1>
-                    <div className="ml-auto flex items-center gap-2 text-green-400 bg-green-400/10 px-3 py-1 rounded-full border border-green-400/20">
+                    <h1 className="text-2xl font-bold" style={{ color: 'var(--m-fg)' }}>Secure Checkout</h1>
+                    <div className="ml-auto flex items-center gap-2 text-green-400 px-3 py-1" style={{ background: 'rgba(74,222,128,0.08)', borderRadius: 'var(--m-radius)', border: '1px solid var(--m-hairline)' }}>
                         <Lock size={14} />
                         <span className="text-xs font-bold uppercase tracking-wider">Encrypted</span>
                     </div>
                 </div>
 
                 {/* Trust / Escrow Banner */}
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-green-900/40 to-green-900/10 border border-green-500/20 p-4 mb-8">
+                <div className="p-4 mb-8" style={{ borderRadius: 'var(--m-radius)', background: 'var(--m-surface)', border: '1px solid var(--m-hairline)' }}>
                     <div className="flex gap-4 items-start">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500/10 text-green-400 shadow-[0_0_15px_rgba(74,222,128,0.2)]">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-green-400" style={{ background: 'rgba(74,222,128,0.1)' }}>
                             <Shield size={20} />
                         </div>
                         <div className="flex flex-col gap-1">
-                            <h4 className="text-sm font-bold text-white">Escrow Protection Active</h4>
-                            <p className="text-sm text-gray-300 leading-relaxed">Your money is held safely in escrow until you verify and approve the device.</p>
+                            <h4 className="text-sm font-bold" style={{ color: 'var(--m-fg)' }}>Escrow Protection Active</h4>
+                            <p className="text-sm leading-relaxed" style={{ color: 'var(--m-fg-muted)' }}>Your money is held safely in escrow until you verify and approve the device.</p>
                         </div>
                     </div>
                 </div>
@@ -293,8 +291,11 @@ function Checkout() {
                                 { num: 2, label: 'Delivery' },
                                 { num: 3, label: 'Payment' }
                             ].map((s) => (
-                                <div key={s.num} className={`flex items-center gap-3 ${step >= s.num ? 'text-legion-gold' : 'text-gray-600'}`}>
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 ${step >= s.num ? 'border-legion-gold bg-legion-gold/10' : 'border-gray-700 bg-transparent'}`}>
+                                <div key={s.num} className="flex items-center gap-3" style={{ color: step >= s.num ? 'var(--m-accent)' : 'var(--m-fg-subtle)' }}>
+                                    <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold" style={{
+                                        border: `2px solid ${step >= s.num ? 'var(--m-accent)' : 'var(--m-hairline)'}`,
+                                        background: step >= s.num ? 'rgba(212,175,55,0.1)' : 'transparent'
+                                    }}>
                                         {s.num}
                                     </div>
                                     <span className="hidden sm:block font-medium">{s.label}</span>
@@ -305,18 +306,18 @@ function Checkout() {
                         {/* Step 1: Review */}
                         {step === 1 && (
                             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                                <div className="checkout-section glass-panel border border-white/10 rounded-2xl p-6">
-                                    <h2 className="text-xl font-bold text-white mb-6">Order Items</h2>
+                                <div className="checkout-section p-6" style={{ background: 'var(--m-surface-strong)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)' }}>
+                                    <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--m-fg)' }}>Order Items</h2>
                                     {products.map((product, idx) => (
-                                        <div key={idx} className="product-review-card glass-panel rounded-2xl p-4 flex gap-4 items-center shadow-lg shadow-black/20 mb-4 border border-white/5 bg-black/20">
-                                            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-[#222] border border-white/5">
+                                        <div key={idx} className="product-review-card p-4 flex gap-4 items-center mb-4" style={{ background: 'var(--m-surface)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)' }}>
+                                            <div className="h-20 w-20 shrink-0 overflow-hidden" style={{ borderRadius: 'var(--m-radius)', background: 'var(--m-surface-strong)', border: '1px solid var(--m-hairline)' }}>
                                                 <img src={product.images?.[0] || product.image} alt={product.title} className="w-full h-full object-cover" />
                                             </div>
                                             <div className="flex flex-col flex-1 gap-1">
-                                                <h3 className="font-bold text-white text-base leading-snug">{product.title}</h3>
-                                                <p className="text-sm text-gray-400">Sold by {product.seller?.name || 'Verified Seller'}</p>
+                                                <h3 className="font-bold text-base leading-snug" style={{ color: 'var(--m-fg)' }}>{product.title}</h3>
+                                                <p className="text-sm" style={{ color: 'var(--m-fg-muted)' }}>Sold by {product.seller?.name || 'Verified Seller'}</p>
                                                 <div className="mt-1 flex items-center justify-between">
-                                                    <span className="text-lg font-extrabold text-white">{formatPrice(product.price)}</span>
+                                                    <span className="text-lg font-bold" style={{ color: 'var(--m-fg)' }}>{formatPrice(product.price)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-1 mt-1">
                                                     <Shield size={12} className="text-green-500" />
@@ -326,27 +327,35 @@ function Checkout() {
                                         </div>
                                     ))}
 
-                                    <div className="mt-8 pt-6 border-t border-white/10">
-                                        <h3 className="text-lg font-bold text-white mb-4">Choose Delivery Method</h3>
+                                    <div className="mt-8 pt-6" style={{ borderTop: '1px solid var(--m-hairline)' }}>
+                                        <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--m-fg)' }}>Choose Delivery Method</h3>
                                         <div className="grid md:grid-cols-2 gap-4">
-                                            <label className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${deliveryMethod === 'meetup' ? 'border-legion-gold bg-legion-gold/5' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
+                                            <label className="cursor-pointer p-4 transition-all" style={{
+                                                borderRadius: 'var(--m-radius)',
+                                                border: `2px solid ${deliveryMethod === 'meetup' ? 'var(--m-accent)' : 'var(--m-hairline)'}`,
+                                                background: deliveryMethod === 'meetup' ? 'rgba(212,175,55,0.05)' : 'var(--m-surface)'
+                                            }}>
                                                 <input type="radio" className="hidden" checked={deliveryMethod === 'meetup'} onChange={() => setDeliveryMethod('meetup')} />
                                                 <div className="flex items-center gap-3 mb-2">
-                                                    <MapPin className={deliveryMethod === 'meetup' ? 'text-legion-gold' : 'text-gray-400'} />
-                                                    <span className="font-bold text-white">Safe Meetup</span>
+                                                    <MapPin style={{ color: deliveryMethod === 'meetup' ? 'var(--m-accent)' : 'var(--m-fg-muted)' }} />
+                                                    <span className="font-bold" style={{ color: 'var(--m-fg)' }}>Safe Meetup</span>
                                                 </div>
-                                                <p className="text-sm text-gray-400">Meet at a verified SwapSafe Zone</p>
+                                                <p className="text-sm" style={{ color: 'var(--m-fg-muted)' }}>Meet at a verified SwapSafe Zone</p>
                                                 <p className="text-green-400 text-sm font-bold mt-2">Free</p>
                                             </label>
 
-                                            <label className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${deliveryMethod === 'delivery' ? 'border-legion-gold bg-legion-gold/5' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
+                                            <label className="cursor-pointer p-4 transition-all" style={{
+                                                borderRadius: 'var(--m-radius)',
+                                                border: `2px solid ${deliveryMethod === 'delivery' ? 'var(--m-accent)' : 'var(--m-hairline)'}`,
+                                                background: deliveryMethod === 'delivery' ? 'rgba(212,175,55,0.05)' : 'var(--m-surface)'
+                                            }}>
                                                 <input type="radio" className="hidden" checked={deliveryMethod === 'delivery'} onChange={() => setDeliveryMethod('delivery')} />
                                                 <div className="flex items-center gap-3 mb-2">
-                                                    <Truck className={deliveryMethod === 'delivery' ? 'text-legion-gold' : 'text-gray-400'} />
-                                                    <span className="font-bold text-white">Secure Delivery</span>
+                                                    <Truck style={{ color: deliveryMethod === 'delivery' ? 'var(--m-accent)' : 'var(--m-fg-muted)' }} />
+                                                    <span className="font-bold" style={{ color: 'var(--m-fg)' }}>Secure Delivery</span>
                                                 </div>
-                                                <p className="text-sm text-gray-400">Insured shipping via Delhivery</p>
-                                                <p className="text-white text-sm font-bold mt-2">₹149</p>
+                                                <p className="text-sm" style={{ color: 'var(--m-fg-muted)' }}>Insured shipping via Delhivery</p>
+                                                <p className="text-sm font-bold mt-2" style={{ color: 'var(--m-fg)' }}>₹149</p>
                                             </label>
                                         </div>
                                     </div>
@@ -357,8 +366,8 @@ function Checkout() {
                         {/* Step 2: Delivery Details */}
                         {step === 2 && (
                             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                                <div className="checkout-section glass-panel border border-white/10 rounded-2xl p-6">
-                                    <h2 className="text-xl font-bold text-white mb-6">
+                                <div className="checkout-section p-6" style={{ background: 'var(--m-surface-strong)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)' }}>
+                                    <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--m-fg)' }}>
                                         {deliveryMethod === 'meetup' ? 'Schedule Meetup' : 'Shipping Address'}
                                     </h2>
 
@@ -366,12 +375,12 @@ function Checkout() {
                                         <div className="space-y-6">
                                             <div className="grid md:grid-cols-2 gap-6">
                                                 <div>
-                                                    <label className="block text-sm text-gray-400 mb-2">Preferred Date</label>
-                                                    <input type="date" value={meetupDate} onChange={(e) => setMeetupDate(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-legion-gold outline-none" />
+                                                    <label className="block text-sm mb-2" style={{ color: 'var(--m-fg-muted)' }}>Preferred Date</label>
+                                                    <input type="date" value={meetupDate} onChange={(e) => setMeetupDate(e.target.value)} className="w-full p-3 outline-none" style={{ background: 'var(--m-surface)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)', color: 'var(--m-fg)', transition: 'border-color var(--m-ease)' }} />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm text-gray-400 mb-2">Preferred Time</label>
-                                                    <select value={meetupTime} onChange={(e) => setMeetupTime(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-legion-gold outline-none">
+                                                    <label className="block text-sm mb-2" style={{ color: 'var(--m-fg-muted)' }}>Preferred Time</label>
+                                                    <select value={meetupTime} onChange={(e) => setMeetupTime(e.target.value)} className="w-full p-3 outline-none" style={{ background: 'var(--m-surface)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)', color: 'var(--m-fg)', transition: 'border-color var(--m-ease)' }}>
                                                         <option value="">Select Time</option>
                                                         <option>10:00 AM</option>
                                                         <option>02:00 PM</option>
@@ -381,16 +390,21 @@ function Checkout() {
                                             </div>
 
                                             <div>
-                                                <label className="block text-sm text-gray-400 mb-3">Select Safe Zone</label>
+                                                <label className="block text-sm mb-3" style={{ color: 'var(--m-fg-muted)' }}>Select Safe Zone</label>
                                                 <div className="grid md:grid-cols-2 gap-4">
                                                     {filteredZones.map(zone => (
                                                         <div
                                                             key={zone.id}
                                                             onClick={() => setSelectedZone(zone)}
-                                                            className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedZone?.id === zone.id ? 'border-legion-gold bg-legion-gold/5' : 'border-white/10 bg-white/5 hover:border-white/20'}`}
+                                                            className="p-4 cursor-pointer transition-all"
+                                                            style={{
+                                                                borderRadius: 'var(--m-radius)',
+                                                                border: `1px solid ${selectedZone?.id === zone.id ? 'var(--m-accent)' : 'var(--m-hairline)'}`,
+                                                                background: selectedZone?.id === zone.id ? 'rgba(212,175,55,0.05)' : 'var(--m-surface)'
+                                                            }}
                                                         >
-                                                            <strong className="block text-white mb-1">{zone.name}</strong>
-                                                            <span className="text-xs text-gray-400">{zone.type} • {zone.city}</span>
+                                                            <strong className="block mb-1" style={{ color: 'var(--m-fg)' }}>{zone.name}</strong>
+                                                            <span className="text-xs" style={{ color: 'var(--m-fg-muted)' }}>{zone.type} • {zone.city}</span>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -398,11 +412,11 @@ function Checkout() {
                                         </div>
                                     ) : (
                                         <div className="space-y-4">
-                                            <input type="text" placeholder="Full Name" value={shippingAddress.name} onChange={(e) => setShippingAddress({ ...shippingAddress, name: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-legion-gold outline-none" />
-                                            <input type="text" placeholder="Full Address" value={shippingAddress.address} onChange={(e) => setShippingAddress({ ...shippingAddress, address: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-legion-gold outline-none" />
+                                            <input type="text" placeholder="Full Name" value={shippingAddress.name} onChange={(e) => setShippingAddress({ ...shippingAddress, name: e.target.value })} className="w-full p-3 outline-none" style={{ background: 'var(--m-surface)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)', color: 'var(--m-fg)', transition: 'border-color var(--m-ease)' }} />
+                                            <input type="text" placeholder="Full Address" value={shippingAddress.address} onChange={(e) => setShippingAddress({ ...shippingAddress, address: e.target.value })} className="w-full p-3 outline-none" style={{ background: 'var(--m-surface)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)', color: 'var(--m-fg)', transition: 'border-color var(--m-ease)' }} />
                                             <div className="grid grid-cols-2 gap-4">
-                                                <input type="text" placeholder="City" value={shippingAddress.city} onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-legion-gold outline-none" />
-                                                <input type="text" placeholder="Pincode" value={shippingAddress.pincode} onChange={(e) => setShippingAddress({ ...shippingAddress, pincode: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-legion-gold outline-none" />
+                                                <input type="text" placeholder="City" value={shippingAddress.city} onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })} className="w-full p-3 outline-none" style={{ background: 'var(--m-surface)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)', color: 'var(--m-fg)', transition: 'border-color var(--m-ease)' }} />
+                                                <input type="text" placeholder="Pincode" value={shippingAddress.pincode} onChange={(e) => setShippingAddress({ ...shippingAddress, pincode: e.target.value })} className="w-full p-3 outline-none" style={{ background: 'var(--m-surface)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)', color: 'var(--m-fg)', transition: 'border-color var(--m-ease)' }} />
                                             </div>
                                         </div>
                                     )}
@@ -413,50 +427,58 @@ function Checkout() {
                         {/* Step 3: Payment */}
                         {step === 3 && (
                             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                                <div className="checkout-section glass-panel border border-white/10 rounded-2xl p-6">
-                                    <h2 className="text-xl font-bold text-white mb-6">Payment Method</h2>
+                                <div className="checkout-section p-6" style={{ background: 'var(--m-surface-strong)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)' }}>
+                                    <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--m-fg)' }}>Payment Method</h2>
 
                                     <div className="space-y-4">
-                                        <label className={`relative flex cursor-pointer items-center justify-between p-4 rounded-xl border transition-all ${paymentMethod === 'credits' ? 'bg-legion-gold/5 border-legion-gold' : 'border-white/10 hover:bg-white/5'}`}>
+                                        <label className="relative flex cursor-pointer items-center justify-between p-4 transition-all" style={{
+                                            borderRadius: 'var(--m-radius)',
+                                            border: `1px solid ${paymentMethod === 'credits' ? 'var(--m-accent)' : 'var(--m-hairline)'}`,
+                                            background: paymentMethod === 'credits' ? 'rgba(212,175,55,0.05)' : 'transparent'
+                                        }}>
                                             <div className="flex items-center gap-4">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2C2C35] text-legion-gold">
+                                                <div className="flex h-10 w-10 items-center justify-center" style={{ borderRadius: 'var(--m-radius)', background: 'var(--m-surface)', color: 'var(--m-accent)' }}>
                                                     <Shield size={20} />
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm font-bold text-white">Legion Credits</span>
-                                                    <span className="text-xs text-legion-gold">Balance: {formatPrice(user?.credits || 0)}</span>
+                                                    <span className="text-sm font-bold" style={{ color: 'var(--m-fg)' }}>Legion Credits</span>
+                                                    <span className="text-xs" style={{ color: 'var(--m-accent)' }}>Balance: {formatPrice(user?.credits || 0)}</span>
                                                 </div>
                                             </div>
                                             <input type="radio" className="hidden" checked={paymentMethod === 'credits'} onChange={() => setPaymentMethod('credits')} />
-                                            <div className={paymentMethod === 'credits' ? 'text-legion-gold' : 'text-gray-600'}>
+                                            <div style={{ color: paymentMethod === 'credits' ? 'var(--m-accent)' : 'var(--m-fg-subtle)' }}>
                                                 {paymentMethod === 'credits' ? <CheckCircle size={20} /> : <div className="w-5 h-5 rounded-full border-2 border-current" />}
                                             </div>
                                         </label>
 
-                                        <label className={`relative flex cursor-pointer items-center justify-between p-4 rounded-xl border transition-all ${paymentMethod === 'card' ? 'bg-legion-gold/5 border-legion-gold' : 'border-white/10 hover:bg-white/5'}`}>
+                                        <label className="relative flex cursor-pointer items-center justify-between p-4 transition-all" style={{
+                                            borderRadius: 'var(--m-radius)',
+                                            border: `1px solid ${paymentMethod === 'card' ? 'var(--m-accent)' : 'var(--m-hairline)'}`,
+                                            background: paymentMethod === 'card' ? 'rgba(212,175,55,0.05)' : 'transparent'
+                                        }}>
                                             <div className="flex items-center gap-4">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2C2C35] text-gray-400">
+                                                <div className="flex h-10 w-10 items-center justify-center" style={{ borderRadius: 'var(--m-radius)', background: 'var(--m-surface)', color: 'var(--m-fg-muted)' }}>
                                                     <CreditCard size={20} />
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm font-bold text-white">Credit / Debit Card</span>
-                                                    <span className="text-xs text-gray-400">Instantly processing via Stripe</span>
+                                                    <span className="text-sm font-bold" style={{ color: 'var(--m-fg)' }}>Credit / Debit Card</span>
+                                                    <span className="text-xs" style={{ color: 'var(--m-fg-muted)' }}>Instantly processing via Stripe</span>
                                                 </div>
                                             </div>
                                             <input type="radio" className="hidden" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} />
-                                            <div className={paymentMethod === 'card' ? 'text-legion-gold' : 'text-gray-600'}>
+                                            <div style={{ color: paymentMethod === 'card' ? 'var(--m-accent)' : 'var(--m-fg-subtle)' }}>
                                                 {paymentMethod === 'card' ? <CheckCircle size={20} /> : <div className="w-5 h-5 rounded-full border-2 border-current" />}
                                             </div>
                                         </label>
                                     </div>
 
                                     {paymentMethod === 'card' && (
-                                        <div className="mt-6 p-4 bg-white/5 rounded-xl border border-white/10">
+                                        <div className="mt-6 p-4" style={{ background: 'var(--m-surface)', borderRadius: 'var(--m-radius)', border: '1px solid var(--m-hairline)' }}>
                                             <div className="space-y-4">
-                                                <input type="text" placeholder="Card Number" value={cardDetails.number} onChange={(e) => setCardDetails({ ...cardDetails, number: e.target.value })} className="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-legion-gold outline-none" />
+                                                <input type="text" placeholder="Card Number" value={cardDetails.number} onChange={(e) => setCardDetails({ ...cardDetails, number: e.target.value })} className="w-full p-3 outline-none" style={{ background: 'var(--m-surface-strong)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)', color: 'var(--m-fg)', transition: 'border-color var(--m-ease)' }} />
                                                 <div className="grid grid-cols-2 gap-4">
-                                                    <input type="text" placeholder="MM/YY" value={cardDetails.expiry} onChange={(e) => setCardDetails({ ...cardDetails, expiry: e.target.value })} className="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-legion-gold outline-none" />
-                                                    <input type="text" placeholder="CVV" value={cardDetails.cvv} onChange={(e) => setCardDetails({ ...cardDetails, cvv: e.target.value })} className="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-legion-gold outline-none" />
+                                                    <input type="text" placeholder="MM/YY" value={cardDetails.expiry} onChange={(e) => setCardDetails({ ...cardDetails, expiry: e.target.value })} className="w-full p-3 outline-none" style={{ background: 'var(--m-surface-strong)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)', color: 'var(--m-fg)', transition: 'border-color var(--m-ease)' }} />
+                                                    <input type="text" placeholder="CVV" value={cardDetails.cvv} onChange={(e) => setCardDetails({ ...cardDetails, cvv: e.target.value })} className="w-full p-3 outline-none" style={{ background: 'var(--m-surface-strong)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)', color: 'var(--m-fg)', transition: 'border-color var(--m-ease)' }} />
                                                 </div>
                                             </div>
                                         </div>
@@ -468,31 +490,32 @@ function Checkout() {
 
                     {/* Order Summary Sidebar */}
                     <div className="lg:col-span-1">
-                        <div className="sticky top-24 bg-legion-card border border-white/10 rounded-2xl p-6">
-                            <h3 className="text-lg font-bold text-white mb-6">Order Summary</h3>
+                        <div className="sticky top-24 p-6" style={{ background: 'var(--m-surface-strong)', border: '1px solid var(--m-hairline)', borderRadius: 'var(--m-radius)' }}>
+                            <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--m-fg)' }}>Order Summary</h3>
                             <div className="space-y-3 mb-6">
-                                <div className="flex justify-between text-gray-400">
+                                <div className="flex justify-between" style={{ color: 'var(--m-fg-muted)' }}>
                                     <span>Subtotal</span>
                                     <span>{formatPrice(subtotal)}</span>
                                 </div>
-                                <div className="flex justify-between text-gray-400">
+                                <div className="flex justify-between" style={{ color: 'var(--m-fg-muted)' }}>
                                     <span>Platform Fee</span>
                                     <span>{formatPrice(platformFee)}</span>
                                 </div>
-                                <div className="flex justify-between text-gray-400">
+                                <div className="flex justify-between" style={{ color: 'var(--m-fg-muted)' }}>
                                     <span>Shipping</span>
                                     <span>{deliveryMethod === 'delivery' ? formatPrice(shippingFee) : 'Free'}</span>
                                 </div>
-                                <div className="border-t border-white/10 pt-3 flex justify-between text-white font-bold text-lg">
+                                <div className="pt-3 flex justify-between font-bold text-lg" style={{ borderTop: '1px solid var(--m-hairline)', color: 'var(--m-fg)' }}>
                                     <span>Total</span>
-                                    <span className="text-legion-gold">{formatPrice(total)}</span>
+                                    <span style={{ color: 'var(--m-accent)' }}>{formatPrice(total)}</span>
                                 </div>
                             </div>
 
                             <button
                                 onClick={handleNext}
                                 disabled={!canProceed() || isProcessing}
-                                className="w-full py-4 bg-legion-gold text-black font-bold rounded-xl hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                                className="m-btn-accent w-full py-4 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                style={{ borderRadius: 'var(--m-radius)', transition: 'var(--m-ease)' }}
                             >
                                 {isProcessing ? (
                                     <Loader className="animate-spin" />
@@ -504,9 +527,9 @@ function Checkout() {
                                 )}
                             </button>
 
-                            <div className="mt-6 flex items-center gap-2 text-xs text-gray-500 justify-center">
+                            <div className="mt-6 flex items-center gap-2 text-xs justify-center" style={{ color: 'var(--m-fg-subtle)' }}>
                                 <Lock size={12} />
-                                <span>Payments are 100% encrypted & secure</span>
+                                <span>Payments are 100% encrypted &amp; secure</span>
                             </div>
                         </div>
                     </div>
@@ -514,16 +537,17 @@ function Checkout() {
             </div>
 
             {/* Sticky Footer */}
-            <div className="fixed bottom-0 left-0 right-0 bg-[#0A0A0F]/90 backdrop-blur-xl border-t border-white/10 px-6 py-4 pb-8 z-40 transform translate-y-0 transition-transform">
+            <div className="fixed bottom-0 left-0 right-0 backdrop-blur-xl px-6 py-4 pb-8 z-40" style={{ background: 'rgba(10,10,15,0.9)', borderTop: '1px solid var(--m-hairline)' }}>
                 <div className="mx-auto max-w-6xl flex items-center justify-between gap-4">
                     <div className="flex flex-col">
-                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Total to Pay</span>
-                        <span className="text-xl font-extrabold text-white">{formatPrice(total)}</span>
+                        <span className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--m-fg-muted)' }}>Total to Pay</span>
+                        <span className="text-xl font-bold" style={{ color: 'var(--m-fg)' }}>{formatPrice(total)}</span>
                     </div>
                     <button
                         onClick={handleNext}
                         disabled={!canProceed() || isProcessing}
-                        className="flex-1 max-w-md bg-legion-gold hover:bg-yellow-400 text-black font-bold h-12 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(244,192,37,0.3)] disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+                        className="m-btn-accent flex-1 max-w-md h-12 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ borderRadius: 'var(--m-radius)', transition: 'var(--m-ease)' }}
                     >
                         {isProcessing ? (
                             <Loader className="animate-spin" size={20} />

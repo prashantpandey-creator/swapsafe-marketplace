@@ -65,7 +65,7 @@ const MyListings = () => {
         return (
             <div className="min-h-screen pt-24 pb-12 flex justify-center items-center">
                 <div className="text-center">
-                    <p className="text-gray-400">Redirecting to login...</p>
+                    <p style={{ color: 'var(--m-fg-muted)' }}>Redirecting to login...</p>
                 </div>
             </div>
         )
@@ -76,10 +76,10 @@ const MyListings = () => {
             <div className="container mx-auto px-4">
                 <div className="flex justify-between items-center mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold text-white mb-2">My Listings</h1>
-                        <p className="text-gray-400">Manage your active inventory ({myListings.length})</p>
+                        <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--m-fg)' }}>My Listings</h1>
+                        <p style={{ color: 'var(--m-fg-muted)' }}>Manage your active inventory ({myListings.length})</p>
                     </div>
-                    <Link to="/sell" className="btn btn-primary flex items-center gap-2">
+                    <Link to="/sell" className="m-btn-accent flex items-center gap-2">
                         <Plus className="w-5 h-5" /> New Listing
                     </Link>
                 </div>
@@ -87,7 +87,7 @@ const MyListings = () => {
                 {isLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="h-[350px] bg-white/5 rounded-2xl animate-pulse" />
+                            <div key={i} className="h-[350px] animate-pulse" style={{ background: 'var(--m-surface)', borderRadius: 'var(--m-radius)' }} />
                         ))}
                     </div>
                 ) : myListings.length > 0 ? (
@@ -98,14 +98,17 @@ const MyListings = () => {
                                 <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <Link
                                         to={`/edit-listing/${listing._id || listing.id}`}
-                                        className="p-2 bg-white/90 text-black rounded-full shadow hover:bg-legion-gold transition-colors"
+                                        className="m-iconbtn"
                                         title="Edit"
                                     >
                                         <Edit className="w-4 h-4" />
                                     </Link>
                                     <button
                                         onClick={() => handleDelete(listing._id || listing.id)}
-                                        className="p-2 bg-red-500/90 text-white rounded-full shadow hover:bg-red-600 transition-colors"
+                                        className="p-2 text-white rounded-[var(--m-radius)] transition-colors"
+                                        style={{ background: 'rgba(239,68,68,0.85)', transition: 'background var(--m-ease)' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = 'rgb(220,38,38)'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.85)'}
                                         title="Delete"
                                     >
                                         <Trash2 className="w-4 h-4" />
@@ -115,10 +118,10 @@ const MyListings = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-20 bg-white/5 rounded-2xl border border-white/10">
-                        <h3 className="text-xl font-bold text-white mb-2">No active listings</h3>
-                        <p className="text-gray-400 mb-6">You haven't listed anything yet.</p>
-                        <Link to="/sell" className="btn btn-outline">Create First Listing</Link>
+                    <div className="text-center py-20" style={{ background: 'var(--m-surface)', borderRadius: 'var(--m-radius)', border: '1px solid var(--m-hairline)' }}>
+                        <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--m-fg)' }}>No active listings</h3>
+                        <p className="mb-6" style={{ color: 'var(--m-fg-muted)' }}>You haven't listed anything yet.</p>
+                        <Link to="/sell" className="m-btn-ghost">Create First Listing</Link>
                     </div>
                 )}
             </div>
