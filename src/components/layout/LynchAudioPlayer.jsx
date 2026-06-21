@@ -83,12 +83,10 @@ export default function LynchAudioPlayer({ active }) {
         } catch (_) {}
     };
 
-    if (!visible) return <div ref={containerRef} style={{ display: 'none' }} />;
-
     return (
         <>
-            {/* Hidden iframe mount point */}
-            <div ref={containerRef} style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
+            {/* Hidden iframe mount point — always in DOM so ref is stable */}
+            <div ref={containerRef} style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none', top: 0, left: 0 }} />
 
             {/* Mute toggle pill */}
             <button
