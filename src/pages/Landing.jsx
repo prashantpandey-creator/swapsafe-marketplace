@@ -41,19 +41,19 @@ const Landing = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8 }}
                     >
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm hover:border-legion-gold/30 transition-colors cursor-pointer">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-[10px] bg-[var(--m-surface)] border border-[var(--m-hairline)] mb-8 backdrop-blur-sm hover:border-legion-gold/30 transition-colors cursor-pointer">
                             <Shield className="w-4 h-4 text-legion-gold" />
-                            <span className="text-gray-300 text-sm font-medium">Every item verified. Every transaction protected.</span>
+                            <span className="text-[var(--m-fg-muted)] text-sm font-medium">Every item verified. Every transaction protected.</span>
                         </div>
 
-                        <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 leading-tight tracking-tight">
+                        <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-6 leading-tight">
                             BUY & SELL <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-legion-gold via-yellow-200 to-legion-gold">
+                            <span className="text-legion-gold">
                                 VERIFIED GEAR
                             </span>
                         </h1>
 
-                        <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto mb-10 font-light">
+                        <p className="text-xl md:text-2xl text-[var(--m-fg-muted)] max-w-2xl mx-auto mb-10 font-light">
                             The safest marketplace for second-hand electronics, fashion, and collectibles.
                             Backed by <span className="text-white font-semibold">AI Verification</span> and <span className="text-white font-semibold">SwapSafe Shield</span>.
                         </p>
@@ -66,11 +66,11 @@ const Landing = () => {
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                className="w-full h-14 pl-6 pr-32 rounded-full bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-legion-gold/50 focus:bg-white/10 transition-all backdrop-blur-md shadow-2xl"
+                                className="w-full h-14 pl-6 pr-32 rounded-[10px] bg-[var(--m-surface)] border border-[var(--m-hairline)] text-white placeholder-[var(--m-fg-subtle)] focus:outline-none focus:border-legion-gold/50 focus:bg-[var(--m-surface-strong)] transition-all backdrop-blur-md"
                             />
                             <button
                                 onClick={handleSearch}
-                                className="absolute right-1 top-1 h-12 px-8 bg-legion-gold text-black font-bold rounded-full hover:bg-yellow-400 transition-colors flex items-center gap-2"
+                                className="absolute right-1 top-1 h-12 px-8 bg-legion-gold text-black font-bold rounded-[10px] hover:brightness-110 transition-all flex items-center gap-2"
                             >
                                 <Search className="w-5 h-5" />
                                 <span>Search</span>
@@ -79,32 +79,32 @@ const Landing = () => {
 
                         {/* CTA Buttons */}
                         <div className="flex flex-wrap justify-center gap-4 mb-16">
-                            <Link to="/browse" className="px-8 py-4 bg-legion-gold text-black font-bold rounded-xl shadow-[0_0_20px_rgba(255,215,0,0.3)] hover:shadow-[0_0_30px_rgba(255,215,0,0.5)] hover:scale-105 transition-all flex items-center gap-2">
+                            <Link to="/browse" className="px-8 py-4 bg-legion-gold text-black font-bold rounded-[10px] hover:brightness-110 transition-all flex items-center gap-2">
                                 Start Shopping <ArrowRight className="w-5 h-5" />
                             </Link>
-                            <Link to="/sell" className="px-8 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all flex items-center gap-2">
+                            <Link to="/sell" className="px-8 py-4 bg-[var(--m-surface)] border border-[var(--m-hairline)] text-white font-bold rounded-[10px] hover:bg-[var(--m-surface-strong)] transition-all flex items-center gap-2">
                                 <Box className="w-5 h-5" /> Sell Your Items
                             </Link>
-                            <Link to="/studio" className="px-8 py-4 bg-transparent border border-legion-gold/30 text-legion-gold font-bold rounded-xl hover:bg-legion-gold/10 transition-all flex items-center gap-2">
+                            <Link to="/studio" className="px-8 py-4 bg-transparent border border-legion-gold/30 text-legion-gold font-bold rounded-[10px] hover:bg-legion-gold/10 transition-all flex items-center gap-2">
                                 <Sparkles className="w-5 h-5" /> AI Studio
                             </Link>
                         </div>
 
                         {/* Trust Indicators Strip (Stitch Design) */}
-                        <div className="flex flex-wrap justify-center gap-8 md:gap-12 border-t border-white/5 pt-8">
+                        <div className="flex flex-wrap justify-center gap-8 md:gap-12 border-t border-[var(--m-hairline)] pt-8">
                             <div className="text-center">
                                 <p className="text-2xl font-bold text-white">12.5K+</p>
-                                <p className="text-sm text-gray-500 uppercase tracking-wider">Verified Sellers</p>
+                                <p className="text-sm text-[var(--m-fg-subtle)] uppercase tracking-wider">Verified Sellers</p>
                             </div>
-                            <div className="w-px h-12 bg-white/10 hidden md:block"></div>
+                            <div className="w-px h-12 bg-[var(--m-hairline)] hidden md:block"></div>
                             <div className="text-center">
                                 <p className="text-2xl font-bold text-white">₹2.3 Cr+</p>
-                                <p className="text-sm text-gray-500 uppercase tracking-wider">Protected Value</p>
+                                <p className="text-sm text-[var(--m-fg-subtle)] uppercase tracking-wider">Protected Value</p>
                             </div>
-                            <div className="w-px h-12 bg-white/10 hidden md:block"></div>
+                            <div className="w-px h-12 bg-[var(--m-hairline)] hidden md:block"></div>
                             <div className="text-center">
                                 <p className="text-2xl font-bold text-white">99.8%</p>
-                                <p className="text-sm text-gray-500 uppercase tracking-wider">Match Rate</p>
+                                <p className="text-sm text-[var(--m-fg-subtle)] uppercase tracking-wider">Match Rate</p>
                             </div>
                         </div>
                     </motion.div>
@@ -117,7 +117,7 @@ const Landing = () => {
                     <div className="flex justify-between items-end mb-8">
                         <div>
                             <h2 className="text-2xl font-bold text-white mb-2">Suggested For You</h2>
-                            <p className="text-gray-400 text-sm">Hand-picked gear from top sellers</p>
+                            <p className="text-[var(--m-fg-muted)] text-sm">Hand-picked gear from top sellers</p>
                         </div>
                         <Link to="/browse" className="text-legion-gold hover:text-white transition-colors text-sm font-medium">
                             View More
@@ -127,7 +127,7 @@ const Landing = () => {
                     {loadingSuggestions ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {[1, 2, 3, 4].map(i => (
-                                <div key={i} className="bg-white/5 rounded-2xl h-[350px] animate-pulse" />
+                                <div key={i} className="bg-[var(--m-surface)] rounded-[12px] h-[350px] animate-pulse" />
                             ))}
                         </div>
                     ) : (
@@ -137,7 +137,7 @@ const Landing = () => {
                                     <ProductCard key={product.id || product._id} product={product} />
                                 ))
                             ) : (
-                                <p className="text-gray-400 col-span-full text-center py-10">
+                                <p className="text-[var(--m-fg-muted)] col-span-full text-center py-10">
                                     No suggestions available right now. Check back later!
                                 </p>
                             )}
@@ -152,7 +152,7 @@ const Landing = () => {
                     <div className="flex justify-between items-end mb-12">
                         <div>
                             <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Explore Categories</h2>
-                            <p className="text-gray-400">Find exactly what you need from our trusted sellers.</p>
+                            <p className="text-[var(--m-fg-muted)]">Find exactly what you need from our trusted sellers.</p>
                         </div>
                         <Link to="/browse" className="text-legion-gold hover:text-white transition-colors flex items-center gap-2 font-medium">
                             View All <ArrowRight className="w-4 h-4" />
@@ -167,7 +167,7 @@ const Landing = () => {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.1 }}
                                 whileHover={{ y: -10 }}
-                                className="group relative overflow-hidden rounded-2xl aspect-[4/5] cursor-pointer"
+                                className="group relative overflow-hidden rounded-[12px] border border-[var(--m-hairline)] aspect-[4/5] cursor-pointer"
                                 onClick={() => navigate(`/browse/${cat.name.toLowerCase()}`)}
                             >
                                 <img
@@ -178,7 +178,7 @@ const Landing = () => {
                                 <div className="absolute inset-0 bg-gradient-to-t from-legion-bg via-legion-bg/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
                                 <div className="absolute bottom-0 left-0 w-full p-6">
                                     <h3 className="text-2xl font-bold text-white mb-1 group-hover:text-legion-gold transition-colors">{cat.name}</h3>
-                                    <p className="text-gray-300 text-sm">{cat.count} listings</p>
+                                    <p className="text-[var(--m-fg-muted)] text-sm">{cat.count} listings</p>
                                 </div>
                             </motion.div>
                         ))}
@@ -187,7 +187,7 @@ const Landing = () => {
             </section>
 
             {/* Feature Section: The Shield */}
-            <section className="py-24 bg-legion-card/30 relative border-y border-white/5">
+            <section className="py-24 bg-legion-card/30 relative border-y border-[var(--m-hairline)]">
                 <div className="container mx-auto px-4 lg:flex items-center gap-16">
                     <div className="lg:w-1/2 mb-12 lg:mb-0">
                         <motion.div
@@ -195,14 +195,13 @@ const Landing = () => {
                             whileInView={{ scale: 1, opacity: 1 }}
                             className="relative aspect-square max-w-md mx-auto"
                         >
-                            <div className="absolute inset-0 bg-legion-gold/20 rounded-full blur-[80px] animate-pulse" />
-                            <Shield className="w-full h-full text-legion-gold drop-shadow-[0_0_30px_rgba(251,191,36,0.5)]" strokeWidth={1} />
+                            <Shield className="w-full h-full text-legion-gold" strokeWidth={1} />
                         </motion.div>
                     </div>
                     <div className="lg:w-1/2">
-                        <span className="text-legion-gold font-bold tracking-wider text-sm uppercase mb-2 block">Safety First</span>
+                        <span className="text-legion-gold font-bold text-sm uppercase mb-2 block">Safety First</span>
                         <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">The Ironclad Shield of Trust</h2>
-                        <p className="text-gray-400 text-lg mb-8 leading-relaxed">
+                        <p className="text-[var(--m-fg-muted)] text-lg mb-8 leading-relaxed">
                             We don't just facilitate trades; we guarantee them. With our proprietary AI verification system and Aadhaar-backed identity checks, fraud isn't just unlikely—it's impossible.
                         </p>
 
@@ -212,13 +211,13 @@ const Landing = () => {
                                 { title: "Verified Identity", desc: "Know exactly who you're dealing with." },
                                 { title: "Secure Payments", desc: "Funds held in escrow until you verify the item." }
                             ].map((feature, i) => (
-                                <div key={i} className="flex gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:border-legion-gold/30 transition-colors">
+                                <div key={i} className="flex gap-4 p-4 rounded-[12px] bg-[var(--m-surface)] border border-[var(--m-hairline)] hover:border-legion-gold/30 transition-colors">
                                     <div className="w-12 h-12 rounded-full bg-legion-gold/10 flex items-center justify-center shrink-0">
                                         <Award className="w-6 h-6 text-legion-gold" />
                                     </div>
                                     <div>
                                         <h4 className="text-white font-bold text-lg">{feature.title}</h4>
-                                        <p className="text-gray-400">{feature.desc}</p>
+                                        <p className="text-[var(--m-fg-muted)]">{feature.desc}</p>
                                     </div>
                                 </div>
                             ))}
