@@ -707,4 +707,50 @@ function getRetailPriceEstimate(title, category) {
     };
 }
 
+// @route   POST /api/ai/trust-score
+// @desc    Compute a confidence-graded Trust Score for a listing by combining
+//          price-sanity + photo-honesty + claim-match signals. Advisory only —
+//          this endpoint NEVER blocks; it explains. The caller decides what to do.
+// @access  Public (rate-limited upstream)
+router.post('/trust-score', async (req, res) => {
+    try {
+        const {
+            title,
+            description,
+            condition,
+            price,
+            retailPrice,
+            productName,
+            images,        // array of Cloudinary URLs or data: base64 strings
+            provider
+        } = req.body;
+
+        if (!images || !Array.isArray(images) || images.length === 0) {
+            // We can still score on price alone, but be explicit that the photo
+            // checks won't run — the service handles this gracefully.
+            console.warn('⚠️ trust-score called without images — photo checks will be unavailable');
+        }
+
+        const { computeTrustScore } = await import('../services/trustScore.js');
+
+        const result = await computeTrustScore(
+            { title, description, condition, price, retailPrice, productName, images },
+            { provider }
+        );
+
+        res.json({ success: true, ...result });
+    } catch (error) {
+        console.error('Trust score error:', error);
+        // Fail OPEN, not closed — a scoring outage must never block a listing.
+        res.status(200).json({
+            success: false,
+            trustScore: 50,
+            confidence: 0,
+            band: 'medium',
+            error: 'Trust scoring temporarily unavailable',
+            summary: 'Could not run trust checks right now; listing is unaffected.'
+        });
+    }
+});
+
 export default router;
