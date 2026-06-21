@@ -36,6 +36,7 @@ import Community from './pages/Community'
 import PostDetail from './pages/PostDetail'
 import CommunityProfile from './pages/CommunityProfile'
 import BackgroundManager from './components/layout/BackgroundManager'
+import LynchAudioPlayer from './components/layout/LynchAudioPlayer'
 import ServerWaker from './components/common/ServerWaker'
 
 // Redirects unauthenticated users to /login, preserving intended destination
@@ -98,6 +99,7 @@ function App() {
                         <ToastProvider>
                             <Router>
                                 <BackgroundManager currentTheme={theme} />
+                                <LynchAudioPlayer active={theme === 'lynch'} />
                                 <ServerWaker />
                                 <div className="app" style={{ position: 'relative', zIndex: 1 }}>
                                     <Header currentTheme={theme} toggleTheme={toggleTheme} />
