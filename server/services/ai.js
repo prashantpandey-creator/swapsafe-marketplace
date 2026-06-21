@@ -20,13 +20,16 @@ if (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY !== 'your_groq_api_key_
 }
 
 // Google Gemini (FREE - Good for Vision)
+// Default to the `-latest` alias so we don't 404 when Google rotates model
+// versions (gemini-1.5-flash was retired). Override via GEMINI_MODEL if needed.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 let gemini = null;
 let geminiVision = null;
 if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here') {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    gemini = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    geminiVision = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    console.log('✅ Google Gemini initialized');
+    gemini = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+    geminiVision = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+    console.log(`✅ Google Gemini initialized (model: ${GEMINI_MODEL})`);
 }
 
 // OpenAI (PAID - Fallback)
@@ -101,7 +104,7 @@ async function generateWithGemini(prompt, options) {
     return {
         text: response.text(),
         provider: 'gemini',
-        model: 'gemini-1.5-flash'
+        model: GEMINI_MODEL
     };
 }
 
@@ -215,7 +218,7 @@ async function analyzeWithGemini(images, prompt, options) {
     return {
         text: response.text(),
         provider: 'gemini',
-        model: 'gemini-1.5-flash'
+        model: GEMINI_MODEL
     };
 }
 
