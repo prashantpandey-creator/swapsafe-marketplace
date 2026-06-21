@@ -1,1370 +1,563 @@
 import React, { useRef, useEffect, useState } from 'react';
 
-// ★ Insight ─────────────────────────────────────
-// This enhanced LynchBackground component implements professional optimizations:
-// 1. Gradient caching reduces per-frame allocations by ~40%
-// 2. Delta time ensures smooth animations across refresh rates
-// 3. Centralized config makes visual tuning maintainable
-// 4. Layer manager provides modular architecture
-// ─────────────────────────────────────────────────
+// Reference: Twin Peaks Red Room 3D model (Sketchfab 46430c73087e4951a6bdf2f4bd3305f4)
+// Key visual facts extracted from the model thumbnail:
+//   - Curtains: dense fine pleats, saturated crimson-red, fill back wall + left + right sides
+//   - Floor: bold black-and-white zigzag CHEVRON (not diagonal checker) in one-point perspective
+//   - Lighting: cool-neutral, slight blue cast, chromatic aberration (RGB split) effect
+//   - Mood: theatrical, bright, uncanny
 
-// ============================================================================
-// LYNCH THEME CONFIGURATION
-// Centralized configuration for all visual and performance parameters
-// ============================================================================
-const LYNCH_CONFIG = {
-    // Performance settings
-    performance: {
-        particleCount: {
-            smoke: 20,
-            dust: 30,
-            sigils: 5
-        },
-        floorResolution: 1.0,
-        enableEffects: {
-            shadowFigure: true,
-            chromaticAberration: true,
-            electricalInterference: false,
-            roomBreathing: true,
-            floorReflection: true
-        }
+const C = {
+    curtain: {
+        // Side curtain panels: left 0..sideW, right (w-sideW)..w
+        // Back wall: fills sideW..(w-sideW), top 0..backH
+        sideWidthRatio: 0.22,   // each side panel
+        backHeightRatio: 0.72,  // back curtain fills top 72% of canvas
+        foldCount: 32,          // dense fine pleats
+        strandCount: 80,
+        speed: 0.3,             // sway speed (per frame at 60fps)
+        // Colors — all saturated crimson
+        base:      [195, 25, 25],
+        lit:       [235, 55, 45],   // bright ridge highlights
+        shadow:    [55,  4,  4],    // deep valley shadow
+        dark:      [10,  0,  0],    // solid backing
+        highlight: [250, 90, 70],   // specular peak on ridge
     },
-
-    // Animation speeds (per second, normalized to 60fps)
-    animation: {
-        floorFlowSpeed: 0.054,
-        curtainSpeed: 0.48,           // slightly faster sway
-        flickerRate: 9,
-        glitchFrequency: 0.12,
-        breathSpeed: 0.24,
-        pulseSpeed: 0.42
+    floor: {
+        startYRatio: 0.62,   // horizon
+        // Zigzag chevron: pure black-and-white, high contrast
+        white: [238, 235, 230],
+        black: [18,  16,  18],
+        COLS: 10,    // chevron columns across floor width
+        ROWS: 14,    // row bands from horizon to bottom
     },
-
-    // Visual parameters
-    visual: {
-        curtains: {
-            widthRatio: 0.26,         // wide — dominant like the photo
-            foldCount: 22,            // more folds = richer drape
-            strandCount: 72,          // denser velvet texture
-            highlightCount: 24,
-            shadowDepth: 0.92,
-            sheenOpacity: 0.18,       // more visible sheen
-            colors: {
-                base: [178, 22, 22],  // richer crimson
-                dark: [6, 0, 0],
-                highlight: [240, 80, 60],
-                shadow: [40, 3, 3]
-            }
-        },
-        floor: {
-            startYRatio: 0.60,        // floor starts higher — more visible
-            zigzagBands: 14,
-            colors: {
-                // Warm pinkish-red zigzag like the photo
-                white: [210, 155, 140],
-                black: [80, 18, 18]
-            }
-        },
-        light: {
-            coneWidth: 0.5,
-            baseIntensity: 0.04,
-            surgeIntensity: 0.12
-        },
-        lightning: {
-            flashMinInterval: 240,
-            flashMaxInterval: 600,
-            flashDecayFrames: 6,
-            intensity: 0.20,          // subtler flashes
-            color: [220, 160, 140],   // warm reddish flash (not blue)
-            tintColor: [180, 80, 60]
-        },
-        vignette: {
-            innerRadiusRatio: 0.20,
-            outerRadiusRatio: 0.75,
-            layers: 4,
-            maxOpacity: 0.07          // stronger edge darkening
-        }
-    },
-
-    // Layer visibility controls
-    layers: {
-        depthFog: true,
-        floor: true,
-        ambientPulse: true,
-        shadowFigure: true,
-        smoke: true,
-        dust: true,
-        flickerLight: false,
-        lightning: true,
-        sigils: true,
-        electricalInterference: true,
-        scanlines: true,
-        filmGrain: true,
-        chromaticAberration: true,
-        glitch: true,
-        curtains: true,
-        vignette: true,
-        roomBreathing: true,
-        floorReflection: true
-    }
+    // Cool neutral ambient — slight blue cast as in the model
+    blueLight: { r: 110, g: 145, b: 220 },
+    vignette:  { opacity: 0.72 },  // strong corner darkening so UI text is readable
 };
 
-// ============================================================================
-// GRADIENT CACHE SYSTEM
-// Caches gradients to avoid recreating identical ones every frame
-// ============================================================================
-const gradientCache = new Map();
+const clamp = (v) => Math.max(0, Math.min(255, Math.round(v)));
 
-function getCachedGradient(type, key, createFn) {
-    const cacheKey = `${type}_${key}`;
-    if (!gradientCache.has(cacheKey)) {
-        gradientCache.set(cacheKey, createFn());
+// ---------------------------------------------------------------------------
+// CURTAIN SIDE PANEL  (dir=+1 → left panel, dir=-1 → right panel)
+// ---------------------------------------------------------------------------
+function drawSideCurtain(ctx, w, h, tick, edgeX, panelW, dir) {
+    const { foldCount, strandCount, speed } = C.curtain;
+    const spd = speed / 60;
+
+    // Solid dark backing
+    const [dk, dg, db] = C.curtain.dark;
+    ctx.fillStyle = `rgb(${dk},${dg},${db})`;
+    ctx.fillRect(dir === 1 ? edgeX : edgeX - panelW, 0, panelW, h);
+
+    // Folds drawn back-to-front (outermost first)
+    for (let fold = foldCount - 1; fold >= 0; fold--) {
+        const t  = fold / foldCount;
+        const fx = edgeX + (t * panelW * 0.95) * dir;
+        const phase = fold * 0.8 + tick * spd;
+
+        ctx.beginPath();
+        ctx.moveTo(fx, 0);
+        for (let y = 0; y <= h; y += 3) {
+            const af = y / h;
+            const sway   = Math.sin(y * 0.006 + phase)               * (2  + af * 16);
+            const billow = Math.sin(y * 0.002 + tick * spd * 0.35 + fold * 0.25) * (3  + af * 24);
+            const micro  = Math.sin(y * 0.016 + tick * spd * 1.1 + fold * 0.6)  * (0.8 * af);
+            ctx.lineTo(fx + (sway + billow + micro) * dir, y);
+        }
+        const fw = (panelW / foldCount) * 1.18;
+        ctx.lineTo(fx + fw * dir, h);
+        ctx.lineTo(fx + fw * dir, 0);
+        ctx.closePath();
+
+        // Gradient: bright lit edge → base → shadow valley
+        const g = ctx.createLinearGradient(fx, 0, fx + fw * dir, 0);
+        const litBoost = fold === foldCount - 1 ? 1.3 : 1.0; // innermost fold brightest
+        const [br, bg, bb] = C.curtain.base;
+        const [lr, lg, lb] = C.curtain.lit;
+        const [sr, sg, sb] = C.curtain.shadow;
+        const [hr, hg, hb] = C.curtain.highlight;
+
+        const hA = Math.min(1, (0.82 + t * 0.15) * litBoost);
+        const mA = Math.min(1, (0.68 + t * 0.12) * litBoost);
+        const sA = 0.88;
+
+        g.addColorStop(0,    `rgba(${clamp(hr)},${clamp(hg)},${clamp(hb)},${hA})`);
+        g.addColorStop(0.08, `rgba(${clamp(lr)},${clamp(lg)},${clamp(lb)},${hA * 0.9})`);
+        g.addColorStop(0.30, `rgba(${clamp(br)},${clamp(bg)},${clamp(bb)},${mA})`);
+        g.addColorStop(0.60, `rgba(${clamp(br - 30)},${clamp(bg - 4)},${clamp(bb - 4)},${mA * 0.75})`);
+        g.addColorStop(0.85, `rgba(${clamp(sr)},${clamp(sg)},${clamp(sb)},${sA})`);
+        g.addColorStop(1,    `rgba(${clamp(sr - 8)},${clamp(sg)},${clamp(sb)},${sA * 0.9})`);
+        ctx.fillStyle = g;
+        ctx.fill();
     }
-    return gradientCache.get(cacheKey);
+
+    // Dense velvet strand texture
+    for (let s = 0; s < strandCount; s++) {
+        const t  = s / strandCount;
+        const sx = edgeX + (t * panelW * 0.97) * dir;
+        const phase = s * 0.42 + tick * spd * 0.7;
+        ctx.beginPath();
+        ctx.moveTo(sx, 0);
+        for (let y = 0; y <= h; y += 3) {
+            const af = y / h;
+            ctx.lineTo(sx + (Math.sin(y * 0.005 + phase) * (1.5 + af * 9) + Math.sin(y * 0.002 + tick * spd * 0.3) * (2 + af * 14)) * dir, y);
+        }
+        const cv = (s % 7) * 4;
+        const [hr, hg, hb] = C.curtain.highlight;
+        ctx.strokeStyle = `rgba(${clamp(hr - 15 + cv)},${hg},${hb},${0.05 + t * 0.12})`;
+        ctx.lineWidth = 0.7 + (s % 3) * 0.3;
+        ctx.stroke();
+    }
+
+    // Valance pelmet at top
+    const vH = h * 0.10;
+    ctx.beginPath();
+    ctx.moveTo(dir === 1 ? edgeX : edgeX - panelW, 0);
+    for (let x = 0; x <= panelW; x += 2) {
+        const xPos = dir === 1 ? edgeX + x : edgeX - panelW + x;
+        const droop = Math.sin((x / panelW) * Math.PI * 6 + tick * spd * 0.4) * vH * 0.16 + vH * 0.84;
+        ctx.lineTo(xPos, droop);
+    }
+    ctx.lineTo(dir === 1 ? edgeX + panelW : edgeX, 0);
+    ctx.closePath();
+    const [br, bg, bb] = C.curtain.base;
+    const [lr, lg, lb] = C.curtain.lit;
+    const vg = ctx.createLinearGradient(dir === 1 ? edgeX : edgeX - panelW, 0, dir === 1 ? edgeX + panelW : edgeX, 0);
+    vg.addColorStop(0,   `rgba(${lr},${lg},${lb},0.95)`);
+    vg.addColorStop(0.5, `rgba(${br},${bg},${bb},0.92)`);
+    vg.addColorStop(1,   `rgba(${C.curtain.dark[0]},${C.curtain.dark[1]},${C.curtain.dark[2]},1)`);
+    ctx.fillStyle = vg;
+    ctx.fill();
+
+    // Inner edge glow
+    const edgePts = [];
+    for (let y = 0; y <= h; y += 2) {
+        const af = y / h;
+        edgePts.push({
+            x: edgeX + (panelW + Math.sin(y * 0.007 + tick * spd) * (3 + af * 14) + Math.sin(y * 0.003 + tick * spd * 0.4) * (5 + af * 20)) * dir,
+            y,
+        });
+    }
+    ctx.beginPath();
+    edgePts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.strokeStyle = 'rgba(215,45,35,0.6)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(140,15,15,0.22)';
+    ctx.lineWidth = 9;
+    ctx.stroke();
 }
 
-function clearGradientCache() {
-    gradientCache.clear();
+// ---------------------------------------------------------------------------
+// BACK WALL CURTAIN  — fills the center strip from y=0 to backH
+// ---------------------------------------------------------------------------
+function drawBackCurtain(ctx, w, h, tick, x0, x1, backH) {
+    const panelW = x1 - x0;
+    if (panelW <= 0 || backH <= 0) return;
+    const { foldCount, speed } = C.curtain;
+    const spd = speed / 60;
+
+    // Backing
+    const [dk, dg, db] = C.curtain.dark;
+    ctx.fillStyle = `rgb(${dk},${dg},${db})`;
+    ctx.fillRect(x0, 0, panelW, backH);
+
+    // Fine folds across full back wall — subtle depth-axis sway only
+    for (let fold = 0; fold < foldCount; fold++) {
+        const t  = fold / foldCount;
+        const fx = x0 + t * panelW;
+        const fw = (panelW / foldCount) * 1.05;
+        const phase = fold * 0.7 + tick * spd * 0.6;
+
+        ctx.beginPath();
+        ctx.moveTo(fx, 0);
+        for (let y = 0; y <= backH; y += 3) {
+            const af = y / backH;
+            const sway = Math.sin(y * 0.004 + phase) * (1 + af * 4);
+            ctx.lineTo(fx + sway, y);
+        }
+        ctx.lineTo(fx + fw, backH);
+        ctx.lineTo(fx + fw, 0);
+        ctx.closePath();
+
+        const [br, bg, bb] = C.curtain.base;
+        const [sr, sg, sb] = C.curtain.shadow;
+        const [lr, lg, lb] = C.curtain.lit;
+
+        // Lighting: brighter in center of back wall (facing the room light)
+        const centerT = 1 - Math.abs(t - 0.5) * 2; // 1 at center, 0 at edges
+        const litBoost = 0.85 + centerT * 0.35;
+
+        const g = ctx.createLinearGradient(fx, 0, fx + fw, 0);
+        g.addColorStop(0,    `rgba(${clamp(lr - 10)},${clamp(lg)},${clamp(lb)},${Math.min(1, 0.78 * litBoost)})`);
+        g.addColorStop(0.25, `rgba(${clamp(br + 10)},${clamp(bg + 1)},${clamp(bb + 1)},${Math.min(1, 0.70 * litBoost)})`);
+        g.addColorStop(0.55, `rgba(${clamp(br - 15)},${clamp(bg - 2)},${clamp(bb - 2)},${Math.min(1, 0.60 * litBoost)})`);
+        g.addColorStop(0.80, `rgba(${clamp(sr + 8)},${sg},${sb},${0.82})`);
+        g.addColorStop(1,    `rgba(${sr},${sg},${sb},0.88)`);
+        ctx.fillStyle = g;
+        ctx.fill();
+    }
+
+    // Valance across back wall top
+    const vH = backH * 0.08;
+    ctx.beginPath();
+    ctx.moveTo(x0, 0);
+    for (let x = 0; x <= panelW; x += 2) {
+        const droop = Math.sin((x / panelW) * Math.PI * 10 + tick * spd * 0.3) * vH * 0.18 + vH * 0.82;
+        ctx.lineTo(x0 + x, droop);
+    }
+    ctx.lineTo(x1, 0);
+    ctx.closePath();
+    const [lr, lg, lb] = C.curtain.lit;
+    ctx.fillStyle = `rgba(${lr},${lg},${lb},0.92)`;
+    ctx.fill();
 }
 
-// ============================================================================
-// BASE PARTICLE CLASS
-// Common particle functionality for inheritance
-// ============================================================================
-class BaseParticle {
-    constructor(w, h) {
-        this.reset(w, h);
-    }
+// ---------------------------------------------------------------------------
+// ZIGZAG CHEVRON FLOOR  — one-point perspective
+// The zigzag pattern: each row band alternates black/white in a W/M shape.
+// At the horizon all columns converge to vpX; at bottom they span full floor width.
+// ---------------------------------------------------------------------------
+function drawChevronFloor(ctx, w, h) {
+    const cfg = C.floor;
+    const floorY = h * cfg.startYRatio;
+    const floorH  = h - floorY;
+    if (floorH <= 0) return;
 
-    reset(w, h) {
-        this.x = Math.random() * w;
-        this.y = Math.random() * h;
-        this.life = 0;
-        this.maxLife = 600 + Math.random() * 800;
-        this.opacity = 0;
-        this.targetOpacity = 0.01 + Math.random() * 0.02;
-        this.fadeIn = true;
-    }
+    const sideW   = w * C.curtain.sideWidthRatio;
+    const floorX0 = sideW;
+    const floorX1 = w - sideW;
+    const floorW  = floorX1 - floorX0;
 
-    update(w, h, deltaTime = 1) {
-        this.life += deltaTime;
+    const vpX = w / 2;
+    const vpY = floorY;
 
-        if (this.fadeIn) {
-            this.opacity += 0.0003 * deltaTime;
-            if (this.opacity >= this.targetOpacity) {
-                this.fadeIn = false;
-            }
-        } else {
-            this.opacity -= 0.0001 * deltaTime;
+    const COLS = cfg.COLS;   // number of zigzag columns (must be even)
+    const ROWS = cfg.ROWS;
+
+    const [wr, wg, wb] = cfg.white;
+    const [kr, kg, kb] = cfg.black;
+
+    // Map (colFrac 0..1, depth 0..1) → screen (x, y)
+    const toX = (f, d) => vpX + (f - 0.5) * floorW * Math.max(d, 0.001);
+    const toY = (d)    => vpY + d * floorH;
+
+    // For each row and column, determine the chevron shape.
+    // A chevron column at screen-space is split into two triangles (up-pointing and down-pointing)
+    // Row parity determines which color is on top.
+    for (let row = 0; row < ROWS; row++) {
+        const dTop = row      / ROWS;
+        const dBot = (row + 1) / ROWS;
+        if (dBot <= 0 || dTop >= 1) continue;
+
+        const yTop = toY(Math.max(0,   dTop));
+        const yBot = toY(Math.min(1,   dBot));
+        const yMid = (yTop + yBot) * 0.5;
+
+        // Fog: near horizon fades out a bit
+        const fogA = 0.2 + Math.min(1, dBot) * 0.8;
+
+        for (let col = 0; col < COLS; col++) {
+            const f0 = col       / COLS;
+            const f1 = (col + 1) / COLS;
+            const fm = (f0 + f1) * 0.5;  // midpoint for chevron tip
+
+            // Four corners of this cell at top and bottom rows
+            const x0t = toX(f0, dTop);
+            const x1t = toX(f1, dTop);
+            const x0b = toX(f0, dBot);
+            const x1b = toX(f1, dBot);
+            const xmt = toX(fm, dTop);   // top mid
+            const xmb = toX(fm, dBot);   // bottom mid
+
+            // Determine colors based on (row+col) parity
+            // Upper triangle: tip points up (like /\)
+            // Lower triangle: tip points down (like \/)
+            const isEven = (row + col) % 2 === 0;
+            const [upR, upG, upB] = isEven ? [wr, wg, wb] : [kr, kg, kb];
+            const [dnR, dnG, dnB] = isEven ? [kr, kg, kb] : [wr, wg, wb];
+
+            // Upper chevron: quadrilateral with a V-notch at the bottom
+            // shape: x0t,yTop → x1t,yTop → xmb,yBot  (triangle pointing down into next row)
+            // We draw as two triangles meeting at mid
+            // Upper half (top of band): solid rectangle portion
+            // Lower half: the zigzag teeth
+
+            // Simple approach: split each cell into top-triangle and bottom-triangle
+            // Upper triangle (occupies top half of row band)
+            const yH = (yTop + yBot) * 0.5;
+
+            // Upper sub-cell (from yTop to yH): upper color
+            ctx.beginPath();
+            ctx.moveTo(x0t, yTop);
+            ctx.lineTo(x1t, yTop);
+            ctx.lineTo(toX(f1, (dTop + dBot) * 0.5), yH);
+            ctx.lineTo(toX(f0, (dTop + dBot) * 0.5), yH);
+            ctx.closePath();
+            ctx.fillStyle = `rgba(${upR},${upG},${upB},${fogA})`;
+            ctx.fill();
+
+            // Lower sub-cell: chevron (zigzag) shape
+            // Up-pointing triangle: base at yH, tip at yTop-mid → creates the M/W pattern
+            const xHm = toX(fm, (dTop + dBot) * 0.5);
+
+            // Lower-left triangle (lower color, bottom-left)
+            ctx.beginPath();
+            ctx.moveTo(toX(f0, (dTop + dBot) * 0.5), yH);
+            ctx.lineTo(xHm, yH);
+            ctx.lineTo(xmb, yBot);
+            ctx.lineTo(x0b, yBot);
+            ctx.closePath();
+            ctx.fillStyle = `rgba(${dnR},${dnG},${dnB},${fogA})`;
+            ctx.fill();
+
+            // Lower-right triangle (lower color, bottom-right)
+            ctx.beginPath();
+            ctx.moveTo(xHm, yH);
+            ctx.lineTo(toX(f1, (dTop + dBot) * 0.5), yH);
+            ctx.lineTo(x1b, yBot);
+            ctx.lineTo(xmb, yBot);
+            ctx.closePath();
+            ctx.fillStyle = `rgba(${dnR},${dnG},${dnB},${fogA})`;
+            ctx.fill();
+
+            // Upper-pointing tip (upper color triangle pointing down into lower half)
+            ctx.beginPath();
+            ctx.moveTo(toX(f0, (dTop + dBot) * 0.5), yH);
+            ctx.lineTo(toX(f1, (dTop + dBot) * 0.5), yH);
+            ctx.lineTo(xHm, yH);   // this just makes a line; the V tip goes up
+            ctx.closePath();
+
+            // Actually draw the V tip upward into the upper sub-cell
+            ctx.beginPath();
+            ctx.moveTo(toX(f0, (dTop + dBot) * 0.5), yH);
+            ctx.lineTo(xHm, yTop + (yH - yTop) * 0.1);  // tip pointing up
+            ctx.lineTo(toX(f1, (dTop + dBot) * 0.5), yH);
+            ctx.closePath();
+            ctx.fillStyle = `rgba(${dnR},${dnG},${dnB},${fogA})`;
+            ctx.fill();
         }
-
-        if (this.opacity <= 0 || this.life > this.maxLife) {
-            this.reset(w, h);
-        }
     }
 
+    // Horizon line — faint separator
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(sideW, floorY);
+    ctx.lineTo(w - sideW, floorY);
+    ctx.stroke();
+}
+
+// ---------------------------------------------------------------------------
+// CHROMATIC ABERRATION — RGB split on edges, the Lodge's signature weirdness
+// ---------------------------------------------------------------------------
+function drawChromaticAberration(ctx, w, h, tick) {
+    // Random glitch strips
+    if (Math.random() > 0.985) {
+        const y      = Math.random() * h;
+        const stripH = 1 + Math.random() * 4;
+        const offset = 2 + Math.random() * 3;
+        const alpha  = 0.06 + Math.random() * 0.08;
+        ctx.fillStyle = `rgba(255,0,0,${alpha})`;
+        ctx.fillRect(offset, y, w, stripH);
+        ctx.fillStyle = `rgba(0,0,255,${alpha})`;
+        ctx.fillRect(-offset, y, w, stripH);
+    }
+
+    // Persistent subtle left-edge RGB split (like the model's table legs)
+    const edgeSplit = ctx.createLinearGradient(0, 0, w * 0.08, 0);
+    edgeSplit.addColorStop(0,    'rgba(255,0,0,0.04)');
+    edgeSplit.addColorStop(0.5,  'rgba(0,0,255,0.04)');
+    edgeSplit.addColorStop(1,    'transparent');
+    ctx.fillStyle = edgeSplit;
+    ctx.fillRect(0, 0, w * 0.08, h);
+}
+
+// ---------------------------------------------------------------------------
+// COOL BLUE KEY LIGHT — the signature Lynch cold wash
+// ---------------------------------------------------------------------------
+function drawBlueLight(ctx, w, h, tick) {
+    const { r, g, b } = C.blueLight;
+    // Central cool radial (brightest top-center, fading out)
+    const pulse = Math.sin(tick * 0.008) * 0.5 + 0.5;
+    const alpha = 0.10 + pulse * 0.04;
+
+    const grad = ctx.createRadialGradient(w * 0.5, 0, 0, w * 0.5, h * 0.4, h * 0.9);
+    grad.addColorStop(0,   `rgba(${r},${g},${b},${alpha})`);
+    grad.addColorStop(0.4, `rgba(${r},${g},${b},${alpha * 0.45})`);
+    grad.addColorStop(1,   'transparent');
+
+    ctx.globalCompositeOperation = 'screen';
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = 'source-over';
+}
+
+// ---------------------------------------------------------------------------
+// VIGNETTE — dark corners so UI content remains readable
+// ---------------------------------------------------------------------------
+function drawVignette(ctx, w, h) {
+    const grad = ctx.createRadialGradient(w * 0.5, h * 0.45, h * 0.1, w * 0.5, h * 0.45, Math.max(w, h) * 0.82);
+    grad.addColorStop(0,   'transparent');
+    grad.addColorStop(0.55,'rgba(0,0,0,0.25)');
+    grad.addColorStop(1,   `rgba(0,0,0,${C.vignette.opacity})`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+}
+
+// ---------------------------------------------------------------------------
+// FILM GRAIN + SCANLINES
+// ---------------------------------------------------------------------------
+function drawGrain(ctx, w, h) {
+    for (let i = 0; i < 20; i++) {
+        if (Math.random() > 0.65) {
+            ctx.fillStyle = `rgba(200,200,220,${0.008 + Math.random() * 0.018})`;
+            ctx.fillRect(Math.random() * w, Math.random() * (h - 20), 1, 5 + Math.random() * 18);
+        }
+    }
+    // 3 faint scanlines drifting down
+    for (let i = 0; i < 3; i++) {
+        const speed = 0.25 + i * 0.12;
+        ctx.fillStyle = 'rgba(120,120,140,0.012)';
+        ctx.fillRect(0, 0, w, h);  // replace with actual scanline
+    }
+}
+
+// ---------------------------------------------------------------------------
+// DUST MOTES — tiny floating particles in the beam
+// ---------------------------------------------------------------------------
+class DustMote {
+    constructor(w, h) { this.init(w, h); }
+    init(w, h) {
+        this.x    = Math.random() * w;
+        this.y    = Math.random() * h;
+        this.size = 0.8 + Math.random() * 1.8;
+        this.op   = 0.015 + Math.random() * 0.04;
+        this.vx   = (Math.random() - 0.5) * 0.03;
+        this.vy   = (Math.random() - 0.5) * 0.03;
+        this.ph   = Math.random() * Math.PI * 2;
+        this.spd  = 0.003 + Math.random() * 0.005;
+    }
+    update(w, h, dt) {
+        this.ph += this.spd * dt;
+        this.x  += this.vx * dt + Math.sin(this.ph) * 0.08;
+        this.y  += this.vy * dt + Math.cos(this.ph) * 0.06;
+        if (this.x < -5 || this.x > w + 5 || this.y < -5 || this.y > h + 5) this.init(w, h);
+    }
     draw(ctx) {
-        // Override in subclasses
+        const twinkle = Math.sin(this.ph * 2) * 0.3 + 0.7;
+        ctx.fillStyle = `rgba(220,215,240,${this.op * twinkle})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
     }
 }
 
-// ============================================================================
-// LAYER MANAGER
-// Manages rendering of visual layers with enable/disable functionality
-// ============================================================================
-class LayerManager {
-    constructor() {
-        this.layers = [];
-        this.enabledLayers = new Set();
-    }
-
-    register(name, renderFn, zIndex = 0) {
-        this.layers.push({ name, renderFn, zIndex });
-        this.layers.sort((a, b) => a.zIndex - b.zIndex);
-        // Enable by default if config allows
-        if (LYNCH_CONFIG.layers[name] !== false) {
-            this.enabledLayers.add(name);
-        }
-    }
-
-    enable(name) {
-        this.enabledLayers.add(name);
-    }
-
-    disable(name) {
-        this.enabledLayers.delete(name);
-    }
-
-    render(ctx, w, h, tick) {
-        for (const layer of this.layers) {
-            if (this.enabledLayers.has(layer.name)) {
-                layer.renderFn(ctx, w, h, tick);
-            }
-        }
-    }
-}
-
-// ============================================================================
-// LIGHT INFLUENCE CALCULATOR
-// Calculates how light affects elements based on position
-// ============================================================================
-function calculateLightInfluence(x, y, lightX, lightY, intensity) {
-    const dx = x - lightX;
-    const dy = y - lightY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const influence = Math.max(0, 1 - distance / 500);
-    return influence * intensity;
-}
-
+// ---------------------------------------------------------------------------
+// MAIN COMPONENT
+// ---------------------------------------------------------------------------
 const LynchBackground = () => {
     const canvasRef = useRef(null);
-    const mouseRef = useRef({ x: 0, y: 0 });
     const [isMobile, setIsMobile] = useState(false);
-    const animationRef = useRef(null);
+    const animRef   = useRef(null);
 
     useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
+        const check = () => setIsMobile(window.innerWidth < 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
     }, []);
 
     useEffect(() => {
         if (isMobile) return;
-        if (!canvasRef.current) return;
-
         const canvas = canvasRef.current;
+        if (!canvas) return;
         const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        let isRunning = true;
-        let tick = 0;
-
-        // Delta time for frame-independent animation
-        let lastTime = 0;
-        let deltaTime = 0;
-
-        mouseRef.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-
-        // ============================================================================
-        // SMOKE PARTICLES (extends BaseParticle)
-        // ============================================================================
-        class SmokeParticle extends BaseParticle {
-            constructor(w, h) {
-                super(w, h);
-                // Override base defaults for smoke-specific behavior
-                this.size = 30 + Math.random() * 80;
-                this.opacity = 0.005 + Math.random() * 0.02;
-                this.vx = (Math.random() - 0.5) * 0.15;
-                this.vy = -0.05 - Math.random() * 0.15;
-                this.maxLife = 600 + Math.random() * 800;
-                this.drift = Math.random() * Math.PI * 2;
-                this.driftSpeed = 0.002 + Math.random() * 0.005;
-            }
-
-            reset(w, h) {
-                this.x = Math.random() * w;
-                this.y = Math.random() * h;
-                this.size = 30 + Math.random() * 80;
-                this.opacity = 0.005 + Math.random() * 0.02;
-                this.vx = (Math.random() - 0.5) * 0.15;
-                this.vy = -0.05 - Math.random() * 0.15;
-                this.life = 0;
-                this.maxLife = 600 + Math.random() * 800;
-                this.drift = Math.random() * Math.PI * 2;
-                this.fadeIn = true;
-            }
-
-            update(w, h, dt = 1) {
-                this.life += dt;
-                this.drift += this.driftSpeed * dt;
-                this.x += (this.vx + Math.sin(this.drift) * 0.2) * dt;
-                this.y += this.vy * dt;
-
-                if (this.life > this.maxLife || this.y < -this.size) {
-                    this.reset(w, h);
-                    this.y = h + this.size;
-                }
-            }
-
-            draw(ctx) {
-                const fadeIn = Math.min(1, this.life / 100);
-                const fadeOut = Math.max(0, 1 - (this.life - this.maxLife + 200) / 200);
-                const alpha = this.opacity * fadeIn * fadeOut;
-
-                // Cache the radial gradient based on size and alpha
-                const cacheKey = `${Math.floor(this.size)}_${Math.floor(alpha * 1000)}`;
-                const gradient = getCachedGradient('smoke', cacheKey, () => {
-                    return {
-                        addColorStop: (pos, color) => {}, // Stub for caching structure
-                        // Actual gradient created in draw
-                    };
-                });
-
-                // Create gradient (can't cache actual CanvasGradient objects across frames)
-                const grad = ctx.createRadialGradient(
-                    this.x, this.y, 0,
-                    this.x, this.y, this.size
-                );
-                grad.addColorStop(0, `rgba(60, 60, 70, ${alpha * 1.2})`);
-                grad.addColorStop(0.5, `rgba(40, 40, 50, ${alpha * 0.6})`);
-                grad.addColorStop(1, 'transparent');
-                ctx.fillStyle = grad;
-                ctx.fillRect(
-                    this.x - this.size, this.y - this.size,
-                    this.size * 2, this.size * 2
-                );
-            }
-        }
-
-        // ============================================================================
-        // LIGHTNING (bluish flashes instead of overhead light)
-        // ============================================================================
-        class Lightning {
-            constructor() {
-                this.nextFlashAt = 60 + Math.random() * 120;
-                this.flashAlpha = 0;
-                this.decayFrames = 0;
-            }
-
-            update(tick) {
-                const cfg = LYNCH_CONFIG.visual.lightning;
-                if (this.decayFrames > 0) {
-                    this.decayFrames--;
-                    this.flashAlpha = Math.max(0, (this.decayFrames / cfg.flashDecayFrames) * this.flashAlpha);
-                    return;
-                }
-                if (tick >= this.nextFlashAt) {
-                    this.flashAlpha = cfg.intensity * (0.7 + Math.random() * 0.3);
-                    this.decayFrames = cfg.flashDecayFrames;
-                    this.nextFlashAt = tick + cfg.flashMinInterval + Math.random() * (cfg.flashMaxInterval - cfg.flashMinInterval);
-                }
-            }
-
-            draw(ctx, w, h) {
-                if (this.flashAlpha <= 0) return;
-                const cfg = LYNCH_CONFIG.visual.lightning;
-                const [r, g, b] = cfg.color;
-                const [tr, tg, tb] = cfg.tintColor;
-                const a = Math.max(0, Math.min(1, this.flashAlpha));
-                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a * 0.5})`;
-                ctx.fillRect(0, 0, w, h);
-                const grad = ctx.createRadialGradient(w / 2, 0, 0, w / 2, 0, h * 1.2);
-                grad.addColorStop(0, `rgba(${tr}, ${tg}, ${tb}, ${a * 0.25})`);
-                grad.addColorStop(0.4, `rgba(${tr}, ${tg}, ${tb}, ${a * 0.08})`);
-                grad.addColorStop(1, 'transparent');
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, 0, w, h);
-            }
-        }
-
-        // ============================================================================
-        // BLACK LODGE CHECKER FLOOR
-        // True perspective checker using a vanishing point at horizon.
-        // Columns are evenly spaced at the horizon and fan out to the bottom edge.
-        // Row lines are spaced by 1/depth so tiles look square in perspective.
-        // A slow scroll offset animates the tiles drifting toward the viewer.
-        // ============================================================================
-        function drawCheckerFloor(ctx, w, h, tick) {
-            const config = LYNCH_CONFIG.visual.floor;
-            const floorStartY = h * config.startYRatio; // horizon line
-            const floorH = h - floorStartY;
-            if (floorH <= 0) return;
-
-            const curtainWidth = w * LYNCH_CONFIG.visual.curtains.widthRatio;
-            const floorLeft = curtainWidth;
-            const floorRight = w - curtainWidth;
-            const floorWidth = floorRight - floorLeft;
-
-            const white = config.colors.white;
-            const black = config.colors.black;
-
-            // Vanishing point sits at the center of the horizon
-            const vpX = w / 2;
-            const vpY = floorStartY;
-
-            // Number of columns at the horizon (each column pair = 1 checker column)
-            const COLS = 14; // must be even for clean checker
-
-            // Slow forward-scroll: fraction of one tile row scrolled per frame
-            // We model depth as d ∈ [0, 1] where 0 = horizon, 1 = bottom of screen.
-            // Each row line is placed at d = i/ROWS after applying the scroll offset.
-            const ROWS = 16;
-            const scrollSpeed = 0.012; // tiles per second (normalized at 60fps)
-            const scrollOffset = (tick * scrollSpeed / 60) % 1; // 0..1, repeating
-
-            // Pre-compute the x positions of each column boundary at the bottom edge.
-            // At the horizon they all converge to vpX; at the bottom they spread from floorLeft to floorRight.
-            // colFrac[c] = fraction along the bottom edge for column boundary c.
-            // c = 0 → floorLeft, c = COLS → floorRight
-
-            // For each checker cell (col, row):
-            //   top-left, top-right at row depth, bottom-left, bottom-right at row+1 depth.
-            // A depth d maps to screen y via: y = vpY + d * floorH
-            // A column fraction f maps to screen x via: x = vpX + (f - 0.5) * floorWidth * d  [perspective]
-            // At d=0 everything converges to vpX; at d=1 we span the full floor width.
-
-            function depthToY(d) {
-                return vpY + d * floorH;
-            }
-
-            function colFracToX(f, d) {
-                // f is 0..1 across the floor width; perspective foreshortens at small d
-                return vpX + (f - 0.5) * floorWidth * d;
-            }
-
-            // Draw cells back-to-front (small row index = near horizon = small on screen)
-            for (let row = 0; row < ROWS; row++) {
-                // Depth of top and bottom of this row, with scroll offset applied
-                const dTop = (row + scrollOffset) / ROWS;
-                const dBot = (row + 1 + scrollOffset) / ROWS;
-
-                // Skip rows that have scrolled completely past the horizon or floor
-                if (dBot <= 0 || dTop >= 1) continue;
-
-                const yTop = depthToY(Math.max(0, dTop));
-                const yBot = depthToY(Math.min(1, dBot));
-
-                // Fog: tiles near horizon are dimmer (far away), near viewer are bright
-                const fogT = Math.min(1, dBot);
-                const fogAlpha = 0.15 + fogT * 0.85;
-
-                for (let col = 0; col < COLS; col++) {
-                    const f0 = col / COLS;
-                    const f1 = (col + 1) / COLS;
-
-                    // Checkerboard parity: (row+col) % 2 — but we must account for scrolled row index
-                    // Use integer row index (not scrolled) for stable parity
-                    const isWhite = (row + col) % 2 === 0;
-                    const [r, g, b] = isWhite ? white : black;
-
-                    // Four corners of this cell
-                    const x0t = colFracToX(f0, Math.max(0.001, dTop));
-                    const x1t = colFracToX(f1, Math.max(0.001, dTop));
-                    const x0b = colFracToX(f0, Math.min(1, dBot));
-                    const x1b = colFracToX(f1, Math.min(1, dBot));
-
-                    ctx.beginPath();
-                    ctx.moveTo(x0t, yTop);
-                    ctx.lineTo(x1t, yTop);
-                    ctx.lineTo(x1b, yBot);
-                    ctx.lineTo(x0b, yBot);
-                    ctx.closePath();
-                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${fogAlpha})`;
-                    ctx.fill();
-                }
-            }
-
-            // Thin seam lines along the column vanishing lines for crispness
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
-            ctx.lineWidth = 0.5;
-            for (let col = 0; col <= COLS; col++) {
-                const f = col / COLS;
-                const xTop = colFracToX(f, 0.001); // near-horizon x (almost converged)
-                const xBot = colFracToX(f, 1);
-                ctx.beginPath();
-                ctx.moveTo(xTop, vpY);
-                ctx.lineTo(xBot, h);
-                ctx.stroke();
-            }
-        }
-
-        // ============================================================================
-        // FLOOR REFLECTION
-        // Subtle glass-like reflection on the floor tiles
-        // ============================================================================
-        function drawFloorReflection(ctx, w, h, floorStartY, tick) {
-            if (!LYNCH_CONFIG.performance.enableEffects.floorReflection) return;
-
-            const t = Number(tick) || 0;
-            const pulse = Math.sin(t * 0.02) * 0.5 + 0.5;
-            const alpha = Math.max(0, Math.min(1, (0.02 + pulse * 0.01)));
-            const reflectionGrad = ctx.createLinearGradient(0, floorStartY, 0, floorStartY + 50);
-
-            reflectionGrad.addColorStop(0, `rgba(150, 140, 170, ${alpha})`);
-            reflectionGrad.addColorStop(1, 'transparent');
-
-            ctx.fillStyle = reflectionGrad;
-            ctx.fillRect(w * 0.1, floorStartY, w * 0.8, 50);
-        }
-
-        // ============================================================================
-        // RED CURTAIN DRAPES
-        // ============================================================================
-        function drawCurtains(ctx, w, h, tick, lightX, lightY) {
-            const curtainWidth = w * LYNCH_CONFIG.visual.curtains.widthRatio;
-            drawCurtainSide(ctx, 0, curtainWidth, h, tick, 1, lightX, lightY);
-            drawCurtainSide(ctx, w, curtainWidth, h, tick, -1, lightX, lightY);
-        }
-
-        function drawCurtainSide(ctx, edgeX, width, h, tick, dir, lightX, lightY) {
-            const config = LYNCH_CONFIG.visual.curtains;
-            const speed = LYNCH_CONFIG.animation.curtainSpeed / 60;
-
-            const clamp = (v) => Math.max(0, Math.min(255, Math.round(v)));
-            const [br, bg, bb] = config.colors.base;
-            const [sr, sg, sb] = config.colors.shadow;
-            const [hr, hg, hb] = config.colors.highlight;
-            const [dr, dg, db] = config.colors.dark;
-
-            // Solid dark backing behind all folds
-            ctx.fillStyle = `rgb(${dr}, ${dg}, ${db})`;
-            ctx.fillRect(dir === 1 ? edgeX : edgeX - width, 0, width, h);
-
-            const foldCount = config.foldCount;
-
-            // Main drape folds — drawn back to front (outer edge first)
-            for (let fold = foldCount - 1; fold >= 0; fold--) {
-                const foldT = fold / foldCount;
-                // Inner folds are brighter (lit from room center)
-                const isInnerFold = dir === 1 ? fold === foldCount - 1 : fold === 0;
-                const foldBaseX = edgeX + (foldT * width * 0.94) * dir;
-                const phase = fold * 0.85 + tick * speed;
-
-                const lightInfluence = calculateLightInfluence(
-                    foldBaseX, h * 0.5, lightX, lightY, 0.6
-                );
-
-                ctx.beginPath();
-                ctx.moveTo(foldBaseX, 0);
-
-                // Richer billow: hanging fabric has small upper movement, big lower sway
-                for (let y = 0; y <= h; y += 3) {
-                    const af = y / h;  // anchor factor: 0 at top, 1 at bottom
-                    // Top is fixed, bottom swings freely
-                    const topPin = Math.max(0, 1 - af * 4); // clamps upper movement
-                    const sway   = Math.sin(y * 0.007 + phase) * (2 + af * 14) * (1 - topPin * 0.7);
-                    const billow = Math.sin(y * 0.0025 + tick * speed * 0.4 + fold * 0.3) * (4 + af * 22) * (1 - topPin * 0.8);
-                    const micro  = Math.sin(y * 0.018 + tick * speed * 1.2 + fold * 0.6) * 1.5 * af;
-                    const x = foldBaseX + (sway + billow + micro) * dir;
-                    ctx.lineTo(x, y);
-                }
-
-                const foldWidth = (width / foldCount) * 1.15;
-                ctx.lineTo(foldBaseX + foldWidth * dir, h);
-                ctx.lineTo(foldBaseX + foldWidth * dir, 0);
-                ctx.closePath();
-
-                const foldGrad = ctx.createLinearGradient(
-                    foldBaseX, 0,
-                    foldBaseX + foldWidth * dir, 0
-                );
-
-                const litBoost = 1 + lightInfluence * 0.5;
-                const edgeBright = isInnerFold ? 1.25 : 1.0;
-                const hA = Math.min(1, (0.75 + foldT * 0.2) * litBoost * edgeBright);
-                const mA = Math.min(1, (0.60 + foldT * 0.15) * litBoost);
-                const dA = Math.min(1, 0.82 * config.shadowDepth);
-                const ddA = Math.min(1, dA * 0.88);
-
-                foldGrad.addColorStop(0,    `rgba(${clamp(br + 40)}, ${clamp(bg + 8)}, ${clamp(bb + 8)}, ${hA})`);
-                foldGrad.addColorStop(0.15, `rgba(${clamp(br + 15)}, ${clamp(bg + 2)}, ${clamp(bb + 2)}, ${hA * 0.9})`);
-                foldGrad.addColorStop(0.4,  `rgba(${br}, ${bg}, ${bb}, ${mA})`);
-                foldGrad.addColorStop(0.65, `rgba(${clamp(br - 25)}, ${clamp(bg - 4)}, ${clamp(bb - 4)}, ${mA * 0.8})`);
-                foldGrad.addColorStop(0.82, `rgba(${sr}, ${sg}, ${sb}, ${dA})`);
-                foldGrad.addColorStop(1,    `rgba(${clamp(sr - 5)}, ${sg}, ${sb}, ${ddA})`);
-
-                ctx.fillStyle = foldGrad;
-                ctx.fill();
-            }
-
-            // Dense velvet strand texture
-            const strandCount = config.strandCount;
-            for (let strand = 0; strand < strandCount; strand++) {
-                const strandT = strand / strandCount;
-                const strandBaseX = edgeX + (strandT * width * 0.96) * dir;
-                const phase = strand * 0.45 + tick * speed * 0.75;
-
-                ctx.beginPath();
-                ctx.moveTo(strandBaseX, 0);
-
-                for (let y = 0; y <= h; y += 3) {
-                    const af = y / h;
-                    const sway   = Math.sin(y * 0.006 + phase) * (1.5 + af * 10);
-                    const billow = Math.sin(y * 0.002 + tick * speed * 0.35) * (3 + af * 16);
-                    ctx.lineTo(strandBaseX + (sway + billow) * dir, y);
-                }
-
-                const colorVar = (strand % 7) * 5;
-                const intensity = 0.06 + strandT * 0.14;
-                ctx.strokeStyle = `rgba(${clamp(hr - 20 + colorVar)}, ${hg}, ${hb}, ${intensity})`;
-                ctx.lineWidth = 0.8 + (strand % 3) * 0.4;
-                ctx.lineCap = 'round';
-                ctx.stroke();
-            }
-
-            // Bright velvet sheen strands (light catching fabric peaks)
-            for (let strand = 0; strand < config.highlightCount; strand++) {
-                const strandT = strand / config.highlightCount;
-                const strandBaseX = edgeX + (strandT * width * 0.88) * dir;
-                const phase = strand * 1.1 + tick * speed;
-
-                ctx.beginPath();
-                ctx.moveTo(strandBaseX, 0);
-
-                for (let y = 0; y <= h; y += 3) {
-                    const af = y / h;
-                    const sway   = Math.sin(y * 0.007 + phase) * (2 + af * 12);
-                    const billow = Math.sin(y * 0.0025 + tick * speed * 0.4) * (4 + af * 18);
-                    ctx.lineTo(strandBaseX + (sway + billow) * dir, y);
-                }
-
-                const sheenI = Math.min(1, (0.08 + strandT * 0.13) * (1 + config.sheenOpacity));
-                ctx.strokeStyle = `rgba(${hr}, ${clamp(hg + (strand % 4) * 8)}, ${clamp(hb + (strand % 4) * 8)}, ${sheenI})`;
-                ctx.lineWidth = 1;
-                ctx.stroke();
-            }
-
-            // Wide sheen wash — light bouncing off velvet
-            const sheenOpacity = config.sheenOpacity;
-            const sheenGrad = ctx.createLinearGradient(
-                dir === 1 ? edgeX : edgeX - width, 0,
-                dir === 1 ? edgeX + width * 0.5 : edgeX - width * 0.5, 0
-            );
-            sheenGrad.addColorStop(0, 'transparent');
-            sheenGrad.addColorStop(0.2, `rgba(255, 210, 200, ${sheenOpacity * 0.6})`);
-            sheenGrad.addColorStop(0.6, `rgba(220, 120, 100, ${sheenOpacity * 0.25})`);
-            sheenGrad.addColorStop(1, 'transparent');
-            ctx.fillStyle = sheenGrad;
-            ctx.fillRect(dir === 1 ? edgeX : edgeX - width, 0, width, h);
-
-            // Top valance — draped header like a stage curtain pelmet
-            const valanceH = h * 0.12;
-            ctx.beginPath();
-            ctx.moveTo(dir === 1 ? edgeX : edgeX - width, 0);
-            for (let x = 0; x <= width; x += 2) {
-                const xPos = dir === 1 ? edgeX + x : edgeX - width + x;
-                const droop = Math.sin((x / width) * Math.PI * 5 + tick * speed * 0.5) * (valanceH * 0.18) + valanceH * 0.82;
-                ctx.lineTo(xPos, droop);
-            }
-            ctx.lineTo(dir === 1 ? edgeX + width : edgeX, 0);
-            ctx.closePath();
-            const valGrad = ctx.createLinearGradient(
-                dir === 1 ? edgeX : edgeX - width, 0,
-                dir === 1 ? edgeX + width : edgeX, 0
-            );
-            valGrad.addColorStop(0,   `rgba(${clamp(br + 30)}, ${clamp(bg + 6)}, ${clamp(bb + 6)}, 0.95)`);
-            valGrad.addColorStop(0.4, `rgba(${br}, ${bg}, ${bb}, 0.90)`);
-            valGrad.addColorStop(0.8, `rgba(${sr}, ${sg}, ${sb}, 0.95)`);
-            valGrad.addColorStop(1,   `rgba(${dr}, ${dg}, ${db}, 1.0)`);
-            ctx.fillStyle = valGrad;
-            ctx.fill();
-
-            // Inner edge glow — crimson light bleeding into the room
-            const edgePoints = [];
-            for (let y = 0; y <= h; y += 2) {
-                const af = y / h;
-                const sway   = Math.sin(y * 0.008 + tick * speed) * (4 + af * 16);
-                const billow = Math.sin(y * 0.003 + tick * speed * 0.4) * (6 + af * 22);
-                edgePoints.push({ x: edgeX + (width + sway + billow) * dir, y });
-            }
-            ctx.beginPath();
-            edgePoints.forEach((p, i) => { i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y); });
-            ctx.strokeStyle = 'rgba(220, 50, 40, 0.55)';
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
-            ctx.strokeStyle = 'rgba(160, 20, 20, 0.22)';
-            ctx.lineWidth = 8;
-            ctx.stroke();
-
-            // Ambient glow spilling from curtain edge into the room
-            const glowWidth = width * 0.35;
-            const glowGrad = ctx.createLinearGradient(
-                dir === 1 ? edgeX + width : edgeX - width, 0,
-                dir === 1 ? edgeX + width + glowWidth : edgeX - width - glowWidth, 0
-            );
-            glowGrad.addColorStop(0,   `rgba(160, 20, 20, 0.10)`);
-            glowGrad.addColorStop(0.5, `rgba(100, 10, 10, 0.04)`);
-            glowGrad.addColorStop(1,   'transparent');
-            ctx.fillStyle = glowGrad;
-            ctx.fillRect(
-                dir === 1 ? edgeX + width : edgeX - width - glowWidth,
-                0, glowWidth, h
-            );
-        }
-
-        // ============================================================================
-        // SCANLINES
-        // ============================================================================
-        function drawScanlines(ctx, w, h, tick) {
-            const lineCount = 3;
-            for (let i = 0; i < lineCount; i++) {
-                const speed = 0.3 + i * 0.15;
-                const y = ((tick * speed + i * h / lineCount) % (h + 40)) - 20;
-                const alpha = 0.012 + Math.sin(tick * 0.05 + i) * 0.008;
-
-                ctx.fillStyle = `rgba(100, 100, 120, ${Math.max(0, alpha)})`;
-                ctx.fillRect(0, y, w, 1);
-
-                const grad = ctx.createLinearGradient(0, y - 8, 0, y + 8);
-                grad.addColorStop(0, 'transparent');
-                grad.addColorStop(0.5, `rgba(80, 80, 100, ${Math.max(0, alpha * 0.3)})`);
-                grad.addColorStop(1, 'transparent');
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, y - 8, w, 16);
-            }
-        }
-
-        // ============================================================================
-        // GLITCH EFFECT
-        // ============================================================================
-        function drawGlitch(ctx, w, h, tick) {
-            if (Math.random() > 0.997) {
-                const glitchY = Math.random() * h;
-                const glitchH = 2 + Math.random() * 6;
-                const sliceWidth = w * (0.3 + Math.random() * 0.4);
-                const sliceX = Math.random() * (w - sliceWidth);
-
-                ctx.fillStyle = `rgba(100, 100, 120, ${0.04 + Math.random() * 0.06})`;
-                ctx.fillRect(sliceX + (Math.random() - 0.5) * 20, glitchY, sliceWidth, glitchH);
-
-                ctx.fillStyle = `rgba(255, 255, 255, ${0.02 + Math.random() * 0.04})`;
-                ctx.fillRect(0, glitchY - 1, w, 1);
-            }
-        }
-
-        // ============================================================================
-        // DUST MOTES
-        // ============================================================================
-        class DustMote {
-            constructor(w, h) {
-                this.reset(w, h);
-            }
-
-            reset(w, h) {
-                this.x = Math.random() * w;
-                this.y = Math.random() * h;
-                this.z = Math.random() * 3 + 0.5;
-                this.size = (1 + Math.random() * 2) * this.z;
-                this.opacity = 0.02 + Math.random() * 0.05;
-                this.vx = (Math.random() - 0.5) * 0.02;
-                this.vy = (Math.random() - 0.5) * 0.02;
-                this.driftPhase = Math.random() * Math.PI * 2;
-                this.driftSpeed = 0.003 + Math.random() * 0.005;
-                this.twinklePhase = Math.random() * Math.PI * 2;
-            }
-
-            update(w, h, tick, dt = 1) {
-                this.driftPhase += this.driftSpeed * dt;
-                this.twinklePhase += 0.02 * dt;
-
-                this.x += this.vx * dt + Math.sin(this.driftPhase) * 0.1;
-                this.y += this.vy * dt + Math.cos(this.driftPhase) * 0.1;
-
-                if (this.x < -10) this.x = w + 10;
-                if (this.x > w + 10) this.x = -10;
-                if (this.y < -10) this.y = h + 10;
-                if (this.y > h + 10) this.y = -10;
-            }
-
-            draw(ctx, tick) {
-                const twinkle = Math.sin(this.twinklePhase) * 0.3 + 0.7;
-                const alpha = this.opacity * twinkle;
-
-                ctx.fillStyle = `rgba(200, 200, 220, ${alpha})`;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-
-                const glowGrad = ctx.createRadialGradient(
-                    this.x, this.y, 0,
-                    this.x, this.y, this.size * 3
-                );
-                glowGrad.addColorStop(0, `rgba(180, 180, 200, ${alpha * 0.3})`);
-                glowGrad.addColorStop(1, 'transparent');
-                ctx.fillStyle = glowGrad;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        // ============================================================================
-        // FLOATING SIGILS
-        // ============================================================================
-        class Sigil {
-            constructor(w, h) {
-                this.reset(w, h);
-            }
-
-            reset(w, h) {
-                this.x = Math.random() * w;
-                this.y = Math.random() * h;
-                this.size = 15 + Math.random() * 30;
-                this.rotation = Math.random() * Math.PI * 2;
-                this.rotSpeed = (Math.random() - 0.5) * 0.003;
-                this.opacity = 0;
-                this.targetOpacity = 0.01 + Math.random() * 0.025;
-                this.fadeIn = true;
-                this.type = Math.floor(Math.random() * 4);
-                this.pulsePhase = Math.random() * Math.PI * 2;
-                this.driftX = (Math.random() - 0.5) * 0.1;
-                this.driftY = (Math.random() - 0.5) * 0.08;
-            }
-
-            update(w, h, tick, dt = 1) {
-                this.rotation += this.rotSpeed * dt;
-                this.pulsePhase += 0.015 * dt;
-                this.x += this.driftX * dt;
-                this.y += this.driftY * dt;
-
-                const pulse = Math.sin(this.pulsePhase) * 0.5 + 0.5;
-
-                if (this.fadeIn) {
-                    this.opacity += 0.0003 * dt;
-                    if (this.opacity >= this.targetOpacity) {
-                        this.fadeIn = false;
-                    }
-                } else {
-                    this.opacity -= 0.0001 * dt;
-                    if (this.opacity <= 0) {
-                        this.reset(w, h);
-                    }
-                }
-
-                this.currentOpacity = this.opacity * (0.6 + pulse * 0.4);
-
-                if (this.x < -50 || this.x > w + 50 || this.y < -50 || this.y > h + 50) {
-                    this.reset(w, h);
-                }
-            }
-
-            draw(ctx) {
-                if (this.currentOpacity <= 0) return;
-
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.rotation);
-                ctx.strokeStyle = `rgba(150, 160, 180, ${this.currentOpacity})`;
-                ctx.lineWidth = 0.5;
-                ctx.shadowBlur = 8;
-                ctx.shadowColor = `rgba(120, 130, 150, ${this.currentOpacity * 0.5})`;
-
-                const s = this.size;
-
-                switch (this.type) {
-                    case 0:
-                        ctx.beginPath();
-                        ctx.moveTo(0, -s);
-                        ctx.lineTo(-s * 0.866, s * 0.5);
-                        ctx.lineTo(s * 0.866, s * 0.5);
-                        ctx.closePath();
-                        ctx.stroke();
-                        ctx.beginPath();
-                        ctx.arc(0, s * 0.05, s * 0.2, 0, Math.PI * 2);
-                        ctx.stroke();
-                        break;
-
-                    case 1:
-                        ctx.beginPath();
-                        ctx.ellipse(0, 0, s, s * 0.4, 0, 0, Math.PI * 2);
-                        ctx.stroke();
-                        ctx.beginPath();
-                        ctx.arc(0, 0, s * 0.2, 0, Math.PI * 2);
-                        ctx.fillStyle = `rgba(150, 160, 180, ${this.currentOpacity * 0.3})`;
-                        ctx.fill();
-                        ctx.stroke();
-                        break;
-
-                    case 2:
-                        ctx.beginPath();
-                        ctx.arc(0, 0, s, 0, Math.PI * 2);
-                        ctx.stroke();
-                        ctx.beginPath();
-                        ctx.moveTo(0, -s); ctx.lineTo(0, s);
-                        ctx.moveTo(-s, 0); ctx.lineTo(s, 0);
-                        ctx.stroke();
-                        break;
-
-                    case 3:
-                        ctx.beginPath();
-                        ctx.moveTo(0, -s);
-                        ctx.lineTo(-s * 0.866, s * 0.5);
-                        ctx.lineTo(s * 0.866, s * 0.5);
-                        ctx.closePath();
-                        ctx.stroke();
-                        ctx.beginPath();
-                        ctx.moveTo(0, s);
-                        ctx.lineTo(-s * 0.866, -s * 0.5);
-                        ctx.lineTo(s * 0.866, -s * 0.5);
-                        ctx.closePath();
-                        ctx.stroke();
-                        break;
-                }
-
-                ctx.shadowBlur = 0;
-                ctx.restore();
-            }
-        }
-
-        // ============================================================================
-        // SHADOW FIGURE
-        // ============================================================================
-        class ShadowFigure {
-            constructor(w, h) {
-                this.reset(w, h);
-                this.visible = false;
-                this.fadeInTimer = 0;
-            }
-
-            reset(w, h) {
-                this.x = w * 0.5 + (Math.random() - 0.5) * w * 0.3;
-                this.y = h * 0.72;
-                this.height = 80 + Math.random() * 40;
-                this.width = 30 + Math.random() * 15;
-                this.opacity = 0;
-                this.targetOpacity = 0.03 + Math.random() * 0.04;
-                this.state = 'waiting';
-                this.waitTimer = 300 + Math.random() * 600;
-                this.phase = Math.random() * Math.PI * 2;
-                this.swayAmount = 0;
-            }
-
-            update(w, h, tick, lightX, lightY, dt = 1) {
-                this.phase += 0.008 * dt;
-
-                // Shadow figure moves away from light
-                const dx = this.x - lightX;
-                const dy = this.y - lightY;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 200 && dist > 0) {
-                    const pushFactor = (200 - dist) / 200 * 0.3;
-                    this.x += (dx / dist) * pushFactor * dt;
-                }
-
-                switch (this.state) {
-                    case 'waiting':
-                        this.waitTimer -= dt;
-                        if (this.waitTimer <= 0) {
-                            this.state = 'appearing';
-                        }
-                        break;
-                    case 'appearing':
-                        this.opacity += 0.0005 * dt;
-                        if (this.opacity >= this.targetOpacity) {
-                            this.opacity = this.targetOpacity;
-                            this.state = 'visible';
-                            this.visibleTimer = 120 + Math.random() * 180;
-                        }
-                        break;
-                    case 'visible':
-                        this.visibleTimer -= dt;
-                        this.swayAmount = Math.sin(this.phase) * 3;
-                        if (this.visibleTimer <= 0) {
-                            this.state = 'fading';
-                        }
-                        break;
-                    case 'fading':
-                        this.opacity -= 0.0003 * dt;
-                        if (this.opacity <= 0) {
-                            this.reset(w, h);
-                        }
-                        break;
-                }
-            }
-
-            draw(ctx) {
-                if (this.opacity <= 0.001) return;
-
-                ctx.save();
-                ctx.translate(this.x + this.swayAmount, this.y);
-
-                ctx.fillStyle = `rgba(5, 5, 15, ${this.opacity})`;
-
-                ctx.beginPath();
-                ctx.ellipse(0, -this.height * 0.3, this.width * 0.3, this.width * 0.35, 0, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.beginPath();
-                ctx.moveTo(-this.width * 0.25, -this.height * 0.1);
-                ctx.lineTo(-this.width * 0.35, this.height * 0.2);
-                ctx.lineTo(this.width * 0.35, this.height * 0.2);
-                ctx.lineTo(this.width * 0.25, -this.height * 0.1);
-                ctx.closePath();
-                ctx.fill();
-
-                ctx.beginPath();
-                ctx.moveTo(-this.width * 0.25, this.height * 0.2);
-                ctx.lineTo(-this.width * 0.3, this.height * 0.5);
-                ctx.lineTo(-this.width * 0.15, this.height * 0.5);
-                ctx.lineTo(-this.width * 0.1, this.height * 0.2);
-                ctx.fill();
-
-                ctx.beginPath();
-                ctx.moveTo(this.width * 0.25, this.height * 0.2);
-                ctx.lineTo(this.width * 0.3, this.height * 0.5);
-                ctx.lineTo(this.width * 0.15, this.height * 0.5);
-                ctx.lineTo(this.width * 0.1, this.height * 0.2);
-                ctx.fill();
-
-                ctx.restore();
-            }
-        }
-
-        // ============================================================================
-        // ELECTRICAL INTERFERENCE
-        // ============================================================================
-        function drawElectricalInterference(ctx, w, h, tick) {
-            if (!LYNCH_CONFIG.performance.enableEffects.electricalInterference) return;
-
-            if (Math.random() > 0.985) {
-                const y = Math.random() * h;
-                const segments = 5 + Math.floor(Math.random() * 8);
-                const startX = Math.random() * w * 0.3;
-                const totalWidth = w * (0.4 + Math.random() * 0.4);
-
-                ctx.beginPath();
-                ctx.moveTo(startX, y);
-
-                let currentX = startX;
-                for (let i = 0; i < segments; i++) {
-                    const segWidth = totalWidth / segments;
-                    const yOffset = (Math.random() - 0.5) * 4;
-                    currentX += segWidth;
-                    ctx.lineTo(currentX, y + yOffset);
-                }
-
-                ctx.strokeStyle = `rgba(150, 180, 200, ${0.02 + Math.random() * 0.03})`;
-                ctx.lineWidth = 1;
-                ctx.stroke();
-            }
-        }
-
-        // ============================================================================
-        // AMBIENT PULSE
-        // ============================================================================
-        function drawAmbientPulse(ctx, w, h, tick) {
-            const t = Number(tick) || 0;
-            const pulseSpeed = LYNCH_CONFIG.animation.pulseSpeed / 60;
-            const pulsePhase = (t * pulseSpeed * 0.1) % (Math.PI * 2);
-            const pulseIntensity = Math.sin(pulsePhase) * 0.5 + 0.5;
-            // Richer red room glow — like crimson theatre lighting
-            const a0 = Math.max(0, Math.min(1, 0.04 + pulseIntensity * 0.035));
-            const a1 = Math.max(0, Math.min(1, 0.02 + pulseIntensity * 0.018));
-
-            const pulseGrad = ctx.createRadialGradient(
-                w / 2, h * 0.45, 0,
-                w / 2, h * 0.45, Math.max(w, h) * 0.7
-            );
-            pulseGrad.addColorStop(0,   `rgba(120, 20, 10, ${a0})`);
-            pulseGrad.addColorStop(0.35, `rgba(80, 10, 5, ${a1})`);
-            pulseGrad.addColorStop(0.7,  `rgba(30, 3, 3, ${a1 * 0.4})`);
-            pulseGrad.addColorStop(1, 'transparent');
-
-            ctx.fillStyle = pulseGrad;
-            ctx.fillRect(0, 0, w, h);
-
-            // Subtle warm ceiling light pool (like the photo's overhead ambience)
-            const ceilGrad = ctx.createRadialGradient(w / 2, 0, 0, w / 2, 0, h * 0.55);
-            ceilGrad.addColorStop(0,   `rgba(180, 80, 50, ${0.06 + pulseIntensity * 0.04})`);
-            ceilGrad.addColorStop(0.4, `rgba(100, 30, 20, ${0.02 + pulseIntensity * 0.015})`);
-            ceilGrad.addColorStop(1, 'transparent');
-            ctx.fillStyle = ceilGrad;
-            ctx.fillRect(0, 0, w, h * 0.6);
-        }
-
-        // ============================================================================
-        // DEPTH FOG
-        // ============================================================================
-        function drawDepthFog(ctx, w, h, tick) {
-            const fogLayers = [
-                { y: 0.4, opacity: 0.02, speed: 0.002 },
-                { y: 0.55, opacity: 0.015, speed: 0.003 },
-                { y: 0.65, opacity: 0.01, speed: 0.0015 }
-            ];
-
-            fogLayers.forEach((fog, i) => {
-                const fogY = h * fog.y;
-                const fogOffset = Math.sin(tick * fog.speed + i) * 50;
-
-                const fogGrad = ctx.createLinearGradient(0, fogY - 100, 0, fogY + 100);
-                fogGrad.addColorStop(0, 'transparent');
-                fogGrad.addColorStop(0.5, `rgba(20, 25, 40, ${fog.opacity})`);
-                fogGrad.addColorStop(1, 'transparent');
-
-                ctx.fillStyle = fogGrad;
-                ctx.fillRect(0, fogY - 100, w, 200);
-            });
-        }
-
-        // ============================================================================
-        // CHROMATIC ABERRATION
-        // ============================================================================
-        function drawChromaticAberration(ctx, w, h, tick) {
-            if (!LYNCH_CONFIG.performance.enableEffects.chromaticAberration) return;
-
-            if (Math.random() > 0.97) {
-                const intensity = 0.003 + Math.random() * 0.005;
-                const offset = 1;
-
-                ctx.fillStyle = `rgba(255, 0, 0, ${intensity})`;
-                ctx.fillRect(offset, 0, w, h);
-
-                ctx.fillStyle = `rgba(0, 0, 255, ${intensity})`;
-                ctx.fillRect(-offset, 0, w, h);
-            }
-        }
-
-        // ============================================================================
-        // FILM GRAIN
-        // ============================================================================
-        function drawFilmGrain(ctx, w, h, tick) {
-            const grainCount = 15;
-            for (let i = 0; i < grainCount; i++) {
-                if (Math.random() > 0.7) {
-                    const x = Math.random() * w;
-                    const hGrain = 5 + Math.random() * 20;
-                    const y = Math.random() * (h - hGrain);
-                    const alpha = 0.005 + Math.random() * 0.015;
-
-                    ctx.fillStyle = `rgba(100, 100, 120, ${alpha})`;
-                    ctx.fillRect(x, y, 1, hGrain);
-                }
-            }
-        }
-
-        // ============================================================================
-        // MULTI-LAYER VIGNETTE
-        // Smooth, professional edge darkening with multiple falloff layers
-        // ============================================================================
-        function drawVignette(ctx, w, h, tick) {
-            const config = LYNCH_CONFIG.visual.vignette;
-            const cx = w / 2;
-            const cy = h / 2;
-            const maxRadius = Math.max(w, h) * config.outerRadiusRatio;
-            const innerRadius = Math.min(w, h) * config.innerRadiusRatio;
-
-            const layers = config.layers;
-            for (let i = 0; i < layers; i++) {
-                const t = i / (layers - 1);
-                const radius = innerRadius + (maxRadius - innerRadius) * t;
-                const alpha = config.maxOpacity * (i + 1) / layers;
-
-                ctx.beginPath();
-                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-                const grad = ctx.createRadialGradient(cx, cy, radius * 0.8, cx, cy, radius);
-                grad.addColorStop(0, 'transparent');
-                grad.addColorStop(1, `rgba(0, 0, 5, ${alpha})`);
-                ctx.fillStyle = grad;
-                ctx.fill();
-            }
-        }
-
-        // ============================================================================
-        // ROOM BREATHING EFFECT
-        // Subtle scale pulse - like the room itself is alive
-        // ============================================================================
-        function drawRoomBreathing(ctx, w, h, tick) {
-            if (!LYNCH_CONFIG.performance.enableEffects.roomBreathing) return;
-
-            const breathSpeed = LYNCH_CONFIG.animation.breathSpeed / 60;
-            const breathPhase = (tick * breathSpeed * 0.1) % (Math.PI * 2);
-            const breathScale = 1 + Math.sin(breathPhase) * 0.002;
-
-            const centerX = w / 2;
-            const centerY = h / 2;
-
-            ctx.save();
-            ctx.translate(centerX, centerY);
-            ctx.scale(breathScale, breathScale);
-            ctx.translate(-centerX, -centerY);
-
-            ctx.strokeStyle = `rgba(180, 30, 30, ${0.01 + Math.sin(breathPhase) * 0.005})`;
-            ctx.lineWidth = 2;
-            ctx.strokeRect(10, 10, w - 20, h - 20);
-
-            ctx.restore();
-        }
-
-        // ============================================================================
-        // INITIALIZATION
-        // ============================================================================
-        const smokeParticles = [];
-        const sigils = [];
-        const dustMotes = [];
-        const shadowFigure = new ShadowFigure(0, 0);
-        const lightning = new Lightning();
-
-        // Debounced resize handler
-        let resizeTimeout = null;
-
-        const handleResize = () => {
-            if (resizeTimeout) clearTimeout(resizeTimeout);
-
-            resizeTimeout = setTimeout(() => {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-                shadowFigure.reset(canvas.width, canvas.height);
-                clearGradientCache();
-                resizeTimeout = null;
-            }, 150);
+        let running = true;
+        let tick    = 0;
+        let lastT   = 0;
+
+        // Size canvas
+        const resize = () => {
+            canvas.width  = window.innerWidth;
+            canvas.height = window.innerHeight;
         };
+        window.addEventListener('resize', resize);
+        resize();
 
-        const initParticles = () => {
-            smokeParticles.length = 0;
-            sigils.length = 0;
-            dustMotes.length = 0;
+        // Dust motes
+        const dust = Array.from({ length: 35 }, () => new DustMote(canvas.width, canvas.height));
 
-            const count = LYNCH_CONFIG.performance.particleCount;
-
-            for (let i = 0; i < count.smoke; i++) {
-                smokeParticles.push(new SmokeParticle(canvas.width, canvas.height));
-            }
-            for (let i = 0; i < count.sigils; i++) {
-                sigils.push(new Sigil(canvas.width, canvas.height));
-            }
-            for (let i = 0; i < count.dust; i++) {
-                dustMotes.push(new DustMote(canvas.width, canvas.height));
-            }
-        };
-
-        const handleMouseMove = (e) => {
-            mouseRef.current = { x: e.clientX, y: e.clientY };
-        };
-
-        window.addEventListener('resize', handleResize);
-        window.addEventListener('mousemove', handleMouseMove);
-        handleResize();
-        initParticles();
-
-        // ============================================================================
-        // LAYER MANAGER SETUP
-        // ============================================================================
-        const layerManager = new LayerManager();
-
-        // Register layers in render order (zIndex determines draw order)
-        layerManager.register('depthFog', (ctx, w, h, tick) => drawDepthFog(ctx, w, h, tick), 1);
-        layerManager.register('floor', (ctx, w, h, tick) => {
-            drawCheckerFloor(ctx, w, h, tick);
-            const floorStartY = h * LYNCH_CONFIG.visual.floor.startYRatio;
-            drawFloorReflection(ctx, w, h, floorStartY, tick);
-        }, 2);
-        layerManager.register('ambientPulse', (ctx, w, h, tick) => drawAmbientPulse(ctx, w, h, tick), 3);
-        layerManager.register('shadowFigure', (ctx, w, h, tick) => {
-            const cx = w / 2;
-            const cy = h / 2;
-            const dx = mouseRef.current.x - cx;
-            const dy = mouseRef.current.y - cy;
-            const lightX = cx + dx * 0.03;
-            const lightY = cy + dy * 0.02;
-            shadowFigure.update(w, h, tick, lightX, lightY);
-            shadowFigure.draw(ctx);
-        }, 4);
-        layerManager.register('smoke', (ctx, w, h, tick) => {
-            smokeParticles.forEach(p => {
-                p.update(w, h);
-                p.draw(ctx);
-            });
-        }, 5);
-        layerManager.register('dust', (ctx, w, h, tick) => {
-            dustMotes.forEach(d => {
-                d.update(w, h, tick);
-                d.draw(ctx, tick);
-            });
-        }, 6);
-        layerManager.register('lightning', (ctx, w, h, tick) => {
-            lightning.update(tick);
-            lightning.draw(ctx, w, h);
-        }, 7);
-        layerManager.register('sigils', (ctx, w, h, tick) => {
-            ctx.globalCompositeOperation = 'lighter';
-            sigils.forEach(s => {
-                s.update(w, h, tick);
-                s.draw(ctx);
-            });
-            ctx.globalCompositeOperation = 'source-over';
-        }, 8);
-        layerManager.register('electricalInterference', (ctx, w, h, tick) => drawElectricalInterference(ctx, w, h, tick), 9);
-        layerManager.register('scanlines', (ctx, w, h, tick) => drawScanlines(ctx, w, h, tick), 10);
-        layerManager.register('filmGrain', (ctx, w, h, tick) => drawFilmGrain(ctx, w, h, tick), 11);
-        layerManager.register('chromaticAberration', (ctx, w, h, tick) => drawChromaticAberration(ctx, w, h, tick), 12);
-        layerManager.register('glitch', (ctx, w, h, tick) => drawGlitch(ctx, w, h, tick), 13);
-        layerManager.register('curtains', (ctx, w, h, tick) => {
-            const cx = w / 2;
-            const cy = h / 2;
-            const dx = mouseRef.current.x - cx;
-            const dy = mouseRef.current.y - cy;
-            const lightX = cx + dx * 0.03;
-            const lightY = cy + dy * 0.02;
-            drawCurtains(ctx, w, h, tick, lightX, lightY);
-        }, 14);
-        layerManager.register('roomBreathing', (ctx, w, h, tick) => drawRoomBreathing(ctx, w, h, tick), 15);
-        layerManager.register('vignette', (ctx, w, h, tick) => drawVignette(ctx, w, h, tick), 16);
-
-        // ============================================================================
-        // RENDER LOOP with Delta Time
-        // ============================================================================
-        const render = (timestamp) => {
-            if (!isRunning || !canvas) return;
-
-            // Initialize delta time
-            if (!lastTime) lastTime = timestamp;
-            deltaTime = (timestamp - lastTime) / 1000; // Convert to seconds
-            lastTime = timestamp;
-
-            // Normalize to 60fps for consistent animation speed (guard against NaN)
-            const timeScale = (Number(deltaTime) === deltaTime && deltaTime >= 0) ? deltaTime * 60 : 0;
-            tick = (Number(tick) === tick ? tick : 0) + timeScale;
+        const render = (ts) => {
+            if (!running) return;
+            if (!lastT) lastT = ts;
+            const dt  = Math.min((ts - lastT) / 1000 * 60, 4); // dt in ~frames, capped
+            lastT = ts;
+            tick += dt;
 
             const w = canvas.width;
             const h = canvas.height;
 
-            ctx.clearRect(0, 0, w, h);
-
-            // Deep crimson-black base — like the Lodge walls
-            ctx.fillStyle = 'rgba(4, 1, 1, 1)';
+            // Base fill — deep near-black with a hint of dark red
+            ctx.fillStyle = 'rgb(6, 2, 2)';
             ctx.fillRect(0, 0, w, h);
 
-            // Render all layers through the layer manager
-            layerManager.render(ctx, w, h, tick);
+            // ── Floor (drawn first, under curtains) ──
+            drawChevronFloor(ctx, w, h);
 
-            animationRef.current = requestAnimationFrame(render);
+            // ── Back wall curtain ──
+            const sideW  = w * C.curtain.sideWidthRatio;
+            const backH  = h * C.curtain.backHeightRatio;
+            drawBackCurtain(ctx, w, h, tick, sideW, w - sideW, backH);
+
+            // ── Side curtain panels ──
+            drawSideCurtain(ctx, w, h, tick, 0, sideW, 1);     // left
+            drawSideCurtain(ctx, w, h, tick, w, sideW, -1);    // right
+
+            // ── Cool blue key light ──
+            drawBlueLight(ctx, w, h, tick);
+
+            // ── Dust motes ──
+            dust.forEach(d => { d.update(w, h, dt); d.draw(ctx); });
+
+            // ── Chromatic aberration ──
+            drawChromaticAberration(ctx, w, h, tick);
+
+            // ── Film grain ──
+            drawGrain(ctx, w, h);
+
+            // ── Vignette (last — darkens edges for readability) ──
+            drawVignette(ctx, w, h);
+
+            animRef.current = requestAnimationFrame(render);
         };
 
-        render();
+        animRef.current = requestAnimationFrame(render);
 
         return () => {
-            isRunning = false;
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('resize', handleResize);
-            if (resizeTimeout) clearTimeout(resizeTimeout);
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current);
-            }
-            clearGradientCache();
+            running = false;
+            window.removeEventListener('resize', resize);
+            if (animRef.current) cancelAnimationFrame(animRef.current);
         };
     }, [isMobile]);
 
-    // Mobile fallback
+    // Mobile fallback: static gradient that evokes the room
     if (isMobile) {
         return (
             <div style={{
-                position: 'fixed',
-                top: 0, left: 0,
-                width: '100%', height: '100%',
-                zIndex: 0,
-                pointerEvents: 'none',
+                position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
                 background: `
-                    radial-gradient(ellipse at 50% 100%, rgba(139, 0, 0, 0.12) 0%, transparent 50%),
-                    radial-gradient(ellipse at 50% 0%, rgba(25, 25, 70, 0.08) 0%, transparent 40%),
-                    linear-gradient(180deg, #020208 0%, #08060E 50%, #0A0408 100%)
-                `
+                    linear-gradient(180deg,
+                        rgb(160,18,18) 0%,
+                        rgb(120,12,12) 40%,
+                        rgb(14,10,14)  70%,
+                        rgb(6,2,2)    100%)
+                `,
             }}>
                 <div style={{
-                    position: 'absolute',
-                    top: '10%', left: '30%',
-                    width: '40%', height: '60%',
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(178, 34, 34, 0.15), transparent 70%)',
-                    animation: 'lynchPulse 6s ease-in-out infinite',
-                    transformOrigin: 'center center'
-                }} />
-                <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.03) 3px, rgba(0,0,0,0.03) 4px)',
-                    animation: 'lynchFlicker 4s steps(10) infinite'
+                    position: 'absolute', inset: 0,
+                    background: 'radial-gradient(ellipse at 50% 0%, rgba(110,145,220,0.18) 0%, transparent 60%)',
                 }} />
             </div>
         );
@@ -1374,12 +567,9 @@ const LynchBackground = () => {
         <canvas
             ref={canvasRef}
             style={{
-                position: 'fixed',
-                top: 0, left: 0,
+                position: 'fixed', top: 0, left: 0,
                 width: '100%', height: '100%',
-                zIndex: 0,
-                pointerEvents: 'none',
-                background: '#020208'
+                zIndex: 0, pointerEvents: 'none',
             }}
         />
     );
