@@ -33,6 +33,7 @@ import MarketingStudio from './pages/MarketingStudio'
 import Dashboard from './pages/Dashboard'
 import ForgotPassword from './pages/ForgotPassword'
 import Legal from './pages/Legal'
+import Community from './pages/Community'
 import BackgroundManager from './components/layout/BackgroundManager'
 import ServerWaker from './components/common/ServerWaker'
 
@@ -115,6 +116,7 @@ function App() {
                                             <Route path="/studio" element={<ThreeDStudio />} />
                                             <Route path="/studio/marketing" element={<MarketingStudio />} />
                                             <Route path="/shield" element={<SwapSafeShield />} />
+                                            <Route path="/community" element={<Community />} />
 
                                             {/* Auth routes — redirect away if already logged in */}
                                             <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />

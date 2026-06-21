@@ -101,6 +101,24 @@
     --gradient-text: linear-gradient(90deg, #FFFFFF 0%, #FDE68A 60%, #F59E0B 100%);
     --gradient-card: radial-gradient(circle at top right, rgba(245, 197, 66, 0.12), transparent 55%),
       linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(15, 23, 42, 0.6));
+
+    /* ─── MINIMALIST DESIGN TOKENS ───────────────────────────────
+       A restrained layer applied to the toolbar first, then adopted
+       site-wide. One radius, one hairline border, calm surfaces,
+       a single accent. Replaces the ad-hoc glows/blurs/tracking. */
+    --m-accent: var(--legion-gold);
+    --m-fg: #F5F5F4;            /* primary text */
+    --m-fg-muted: #9CA3AF;      /* secondary text / inactive icons */
+    --m-fg-subtle: #6B7280;     /* tertiary */
+    --m-surface: rgba(255, 255, 255, 0.04);   /* hover / chip fill */
+    --m-surface-strong: rgba(255, 255, 255, 0.07);
+    --m-hairline: rgba(255, 255, 255, 0.08);  /* the ONLY border */
+    --m-bar-bg: rgba(8, 8, 11, 0.72);          /* header backdrop */
+    --m-radius: 10px;          /* one radius for everything */
+    --m-radius-pill: 999px;    /* only for the avatar / count badges */
+    --m-gap: 8px;              /* base inline gap unit */
+    --m-tap: 40px;             /* min touch target */
+    --m-ease: 180ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   html {
@@ -178,6 +196,123 @@
 }
 
 @layer components {
+
+  /* ─── MINIMALIST PRIMITIVES ──────────────────────────────────
+     Shared vocabulary for the toolbar and, progressively, the rest
+     of the site. Flat, hairline-bordered, single-accent. */
+
+  .m-bar {
+    background-color: var(--m-bar-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--m-ease), background-color var(--m-ease);
+  }
+  .m-bar[data-scrolled='true'] {
+    border-bottom-color: var(--m-hairline);
+  }
+
+  /* Center nav links — text-first, no pills, accent only on active */
+  .m-navlink {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: var(--m-radius);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--m-fg-muted);
+    transition: color var(--m-ease), background-color var(--m-ease);
+  }
+  .m-navlink:hover {
+    color: var(--m-fg);
+    background-color: var(--m-surface);
+  }
+  .m-navlink[data-active='true'] {
+    color: var(--m-fg);
+  }
+  /* subtle underline marks the active item instead of a filled pill */
+  .m-navlink[data-active='true']::after {
+    content: '';
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 2px;
+    height: 1.5px;
+    border-radius: 2px;
+    background-color: var(--m-accent);
+  }
+
+  /* Square-ish icon buttons, single radius, no glow */
+  .m-iconbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--m-tap);
+    height: var(--m-tap);
+    border-radius: var(--m-radius);
+    color: var(--m-fg-muted);
+    background-color: transparent;
+    transition: color var(--m-ease), background-color var(--m-ease);
+  }
+  .m-iconbtn:hover {
+    color: var(--m-fg);
+    background-color: var(--m-surface);
+  }
+
+  /* The one accent button (SELL / primary CTA) — flat, no shadow stack */
+  .m-btn-accent {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: var(--m-tap);
+    padding: 0 16px;
+    border-radius: var(--m-radius);
+    background-color: var(--m-accent);
+    color: #000;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    transition: filter var(--m-ease);
+  }
+  .m-btn-accent:hover { filter: brightness(1.08); }
+
+  /* Quiet outline button (Login) */
+  .m-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    height: var(--m-tap);
+    padding: 0 18px;
+    border-radius: var(--m-radius);
+    border: 1px solid var(--m-hairline);
+    color: var(--m-fg);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: background-color var(--m-ease), border-color var(--m-ease);
+  }
+  .m-btn-ghost:hover {
+    background-color: var(--m-surface);
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+
+  /* count badge (cart) */
+  .m-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: var(--m-radius-pill);
+    background-color: var(--m-accent);
+    color: #000;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+  }
 
   /* --- PREMIUM HOLOPANELS --- */
   .glass-panel {

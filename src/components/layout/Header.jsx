@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Menu, X, Search, User, MessageSquare, ShoppingBag, Settings, LogOut, Home, Heart, Plus, MapPin, Eye, EyeOff, Sparkles, MinusCircle, Moon, Zap, Flame, Bell, Gavel, Users } from 'lucide-react';
+import { Shield, Search, User, MessageSquare, ShoppingBag, LogOut, Home, Plus, Users } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import ThemeIndicator from '../common/ThemeIndicator';
-import ServerStatus from '../common/ServerStatus';
 
 import logoV2 from '../../assets/buyers_legion_logo_v2.png';
 
@@ -35,107 +34,80 @@ const Header = ({ currentTheme, toggleTheme }) => {
 
     return (
         <>
-            {/* --- DESKTOP HEADER (Tactical Glass) --- */}
+            {/* --- DESKTOP HEADER (Minimalist) --- */}
             <header
-                className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-transparent
-                    ${isScrolled
-                        ? 'bg-[#050505]/80 backdrop-blur-xl border-white/5 py-3'
-                        : 'bg-gradient-to-b from-black/80 to-transparent py-5'}`}
+                data-scrolled={isScrolled}
+                className="m-bar fixed top-0 left-0 right-0 z-50"
                 style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
             >
                 <div className="container mx-auto max-w-7xl px-6">
-                    <div className="flex items-center justify-between">
+                    {/* True 3-column grid: center nav is centered on the page, not pushed by side widths */}
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center h-16">
 
                         {/* 1. LEFT: LOGO & BRAND */}
-                        <div className="flex items-center gap-4 w-1/4">
-                            <Link to="/" className="flex items-center gap-3 group">
-                                <div className="relative w-12 h-12">
-                                    <div className="absolute inset-0 bg-[var(--legion-gold)]/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <img
-                                        src={logoV2}
-                                        alt="Buyers Legion"
-                                        className="relative w-full h-full object-contain drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]"
-                                    />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="font-heading text-xl font-bold tracking-[0.15em] text-white leading-none group-hover:text-[var(--legion-gold)] transition-colors">
-                                        BUYERS
-                                    </span>
-                                    <span className="font-heading text-xl font-bold tracking-[0.15em] text-[var(--legion-gold)] leading-none">
-                                        LEGION
-                                    </span>
-                                </div>
+                        <div className="flex items-center justify-self-start">
+                            <Link to="/" className="flex items-center gap-2.5 group">
+                                <img
+                                    src={logoV2}
+                                    alt="Buyers Legion"
+                                    className="w-9 h-9 object-contain"
+                                />
+                                <span className="text-base font-semibold tracking-tight text-[var(--m-fg)] leading-none">
+                                    Buyers<span className="text-[var(--m-accent)]">Legion</span>
+                                </span>
                             </Link>
                         </div>
 
-                        {/* 2. CENTER: TACTICAL NAVIGATION */}
-                        <nav className="hidden md:flex items-center justify-center gap-1 bg-white/5 backdrop-blur-md px-2 py-1.5 rounded-full border border-white/5">
+                        {/* 2. CENTER: NAVIGATION */}
+                        <nav className="hidden md:flex items-center gap-1 justify-self-center">
                             {[
-                                { path: '/browse', label: 'MARKET', icon: ShoppingBag },
-                                { path: '/auctions', label: 'AUCTIONS', icon: Gavel }, // Placeholder route
-                                { path: '/community', label: 'COMMUNITY', icon: Users }, // Placeholder route
-                                { path: '/shield', label: 'SHIELD', icon: Shield },
+                                { path: '/browse', label: 'Market', icon: ShoppingBag },
+                                { path: '/community', label: 'Community', icon: Users },
+                                { path: '/shield', label: 'Shield', icon: Shield },
                             ].map((link) => (
                                 <Link
                                     key={link.path}
                                     to={link.path}
-                                    className={`relative px-5 py-2.5 rounded-full text-xs font-bold tracking-wider transition-all duration-300 flex items-center gap-2 group overflow-hidden ${location.pathname === link.path
-                                        ? 'text-black bg-[var(--legion-gold)] shadow-[0_0_15px_rgba(245,197,66,0.3)]'
-                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                        }`}
+                                    data-active={location.pathname === link.path}
+                                    className="m-navlink"
                                 >
-                                    <link.icon size={14} className={location.pathname === link.path ? 'stroke-[2.5px]' : ''} />
+                                    <link.icon size={15} />
                                     <span>{link.label}</span>
                                 </Link>
                             ))}
                         </nav>
 
                         {/* 3. RIGHT: ACTIONS & PROFILE */}
-                        <div className="flex items-center justify-end gap-4 w-1/4">
-                            {/* Create Listing Button */}
-                            <Link
-                                to="/sell"
-                                className="hidden lg:flex items-center gap-2 bg-[var(--legion-gold)] hover:bg-yellow-400 text-black px-5 py-2.5 rounded-lg text-xs font-black tracking-wider shadow-[0_0_15px_rgba(245,197,66,0.2)] hover:shadow-[0_0_25px_rgba(245,197,66,0.4)] transition-all transform hover:-translate-y-0.5"
-                            >
-                                <Plus size={16} strokeWidth={3} />
-                                <span>SELL</span>
+                        <div className="flex items-center gap-2 justify-self-end">
+                            {/* Primary CTA */}
+                            <Link to="/sell" className="m-btn-accent hidden sm:inline-flex">
+                                <Plus size={16} strokeWidth={2.5} />
+                                <span>Sell</span>
                             </Link>
 
+                            {/* Cart */}
+                            <Link to="/cart" className="m-iconbtn relative" aria-label="Cart">
+                                <ShoppingBag size={19} />
+                                {cartItems.length > 0 && (
+                                    <span className="m-badge">{cartItems.length}</span>
+                                )}
+                            </Link>
 
-
-                            {/* Icons Group */}
-                            <div className="flex items-center gap-2 border-l border-white/10 pl-4 ml-2">
-                                <ServerStatus /> {/* Add ServerStatus Here */}
-
-                                {/* Theme toggle */}
-                                <ThemeIndicator theme={currentTheme} onToggle={toggleTheme} />
-
-                                <Link to="/cart" className="relative p-2 text-gray-400 hover:text-white transition-colors group">
-                                    <ShoppingBag size={20} />
-                                    {cartItems.length > 0 && (
-                                        <span className="absolute top-0 right-0 w-4 h-4 bg-[var(--legion-gold)] text-black text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg">
-                                            {cartItems.length}
-                                        </span>
-                                    )}
-                                </Link>
-
-                                <button className="p-2 text-gray-400 hover:text-[var(--legion-gold)] transition-colors relative">
-                                    <Bell size={20} />
-                                    <span className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                                </button>
-                            </div>
+                            {/* Theme toggle */}
+                            <ThemeIndicator theme={currentTheme} onToggle={toggleTheme} />
 
                             {/* User Profile */}
                             {isAuthenticated && user ? (
-                                <div className="relative ml-2">
+                                <div className="relative">
                                     <button
                                         onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                                        className="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-white/5 border border-white/10 overflow-hidden hover:border-[var(--legion-gold)]/50 transition-all group"
+                                        className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--m-surface)] border border-[var(--m-hairline)] overflow-hidden hover:border-[var(--m-accent)]/50 transition-colors"
+                                        aria-label="Account menu"
                                     >
                                         {user.avatar ? (
                                             <img src={user.avatar} alt="Profile" className="h-full w-full object-cover" />
                                         ) : (
-                                            <User className="text-gray-400 group-hover:text-white" size={20} />
+                                            <User className="text-[var(--m-fg-muted)]" size={19} />
                                         )}
                                     </button>
 
@@ -145,29 +117,30 @@ const Header = ({ currentTheme, toggleTheme }) => {
                                             <>
                                                 <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
                                                 <motion.div
-                                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                    initial={{ opacity: 0, y: 6, scale: 0.98 }}
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                    className="absolute right-0 top-full mt-3 w-64 bg-[#0A0A0F] border border-white/10 rounded-xl shadow-2xl p-2 z-50 origin-top-right backdrop-blur-3xl ring-1 ring-white/5"
+                                                    exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                                                    transition={{ duration: 0.15 }}
+                                                    className="absolute right-0 top-full mt-2 w-60 bg-[#0A0A0F] border border-[var(--m-hairline)] rounded-[10px] shadow-xl p-1.5 z-50 origin-top-right"
                                                 >
-                                                    <div className="px-4 py-3 border-b border-white/5 mb-2 bg-white/5 rounded-lg">
-                                                        <p className="font-heading font-bold text-white truncate text-base">{user.name}</p>
-                                                        <p className="text-xs text-gray-400 truncate font-mono">{user.email}</p>
+                                                    <div className="px-3 py-2.5 border-b border-[var(--m-hairline)] mb-1.5">
+                                                        <p className="font-medium text-[var(--m-fg)] truncate text-sm">{user.name}</p>
+                                                        <p className="text-xs text-[var(--m-fg-subtle)] truncate">{user.email}</p>
                                                     </div>
-                                                    <div className="space-y-1">
-                                                        <Link to="/my-listings" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                                    <div className="space-y-0.5">
+                                                        <Link to="/my-listings" className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--m-fg-muted)] hover:text-[var(--m-fg)] hover:bg-[var(--m-surface)] rounded-[8px] transition-colors">
                                                             <ShoppingBag size={16} /> My Listings
                                                         </Link>
-                                                        <Link to="/messages" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                                        <Link to="/messages" className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--m-fg-muted)] hover:text-[var(--m-fg)] hover:bg-[var(--m-surface)] rounded-[8px] transition-colors">
                                                             <MessageSquare size={16} /> Messages
                                                         </Link>
-                                                        <Link to="/dashboard" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                                        <Link to="/dashboard" className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--m-fg-muted)] hover:text-[var(--m-fg)] hover:bg-[var(--m-surface)] rounded-[8px] transition-colors">
                                                             <Home size={16} /> Dashboard
                                                         </Link>
-                                                        <div className="h-px bg-white/5 my-2" />
+                                                        <div className="h-px bg-[var(--m-hairline)] my-1.5" />
                                                         <button
                                                             onClick={logout}
-                                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-[8px] transition-colors"
                                                         >
                                                             <LogOut size={16} /> Logout
                                                         </button>
@@ -178,7 +151,7 @@ const Header = ({ currentTheme, toggleTheme }) => {
                                     </AnimatePresence>
                                 </div>
                             ) : (
-                                <Link to="/login" className="ml-2 px-6 py-2 rounded-lg border border-white/10 text-sm font-bold text-white hover:bg-white/5 hover:border-[var(--legion-gold)]/50 transition-all uppercase tracking-wider">
+                                <Link to="/login" className="m-btn-ghost">
                                     Login
                                 </Link>
                             )}
@@ -188,9 +161,9 @@ const Header = ({ currentTheme, toggleTheme }) => {
             </header>
 
             {/* --- MOBILE NAV (Bottom Dock) --- */}
-            <nav 
-                className="md:hidden fixed left-1/2 -translate-x-1/2 z-50 bg-[#0A0A0F]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 flex items-center gap-5 shadow-[0_10px_40px_rgba(0,0,0,0.5)] ring-1 ring-white/5"
-                style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+            <nav
+                className="md:hidden fixed left-1/2 -translate-x-1/2 z-50 bg-[var(--m-bar-bg)] backdrop-blur-xl border border-[var(--m-hairline)] rounded-[18px] px-4 py-2.5 flex items-center gap-5 shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
+                style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
             >
                 {[
                     { path: '/', icon: Home },
@@ -199,15 +172,15 @@ const Header = ({ currentTheme, toggleTheme }) => {
                     <Link
                         key={link.path}
                         to={link.path}
-                        className={`flex flex-col items-center gap-1 group transition-colors ${location.pathname === link.path ? 'text-[var(--legion-gold)]' : 'text-gray-500'}`}
+                        className={`flex items-center justify-center w-10 h-10 rounded-[10px] transition-colors ${location.pathname === link.path ? 'text-[var(--m-accent)]' : 'text-[var(--m-fg-subtle)] hover:text-[var(--m-fg)]'}`}
                     >
-                        <link.icon size={22} className={location.pathname === link.path ? 'fill-current' : ''} />
+                        <link.icon size={21} />
                     </Link>
                 ))}
 
                 {/* Center Add Button */}
-                <Link to="/sell" className="flex items-center justify-center w-14 h-14 bg-[var(--legion-gold)] rounded-full text-black shadow-[0_0_20px_rgba(245,197,66,0.4)] hover:scale-110 transition-transform -mt-10 border-4 border-[#0A0A0F]">
-                    <Plus size={28} strokeWidth={2.5} />
+                <Link to="/sell" className="flex items-center justify-center w-13 h-13 bg-[var(--m-accent)] rounded-full text-black hover:brightness-110 transition-all -mt-8 border-4 border-[#08080B]" style={{ width: '3.25rem', height: '3.25rem' }}>
+                    <Plus size={26} strokeWidth={2.5} />
                 </Link>
 
                 {[
@@ -217,9 +190,9 @@ const Header = ({ currentTheme, toggleTheme }) => {
                     <Link
                         key={link.path}
                         to={link.path}
-                        className={`flex flex-col items-center gap-1 group transition-colors ${location.pathname.startsWith(link.path) ? 'text-[var(--legion-gold)]' : 'text-gray-500'}`}
+                        className={`flex items-center justify-center w-10 h-10 rounded-[10px] transition-colors ${location.pathname.startsWith(link.path) ? 'text-[var(--m-accent)]' : 'text-[var(--m-fg-subtle)] hover:text-[var(--m-fg)]'}`}
                     >
-                        <link.icon size={22} className={location.pathname.startsWith(link.path) ? 'fill-current' : ''} />
+                        <link.icon size={21} />
                     </Link>
                 ))}
 
