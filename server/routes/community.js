@@ -29,7 +29,9 @@ talk, opinions, and complaints are NOT violations.
 Post: """${text}"""
 
 Respond ONLY with JSON: { "flagged": true|false, "reason": "short reason or empty" }`;
-        const res = await generateText(prompt, { temperature: 0 });
+        // Use Gemini explicitly — it's the reliable provider on this deployment
+        // (Groq intermittently drops the connection). Still fail-open on error.
+        const res = await generateText(prompt, { provider: 'gemini', temperature: 0 });
         const parsed = parseJSON(res.text);
         if (parsed && typeof parsed.flagged === 'boolean') {
             return { flagged: parsed.flagged, reason: parsed.reason || '' };

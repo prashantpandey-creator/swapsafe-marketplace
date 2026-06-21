@@ -24,7 +24,11 @@ import communityRoutes from './routes/community.js';
 
 const app = express();
 
-// Middleware
+// Behind the Coolify/nginx reverse proxy, so X-Forwarded-For is set.
+// Trust the first proxy hop so express-rate-limit identifies clients
+// correctly instead of throwing on the forwarded header.
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors({
     origin: process.env.CLIENT_URL || '*', // Use env var in production
