@@ -9,6 +9,16 @@ const Landing = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [suggestedProducts, setSuggestedProducts] = useState([]);
     const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+    const [isLynch, setIsLynch] = useState(() => localStorage.getItem('theme') === 'lynch');
+
+    useEffect(() => {
+        const observer = new MutationObserver(() => {
+            setIsLynch(document.body.classList.contains('theme-lynch'));
+        });
+        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        setIsLynch(document.body.classList.contains('theme-lynch'));
+        return () => observer.disconnect();
+    }, []);
 
     useEffect(() => {
         const fetchSuggestions = async () => {
@@ -34,7 +44,10 @@ const Landing = () => {
     return (
         <div className="min-h-screen overflow-x-hidden">
             {/* Hero Section */}
-            <section className="relative min-h-[90vh] flex items-center justify-center pt-20">
+            <section
+                className="relative min-h-[90vh] flex items-center justify-center pt-20"
+                style={isLynch ? { borderBottom: '1px solid rgba(195,25,25,0.3)' } : {}}
+            >
                 <div className="container mx-auto px-4 relative z-10 text-center">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -48,7 +61,10 @@ const Landing = () => {
 
                         <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-6 leading-tight">
                             BUY & SELL <br />
-                            <span className="text-legion-gold">
+                            <span
+                                className="text-legion-gold"
+                                style={isLynch ? { textShadow: '0 0 40px rgba(195,25,25,0.4)' } : {}}
+                            >
                                 VERIFIED GEAR
                             </span>
                         </h1>
@@ -59,7 +75,10 @@ const Landing = () => {
                         </p>
 
                         {/* Search Bar */}
-                        <div className="max-w-2xl mx-auto relative mb-12 group">
+                        <div
+                            className="max-w-2xl mx-auto relative mb-12 group"
+                            style={isLynch ? { boxShadow: '0 4px 40px rgba(195,25,25,0.15)' } : {}}
+                        >
                             <input
                                 type="text"
                                 placeholder="Search for iPhone 15, Jordan 1s, PS5..."
@@ -116,7 +135,15 @@ const Landing = () => {
                 <div className="container mx-auto px-4">
                     <div className="flex justify-between items-end mb-8">
                         <div>
-                            <h2 className="text-2xl font-bold text-white mb-2">Suggested For You</h2>
+                            <h2
+                                className="text-2xl font-bold mb-2"
+                                style={isLynch ? {
+                                    fontFamily: 'serif',
+                                    letterSpacing: '0.15em',
+                                    textTransform: 'uppercase',
+                                    color: 'rgba(235,215,200,0.9)',
+                                } : { color: 'white' }}
+                            >Suggested For You</h2>
                             <p className="text-[var(--m-fg-muted)] text-sm">Hand-picked gear from top sellers</p>
                         </div>
                         <Link to="/browse" className="text-legion-gold hover:text-white transition-colors text-sm font-medium">
@@ -131,16 +158,34 @@ const Landing = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {suggestedProducts.length > 0 ? (
-                                suggestedProducts.map((product) => (
-                                    <ProductCard key={product.id || product._id} product={product} />
-                                ))
-                            ) : (
-                                <p className="text-[var(--m-fg-muted)] col-span-full text-center py-10">
-                                    No suggestions available right now. Check back later!
-                                </p>
-                            )}
+                        <div style={isLynch ? { perspective: '1200px', perspectiveOrigin: '50% 0%' } : {}}>
+                            <div
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+                                style={isLynch ? {
+                                    transform: 'rotateX(8deg) translateZ(-40px)',
+                                    transformStyle: 'preserve-3d',
+                                } : {}}
+                            >
+                                {suggestedProducts.length > 0 ? (
+                                    suggestedProducts.map((product, index) => {
+                                        const depthStyles = isLynch ? [
+                                            { transform: 'translateZ(20px) rotateY(3deg)' },
+                                            { transform: 'translateZ(10px)' },
+                                            { transform: 'translateZ(10px)' },
+                                            { transform: 'translateZ(20px) rotateY(-3deg)' },
+                                        ] : [];
+                                        return (
+                                            <div key={product.id || product._id} style={depthStyles[index] || {}}>
+                                                <ProductCard product={product} />
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <p className="text-[var(--m-fg-muted)] col-span-full text-center py-10">
+                                        No suggestions available right now. Check back later!
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>

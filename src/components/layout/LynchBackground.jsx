@@ -17,14 +17,14 @@ const C = {
         strandCount: 80,
         speed: 0.3,             // sway speed (per frame at 60fps)
         // Colors — all saturated crimson
-        base:      [195, 25, 25],
-        lit:       [235, 55, 45],   // bright ridge highlights
-        shadow:    [55,  4,  4],    // deep valley shadow
+        base:      [210, 30, 28],
+        lit:       [245, 60, 48],   // bright ridge highlights
+        shadow:    [65,  6,  6],    // deep valley shadow
         dark:      [10,  0,  0],    // solid backing
-        highlight: [250, 90, 70],   // specular peak on ridge
+        highlight: [255, 100, 80],  // specular peak on ridge
     },
     floor: {
-        startYRatio: 0.62,   // horizon
+        startYRatio: 0.58,   // horizon
         // Zigzag chevron: pure black-and-white, high contrast
         white: [238, 235, 230],
         black: [18,  16,  18],
@@ -78,19 +78,43 @@ function drawSideCurtain(ctx, w, h, tick, edgeX, panelW, dir) {
         const [sr, sg, sb] = C.curtain.shadow;
         const [hr, hg, hb] = C.curtain.highlight;
 
-        const hA = Math.min(1, (0.82 + t * 0.15) * litBoost);
-        const mA = Math.min(1, (0.68 + t * 0.12) * litBoost);
-        const sA = 0.88;
+        const hA = 1.0;
+        const mA = Math.min(1, (0.95 + t * 0.05) * litBoost);
+        const sA = 0.90;
 
         g.addColorStop(0,    `rgba(${clamp(hr)},${clamp(hg)},${clamp(hb)},${hA})`);
-        g.addColorStop(0.08, `rgba(${clamp(lr)},${clamp(lg)},${clamp(lb)},${hA * 0.9})`);
+        g.addColorStop(0.08, `rgba(${clamp(lr)},${clamp(lg)},${clamp(lb)},${hA})`);
         g.addColorStop(0.30, `rgba(${clamp(br)},${clamp(bg)},${clamp(bb)},${mA})`);
-        g.addColorStop(0.60, `rgba(${clamp(br - 30)},${clamp(bg - 4)},${clamp(bb - 4)},${mA * 0.75})`);
+        g.addColorStop(0.60, `rgba(${clamp(br - 30)},${clamp(bg - 4)},${clamp(bb - 4)},${mA})`);
         g.addColorStop(0.85, `rgba(${clamp(sr)},${clamp(sg)},${clamp(sb)},${sA})`);
-        g.addColorStop(1,    `rgba(${clamp(sr - 8)},${clamp(sg)},${clamp(sb)},${sA * 0.9})`);
+        g.addColorStop(1,    `rgba(${clamp(sr - 8)},${clamp(sg)},${clamp(sb)},${sA})`);
         ctx.fillStyle = g;
         ctx.fill();
     }
+
+    // Specular sweep — animated shimmer down velvet ridges
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    const sweepY = (tick * 0.5 % (h * 1.5)) - h * 0.1;
+    const sigma  = h * 0.20;
+    for (let fold = 0; fold < foldCount; fold++) {
+        const t  = fold / foldCount;
+        const fx = edgeX + (t * panelW * 0.95) * dir;
+        const fw = (panelW / foldCount) * 1.18;
+        const ridgeX = fx + fw * 0.12 * dir;
+        const sw = fw * 0.22;
+        for (let y = 0; y <= h; y += 4) {
+            const gAlpha = 0.50 * Math.exp(-((y - sweepY) ** 2) / (2 * sigma * sigma));
+            if (gAlpha < 0.002) continue;
+            const sg = ctx.createLinearGradient(ridgeX - sw * 0.5, 0, ridgeX + sw * 0.5, 0);
+            sg.addColorStop(0,   'transparent');
+            sg.addColorStop(0.5, `rgba(255,160,130,${gAlpha})`);
+            sg.addColorStop(1,   'transparent');
+            ctx.fillStyle = sg;
+            ctx.fillRect(ridgeX - sw * 0.5, y, sw, 4);
+        }
+    }
+    ctx.restore();
 
     // Dense velvet strand texture
     for (let s = 0; s < strandCount; s++) {
@@ -190,11 +214,11 @@ function drawBackCurtain(ctx, w, h, tick, x0, x1, backH) {
         const litBoost = 0.85 + centerT * 0.35;
 
         const g = ctx.createLinearGradient(fx, 0, fx + fw, 0);
-        g.addColorStop(0,    `rgba(${clamp(lr - 10)},${clamp(lg)},${clamp(lb)},${Math.min(1, 0.78 * litBoost)})`);
-        g.addColorStop(0.25, `rgba(${clamp(br + 10)},${clamp(bg + 1)},${clamp(bb + 1)},${Math.min(1, 0.70 * litBoost)})`);
-        g.addColorStop(0.55, `rgba(${clamp(br - 15)},${clamp(bg - 2)},${clamp(bb - 2)},${Math.min(1, 0.60 * litBoost)})`);
-        g.addColorStop(0.80, `rgba(${clamp(sr + 8)},${sg},${sb},${0.82})`);
-        g.addColorStop(1,    `rgba(${sr},${sg},${sb},0.88)`);
+        g.addColorStop(0,    `rgba(${clamp(lr - 10)},${clamp(lg)},${clamp(lb)},1.0)`);
+        g.addColorStop(0.25, `rgba(${clamp(br + 10)},${clamp(bg + 1)},${clamp(bb + 1)},${Math.min(1, 0.95 * litBoost)})`);
+        g.addColorStop(0.55, `rgba(${clamp(br - 15)},${clamp(bg - 2)},${clamp(bb - 2)},${Math.min(1, 0.90 * litBoost)})`);
+        g.addColorStop(0.80, `rgba(${clamp(sr + 8)},${sg},${sb},0.90)`);
+        g.addColorStop(1,    `rgba(${sr},${sg},${sb},1.0)`);
         ctx.fillStyle = g;
         ctx.fill();
     }
@@ -256,7 +280,7 @@ function drawChevronFloor(ctx, w, h) {
         const yMid = (yTop + yBot) * 0.5;
 
         // Fog: near horizon fades out a bit
-        const fogA = 0.2 + Math.min(1, dBot) * 0.8;
+        const fogA = 0.55 + Math.min(1, dBot) * 0.45;
 
         for (let col = 0; col < COLS; col++) {
             const f0 = col       / COLS;
@@ -381,7 +405,7 @@ function drawBlueLight(ctx, w, h, tick) {
     const { r, g, b } = C.blueLight;
     // Central cool radial (brightest top-center, fading out)
     const pulse = Math.sin(tick * 0.008) * 0.5 + 0.5;
-    const alpha = 0.10 + pulse * 0.04;
+    const alpha = 0.18 + pulse * 0.06;
 
     const grad = ctx.createRadialGradient(w * 0.5, 0, 0, w * 0.5, h * 0.4, h * 0.9);
     grad.addColorStop(0,   `rgba(${r},${g},${b},${alpha})`);
@@ -391,6 +415,16 @@ function drawBlueLight(ctx, w, h, tick) {
     ctx.globalCompositeOperation = 'screen';
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
+
+    // Soft-light pass — cools midtones without darkening
+    const softGrad = ctx.createRadialGradient(w * 0.5, 0, 0, w * 0.5, h * 0.5, h * 1.0);
+    softGrad.addColorStop(0,   'rgba(80,120,200,0.12)');
+    softGrad.addColorStop(0.6, 'rgba(80,120,200,0.06)');
+    softGrad.addColorStop(1,   'transparent');
+    ctx.globalCompositeOperation = 'soft-light';
+    ctx.fillStyle = softGrad;
+    ctx.fillRect(0, 0, w, h);
+
     ctx.globalCompositeOperation = 'source-over';
 }
 
@@ -499,8 +533,12 @@ const LynchBackground = () => {
             const w = canvas.width;
             const h = canvas.height;
 
-            // Base fill — deep near-black with a hint of dark red
-            ctx.fillStyle = 'rgb(6, 2, 2)';
+            // Base fill — warm deep-crimson gradient, already luminous
+            const baseFill = ctx.createLinearGradient(0, 0, 0, h);
+            baseFill.addColorStop(0,   'rgb(75,8,8)');
+            baseFill.addColorStop(0.6, 'rgb(30,4,4)');
+            baseFill.addColorStop(1,   'rgb(8,2,2)');
+            ctx.fillStyle = baseFill;
             ctx.fillRect(0, 0, w, h);
 
             // ── Floor (drawn first, under curtains) ──

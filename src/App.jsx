@@ -9,6 +9,7 @@ import ErrorBoundary from './components/common/ErrorBoundary'
 import Header from './components/layout/Header'
 import Footer from './components/layout/Footer'
 import Landing from './pages/Landing'
+import LandingLynch from './pages/LandingLynch'
 import Browse from './pages/Browse'
 import ProductDetail from './pages/ProductDetail'
 import CreateListing from './pages/CreateListing'
@@ -106,7 +107,7 @@ function App() {
                                     <main className="main-content" style={{ paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))' }}>
                                         <Routes>
                                             {/* Public routes */}
-                                            <Route path="/" element={<Landing />} />
+                                            <Route path="/" element={theme === 'lynch' ? <LandingLynch /> : <Landing />} />
                                             <Route path="/browse" element={<Browse />} />
                                             <Route path="/search" element={<Browse />} />
                                             <Route path="/browse/:category" element={<Browse />} />
