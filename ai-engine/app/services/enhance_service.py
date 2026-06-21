@@ -12,18 +12,40 @@ class EnhanceService:
     - Color Balancing - Ensures natural colors
     """
     
-    def enhance_product(self, image_bytes: bytes) -> bytes:
+    # Laplacian-variance threshold below which an image counts as "blurry".
+    # Sharpening a blurry/motion-blurred photo amplifies background mush and
+    # hurts the segmentation mask, so we skip the sharpen step under this.
+    BLUR_THRESHOLD = 80.0
+
+    @staticmethod
+    def measure_sharpness(img) -> float:
+        """Laplacian variance of a BGR image — higher means crisper edges."""
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        return float(cv2.Laplacian(gray, cv2.CV_64F).var())
+
+    def enhance_product(self, image_bytes: bytes, sharpen: bool = None) -> bytes:
         """
         Applies a 'Studio' filter to the raw image bytes.
         Returns enhanced image bytes.
+
+        sharpen: None (default) auto-decides from input sharpness — skips the
+                 sharpen on blurry inputs where it would amplify background mush.
+                 Pass True/False to force.
         """
         try:
             # Convert bytes to numpy array for OpenCV
             nparr = np.frombuffer(image_bytes, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            
+
             if img is None:
                 raise ValueError("Could not decode image")
+
+            # Decide whether to sharpen BEFORE denoise softens edges.
+            if sharpen is None:
+                sharpness = self.measure_sharpness(img)
+                sharpen = sharpness >= self.BLUR_THRESHOLD
+                if not sharpen:
+                    print(f"   🩹 Skipping sharpen — soft input (sharpness {sharpness:.0f} < {self.BLUR_THRESHOLD:.0f})")
 
             # --- Step 1: Denoise ---
             # Remove grain/noise which is common in phone photos
@@ -34,28 +56,29 @@ class EnhanceService:
             # Convert to LAB color space to separate Luminance from Color
             lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
             l, a, b = cv2.split(lab)
-            
+
             # Apply Contrast Limited Adaptive Histogram Equalization to L channel
             # This brings out details in shadows without blowing out highlights
             clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
             cl = clahe.apply(l)
-            
+
             # Merge enhanced L with original A/B
             limg = cv2.merge((cl, a, b))
             enhanced_img = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
-            
-            # --- Step 3: Mild Sharpening ---
+
+            # --- Step 3: Mild Sharpening (skipped on blurry inputs) ---
             # Brings out texture details (like speaker mesh)
-            kernel = np.array([[0, -1, 0], 
-                               [-1, 5,-1], 
-                               [0, -1, 0]])
-            enhanced_img = cv2.filter2D(enhanced_img, -1, kernel)
+            if sharpen:
+                kernel = np.array([[0, -1, 0],
+                                   [-1, 5,-1],
+                                   [0, -1, 0]])
+                enhanced_img = cv2.filter2D(enhanced_img, -1, kernel)
 
             # Convert back to bytes (JPEG)
             success, encoded_img = cv2.imencode('.jpg', enhanced_img, [int(cv2.IMWRITE_JPEG_QUALITY), 95])
             if not success:
                 raise ValueError("Could not encode enhanced image")
-                
+
             return encoded_img.tobytes()
 
         except Exception as e:

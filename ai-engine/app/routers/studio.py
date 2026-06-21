@@ -397,6 +397,8 @@ async def enhance_product(
             "image_data": result.get("image_data"),
             "original_image_data": result.get("original_image_data"),
             "dimensions": result.get("dimensions"),
+            "alpha_quality": result.get("alpha_quality"),
+            "low_quality": result.get("low_quality", False),
             "processing_time_ms": int(elapsed * 1000)
         }
         

@@ -105,8 +105,13 @@ class ShowcaseService:
             input_pil = Image.open(io.BytesIO(enhanced_bytes)).convert("RGB")
             fg_image_pil = await run_in_threadpool(birefnet_service.remove_background, input_pil)
             fg_image = fg_image_pil.convert("RGBA")
-            
-            print(f"      ✅ Background removed in {time.time()-step_start:.2f}s")
+
+            # Confidence of the cutout (0-100). Low = ambiguous mask, e.g.
+            # cluttered/low-contrast scene. Surfaced to the caller so the UI
+            # can warn the seller or suggest a cleaner photo.
+            alpha_quality = birefnet_service.last_alpha_quality
+
+            print(f"      ✅ Background removed in {time.time()-step_start:.2f}s (quality: {alpha_quality})")
                 
             # Step 1.5: Upscale for better quality (NEW)
             if apply_upscale and self.upscale_service and background != "transparent":
@@ -201,13 +206,15 @@ class ShowcaseService:
             result = {
                 "status": "success",
                 "image_data": f"data:image/{'png' if background == 'transparent' else 'jpeg'};base64,{b64_image}",
-                "dimensions": output_size
+                "dimensions": output_size,
+                "alpha_quality": alpha_quality,
+                "low_quality": alpha_quality is not None and alpha_quality < 60,
             }
-            
+
             # Add original image if requested
             if original_b64:
                 result["original_image_data"] = f"data:image/jpeg;base64,{original_b64}"
-            
+
             return result
             
         except Exception as e:

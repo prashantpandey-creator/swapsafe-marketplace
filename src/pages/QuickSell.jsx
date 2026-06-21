@@ -302,11 +302,19 @@ const QuickSell = () => {
                         img.id === targetId ? {
                             ...img,
                             status: 'enhanced',
-                            enhancedSrc: result.image_data
+                            enhancedSrc: result.image_data,
+                            lowQuality: !!result.low_quality,
+                            alphaQuality: result.alpha_quality ?? null
                         } : img
                     ));
 
-                    success("Enhanced successfully!");
+                    if (result.low_quality) {
+                        // Cutout is uncertain (cluttered/low-contrast photo). Don't
+                        // block — just nudge the seller toward a cleaner shot.
+                        success("Enhanced — but the cutout looks rough. A photo against a plain wall works best.");
+                    } else {
+                        success("Enhanced successfully!");
+                    }
                 } else {
                     throw new Error(result.error || 'No image data');
                 }

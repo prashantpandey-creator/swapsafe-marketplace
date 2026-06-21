@@ -472,6 +472,8 @@ router.post('/enhance-photo', upload.fields([
                 enhanced: true,
                 product_matched: !!productMatch,
                 reference_used: !!referenceImageUrl,
+                alpha_quality: result.alpha_quality ?? null,
+                low_quality: result.low_quality ?? false,
                 processing_time_ms: totalElapsed
             });
 

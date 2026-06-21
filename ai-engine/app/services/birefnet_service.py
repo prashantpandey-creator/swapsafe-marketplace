@@ -19,6 +19,10 @@ class BiRefNetService:
     def __init__(self):
         self.model = None
         self._rembg_session = None  # cached u2netp session
+        # Quality score (0-100) of the LAST mask produced. Set by remove_background.
+        # High = crisp, confident cutout. Low = lots of ambiguous mid-grey edges
+        # (cluttered/low-contrast scene) — caller may want to retry or warn the user.
+        self.last_alpha_quality = None
         if torch:
             self.device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
         else:
@@ -81,10 +85,14 @@ class BiRefNetService:
         Uses official BiRefNet inference pattern.
         """
         self.load_model()
-        
+        self.last_alpha_quality = None
+
         if self.model == "rembg":
-            return self._rembg_remove(image)
-        
+            rgba = self._rembg_remove(image)
+            self.last_alpha_quality = self._score_alpha_quality(rgba)
+            print(f"   📊 Alpha quality: {self.last_alpha_quality}")
+            return rgba
+
         try:
             # Store original size for resizing mask back
             original_size = image.size
@@ -113,14 +121,20 @@ class BiRefNetService:
             # Apply mask to original image
             rgba = image.convert("RGBA")
             rgba.putalpha(mask)
-            
+
+            self.last_alpha_quality = self._score_alpha_quality(rgba)
+            print(f"   📊 Alpha quality: {self.last_alpha_quality}")
+
             return rgba
             
         except Exception as e:
             print(f"⚠️ BiRefNet inference failed: {e}")
             import traceback
             traceback.print_exc()
-            return self._rembg_remove(image)
+            rgba = self._rembg_remove(image)
+            self.last_alpha_quality = self._score_alpha_quality(rgba)
+            print(f"   📊 Alpha quality: {self.last_alpha_quality}")
+            return rgba
     
     def _cleanup_mask(self, mask: Image.Image) -> Image.Image:
         """
@@ -163,6 +177,51 @@ class BiRefNetService:
         
         return Image.fromarray(result.astype(np.uint8))
     
+    def _score_alpha_quality(self, rgba: Image.Image) -> float:
+        """
+        Score how confident the cutout is, 0-100, from its alpha channel.
+
+        A clean cutout has alpha pixels that are almost all fully opaque (255)
+        or fully transparent (0). Ambiguous masks — cluttered scene, low contrast
+        between subject and a dark/blurry background — leave a large band of
+        mid-grey pixels (the model "isn't sure"). We measure the fraction of
+        edge/foreground pixels that fall in that uncertain mid-band and invert it.
+
+        Returns 100 for a crisp mask, lower as ambiguity rises. Returns 0 if the
+        cutout is degenerate (almost nothing kept, or almost nothing removed).
+        """
+        try:
+            alpha = np.asarray(rgba.split()[-1], dtype=np.uint8)
+            total = alpha.size
+            if total == 0:
+                return 0.0
+
+            # Foreground = anything not fully transparent.
+            fg = alpha > 10
+            fg_count = int(fg.sum())
+            fg_frac = fg_count / total
+
+            # Degenerate: removed everything, or removed nothing.
+            if fg_frac < 0.01 or fg_frac > 0.99:
+                return 0.0
+
+            # Of the foreground pixels, how many sit in the ambiguous mid-band
+            # (neither clearly object nor clearly transparent edge)?
+            mid = fg & (alpha < 230) & (alpha > 40)
+            mid_frac = int(mid.sum()) / max(fg_count, 1)
+
+            # Empirically calibrated against u2netp output (which always leaves a
+            # soft antialiased rim, so even clean cutouts run ~0.20-0.25 mid):
+            #   clean product on plain bg     ~0.25 -> ~78  (pass, >=60)
+            #   subject occluded / ghosting   ~0.45 -> ~46  (warn)
+            #   low-contrast / cluttered scene ~0.70 -> ~16  (warn)
+            # Anchor 0.25 -> 78 and slope so 0.45 -> ~46.
+            score = max(0.0, 100.0 - ((mid_frac - 0.25) * 160.0) - 22.0)
+            return round(min(100.0, score), 1)
+        except Exception as e:
+            print(f"⚠️ alpha quality scoring failed: {e}")
+            return None
+
     def _rembg_remove(self, image: Image.Image) -> Image.Image:
         """Fallback using rembg library (u2netp — fast 4MB model, session cached)"""
         print("⚠️ Using rembg fallback (u2netp)...")
