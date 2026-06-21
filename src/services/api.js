@@ -115,6 +115,14 @@ export const authAPI = {
         });
     },
 
+    deleteAccount: async () => {
+        const data = await apiRequest('/auth/account', { method: 'DELETE' });
+        // Clear local session regardless of what the caller does next.
+        localStorage.removeItem('swapsafe_token');
+        localStorage.removeItem('swapsafe_user');
+        return data;
+    },
+
     loginAsGuest: async () => {
         return await apiRequest('/auth/guest', {
             method: 'POST'

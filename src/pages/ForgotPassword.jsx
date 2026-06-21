@@ -48,8 +48,8 @@ function ForgotPassword() {
                     {submitted ? (
                         <div style={{ textAlign: 'center', padding: '1rem 0' }}>
                             <CheckCircle size={48} style={{ color: '#10b981', margin: '0 auto 1rem' }} />
-                            <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                                If an account exists for <strong style={{ color: '#e2e8f0' }}>{email}</strong>,
+                            <p style={{ color: 'var(--m-fg-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                                If an account exists for <strong style={{ color: 'var(--m-fg)' }}>{email}</strong>,
                                 you'll receive a password reset link shortly.
                             </p>
                         </div>

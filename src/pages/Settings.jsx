@@ -1,11 +1,13 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, Shield, Bell, Trash2, Save, Camera, Lock, Mail } from 'lucide-react'
 import './Settings.css' // We'll assume standard app styles or create this if needed, but inline styles/tailwind work too.
 
 function Settings() {
-    const { user, logout } = useAuth()
+    const { user, logout, deleteAccount } = useAuth()
+    const navigate = useNavigate()
     const [activeTab, setActiveTab] = useState('profile')
     const [isLoading, setIsLoading] = useState(false)
     const [successMsg, setSuccessMsg] = useState('')
@@ -278,12 +280,15 @@ function Settings() {
                                                     Permanently delete your account and all associated data. This action cannot be undone.
                                                 </p>
                                                 <button
-                                                    onClick={() => {
-                                                        if (window.confirm('Are you absolutely sure? This cannot be undone!')) {
-                                                            if (window.confirm('Last chance! Delete your account permanently?')) {
-                                                                // TODO: Implement delete account API call
-                                                                alert('Account deletion will be implemented in production.')
-                                                            }
+                                                    onClick={async () => {
+                                                        if (!window.confirm('Are you absolutely sure? This cannot be undone!')) return
+                                                        if (!window.confirm('Last chance! This permanently deletes your account, listings, and posts.')) return
+                                                        const res = await deleteAccount()
+                                                        if (res.success) {
+                                                            alert('Your account has been permanently deleted.')
+                                                            navigate('/')
+                                                        } else {
+                                                            alert(res.error || 'Could not delete your account. Please try again.')
                                                         }
                                                     }}
                                                     className="btn bg-red-600 hover:bg-red-700 text-white border-red-600"

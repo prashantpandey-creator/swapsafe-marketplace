@@ -295,4 +295,38 @@ router.put('/profile', protect, async (req, res) => {
     }
 });
 
+// @route   DELETE /api/auth/account
+// @desc    Permanently delete the authenticated user's account + their data
+// @access  Private
+router.delete('/account', protect, async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        // Cascade-delete the user's content so nothing is orphaned. Models are
+        // imported dynamically to avoid load-order coupling; each is wrapped so
+        // a missing collection never blocks the account deletion itself.
+        const cascades = [
+            ['../models/Listing.js', (M) => M.deleteMany({ seller: userId })],
+            ['../models/Post.js', (M) => M.deleteMany({ author: userId })],
+            ['../models/Comment.js', (M) => M.deleteMany({ author: userId })],
+            ['../models/Follow.js', (M) => M.deleteMany({ $or: [{ follower: userId }, { following: userId }] })],
+        ];
+        for (const [path, op] of cascades) {
+            try {
+                const M = (await import(path)).default;
+                await op(M);
+            } catch (e) {
+                console.warn(`Cascade delete skipped for ${path}:`, e.message);
+            }
+        }
+
+        await User.findByIdAndDelete(userId);
+
+        res.json({ success: true, message: 'Account permanently deleted.' });
+    } catch (error) {
+        console.error('Delete account error:', error);
+        res.status(500).json({ error: 'Server error deleting account' });
+    }
+});
+
 export default router;

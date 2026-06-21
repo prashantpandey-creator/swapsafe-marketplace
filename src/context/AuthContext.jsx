@@ -114,6 +114,16 @@ export function AuthProvider({ children }) {
         dispatch({ type: 'LOGOUT' })
     }
 
+    const deleteAccount = async () => {
+        try {
+            await authAPI.deleteAccount()
+            dispatch({ type: 'LOGOUT' })
+            return { success: true }
+        } catch (error) {
+            return { success: false, error: error.message || 'Failed to delete account' }
+        }
+    }
+
     // Guest login - creates temporary backend account with JWT
     const loginAsGuest = async () => {
         dispatch({ type: 'AUTH_START' })
@@ -173,6 +183,7 @@ export function AuthProvider({ children }) {
             googleLogin,
             register,
             logout,
+            deleteAccount,
             updateProfile,
             clearError
         }}>
