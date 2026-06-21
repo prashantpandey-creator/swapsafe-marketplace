@@ -125,7 +125,10 @@ const listingSchema = new mongoose.Schema({
             severity: { type: String, enum: ['minor', 'moderate', 'major'] }
         }],
         analyzedAt: Date
-    }
+    },
+    // Pre-publish fraud / trust score (advisory, never blocks)
+    trustScore: { type: Number, min: 0, max: 100 },
+    trustBand: { type: String, enum: ['high', 'medium', 'low', 'flagged'] },
 }, {
     timestamps: true
 });

@@ -244,6 +244,13 @@ export const aiAPI = {
         });
     },
 
+    trustScore: async ({ title, description, condition, price, retailPrice, productName, images }) => {
+        return await apiRequest('/ai/trust-score', {
+            method: 'POST',
+            body: JSON.stringify({ title, description, condition, price, retailPrice, productName, images })
+        });
+    },
+
     // Quantum Marketing Studio (Direct to Python Engine)
     generateMarketingImage: async (formData) => {
         const AI_ENGINE_URL = import.meta.env.VITE_AI_ENGINE_URL || 'http://localhost:8000';

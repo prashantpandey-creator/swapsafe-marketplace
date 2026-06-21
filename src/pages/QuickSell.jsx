@@ -2,14 +2,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, X, Camera, Sparkles, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { Upload, X, Camera, Sparkles, AlertCircle, CheckCircle, Loader, ShieldAlert, ShieldCheck } from 'lucide-react';
 import CameraViewfinder from '../components/sell/CameraViewfinder';
 import QuickSellLanding from '../components/sell/QuickSellLanding';
 import QuickSellDetails from '../components/sell/QuickSellDetails';
 import SpiralBackground from '../components/common/SpiralBackground';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { listingsAPI, uploadImage, jobsAPI } from '../services/api';
+import { listingsAPI, uploadImage, jobsAPI, aiAPI } from '../services/api';
 import { useProductAnalysis } from '../hooks/useProductAnalysis';
 
 const QuickSell = () => {
@@ -75,6 +75,10 @@ const QuickSell = () => {
     const [jobId, setJobId] = useState(null);
     const [jobStatus, setJobStatus] = useState(null);
     const [jobProgress, setJobProgress] = useState(0);
+
+    // Trust Score nudge — shown before publish when AI finds issues
+    const [trustNudge, setTrustNudge] = useState(null); // { trustScore, band, issues[], summary }
+    const [pendingListingData, setPendingListingData] = useState(null); // held while nudge is shown
 
     // Poll for job status
     useEffect(() => {
@@ -323,6 +327,26 @@ const QuickSell = () => {
         }
     };
 
+    // Actually post the listing to the backend (called after trust nudge is dismissed or skipped)
+    const publishListing = async (data, trustResult) => {
+        const payload = {
+            ...data,
+            trustScore: trustResult?.trustScore,
+            trustBand: trustResult?.band,
+            conditionBlemishes: trustResult?.blemishes || [],
+        };
+
+        const response = await listingsAPI.create(payload);
+
+        if (response.jobId) {
+            setJobId(response.jobId);
+            setJobStatus(response.status);
+            setJobProgress(0);
+        } else {
+            navigate('/my-listings', { state: { success: true } });
+        }
+    };
+
     const handleSubmit = async () => {
         if (!formData.askingPrice) {
             error("Please enter a price");
@@ -330,21 +354,20 @@ const QuickSell = () => {
         }
 
         setIsSubmitting(true);
-        setLocalError(''); // Clear previous errors
+        setLocalError('');
 
         try {
-            // Sort: Selected image first
+            // Sort: selected image first
             const sortedGallery = [...gallery].sort((a, b) => {
                 if (a.id === currentImageId) return -1;
                 if (b.id === currentImageId) return 1;
                 return 0;
             });
 
-            // Upload images
+            // Upload images to Cloudinary
             const uploadedImageUrls = await Promise.all(sortedGallery.map(async (img) => {
                 let fileToUpload = img.file;
 
-                // If enhanced/stock (base64) and no file, convert to file
                 if ((img.status === 'enhanced' || img.isStock) && img.enhancedSrc) {
                     const res = await fetch(img.enhancedSrc);
                     const blob = await res.blob();
@@ -358,13 +381,13 @@ const QuickSell = () => {
                 }
 
                 if (fileToUpload) {
-                    const uploadRes = await uploadImage(fileToUpload);
-                    return uploadRes.url;
+                    // uploadImage() returns the URL string directly
+                    return await uploadImage(fileToUpload);
                 }
                 return null;
             }));
 
-            const validUrls = uploadedImageUrls.filter(url => url !== null);
+            const validUrls = uploadedImageUrls.filter(Boolean);
 
             if (validUrls.length === 0) {
                 throw new Error("No images to upload");
@@ -379,25 +402,44 @@ const QuickSell = () => {
                 images: validUrls,
                 brand: formData.brand,
                 model: formData.model,
-                currency: 'INR', // Default
-                location: {
-                    type: 'Point',
-                    coordinates: [77.5946, 12.9716] // Default Bangalore
-                }
+                currency: 'INR',
+                location: { city: 'Bangalore', state: 'Karnataka' },
             };
 
-            const response = await listingsAPI.create(listingData);
+            // Run trust score against the ORIGINAL (first) photo URL.
+            // Fail-open: if the call errors we skip the nudge and publish anyway.
+            let trustResult = null;
+            try {
+                const originalImages = sortedGallery
+                    .filter(img => img.status !== 'enhanced' && !img.isStock && img.src)
+                    .map(img => img.src)
+                    .slice(0, 1); // one image is enough for the nudge
 
-            // Handle async response
-            if (response.jobId) {
-                setJobId(response.jobId);
-                setJobStatus(response.status);
-                setJobProgress(0);
-                // Don't navigate yet, let the polling effect handle it
-            } else {
-                // Fallback for sync response (if any)
-                navigate('/my-listings', { state: { success: true } });
+                trustResult = await aiAPI.trustScore({
+                    title: listingData.title,
+                    description: listingData.description,
+                    condition: listingData.condition,
+                    price: listingData.price,
+                    productName: formData.brand ? `${formData.brand} ${formData.model || ''}`.trim() : listingData.title,
+                    images: originalImages.length ? originalImages : [validUrls[0]],
+                });
+            } catch (_) {
+                // trust check is advisory — never block publish
             }
+
+            // If the AI found real issues, show the nudge first
+            const hasIssues = trustResult?.signals?.honestyDiff?.verdict === 'undisclosed_issues'
+                || trustResult?.signals?.claimMatch?.verdict === 'mismatch';
+
+            if (hasIssues && trustResult) {
+                setPendingListingData(listingData);
+                setTrustNudge(trustResult);
+                setIsSubmitting(false);
+                return;
+            }
+
+            // No issues (or check unavailable) — publish straight away
+            await publishListing(listingData, trustResult);
 
         } catch (err) {
             console.error(err);
@@ -406,9 +448,117 @@ const QuickSell = () => {
         }
     };
 
+    // User acknowledged the nudge and wants to publish anyway
+    const handlePublishAnyway = async () => {
+        if (!pendingListingData) return;
+        setTrustNudge(null);
+        setIsSubmitting(true);
+        try {
+            await publishListing(pendingListingData, null);
+        } catch (err) {
+            setLocalError(err.message || "Failed to create listing");
+            setIsSubmitting(false);
+        }
+        setPendingListingData(null);
+    };
+
+    // User wants to go back and fix the description
+    const handleEditFromNudge = () => {
+        setTrustNudge(null);
+        setPendingListingData(null);
+        setIsSubmitting(false);
+    };
+
     return (
         <div className="fixed inset-0 z-[60] bg-black overflow-hidden font-sans">
             <SpiralBackground />
+
+            {/* Trust Nudge Modal */}
+            <AnimatePresence>
+                {trustNudge && (
+                    <motion.div
+                        key="trust-nudge"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+                        style={{ background: 'rgba(0,0,0,0.85)' }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            className="relative w-full max-w-md rounded-2xl p-6"
+                            style={{ background: 'var(--void-surface)', border: '1px solid rgba(255,255,255,0.08)' }}
+                        >
+                            <div className="flex items-start gap-3 mb-4">
+                                <ShieldAlert size={24} className="text-amber-400 shrink-0 mt-0.5" />
+                                <div>
+                                    <h3 className="text-white font-semibold text-lg leading-snug">
+                                        A couple of things to mention
+                                    </h3>
+                                    <p className="text-gray-400 text-sm mt-1">
+                                        {trustNudge.summary}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {trustNudge.signals?.claimMatch?.verdict === 'mismatch' && (
+                                <div className="mb-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                                    <p className="text-red-300 text-sm font-medium">Photo mismatch</p>
+                                    <p className="text-red-200/70 text-xs mt-0.5">
+                                        {trustNudge.signals.claimMatch.explanation}
+                                    </p>
+                                </div>
+                            )}
+
+                            {trustNudge.signals?.honestyDiff?.issues?.length > 0 && (
+                                <div className="mb-4">
+                                    <p className="text-amber-400 text-sm font-medium mb-2">
+                                        Visible but not mentioned:
+                                    </p>
+                                    <ul className="space-y-1.5">
+                                        {trustNudge.signals.honestyDiff.issues.map((issue, i) => (
+                                            <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+                                                <span className="text-amber-400/70 mt-0.5">•</span>
+                                                <span>
+                                                    <span className="capitalize">{issue.type}</span>
+                                                    {issue.location ? ` — ${issue.location}` : ''}
+                                                    <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                                                        issue.severity === 'major' ? 'bg-red-500/20 text-red-300' :
+                                                        issue.severity === 'moderate' ? 'bg-amber-500/20 text-amber-300' :
+                                                        'bg-gray-500/20 text-gray-400'
+                                                    }`}>{issue.severity}</span>
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <p className="text-gray-500 text-xs mt-2">
+                                        Adding these to your description builds buyer trust and reduces disputes.
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="flex gap-3 mt-2">
+                                <button
+                                    onClick={handleEditFromNudge}
+                                    className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white"
+                                    style={{ background: 'var(--legion-gold)', color: '#000' }}
+                                >
+                                    Update description
+                                </button>
+                                <button
+                                    onClick={handlePublishAnyway}
+                                    className="flex-1 py-2.5 rounded-xl text-sm font-medium border"
+                                    style={{ borderColor: 'rgba(255,255,255,0.12)', color: 'var(--text-secondary)' }}
+                                >
+                                    Publish anyway
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <input
                 type="file"

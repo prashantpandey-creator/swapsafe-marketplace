@@ -104,7 +104,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
 });
 
 // @route   POST /api/listings
-// @desc    Create new listing
+// @desc    Create new listing (JSON body, images already Cloudinary URLs)
 // @access  Private
 router.post('/', protect, async (req, res) => {
     try {
@@ -119,15 +119,26 @@ router.post('/', protect, async (req, res) => {
             location,
             deliveryOptions,
             estimatedPrice,
-            retailPrice
+            retailPrice,
+            trustScore,
+            trustBand,
+            trustSignals,
+            conditionBlemishes,
         } = req.body;
 
         // Validate required fields
-        if (!title || !description || !category || !condition || !price || !location) {
+        if (!title || !description || !category || !condition || !price) {
             return res.status(400).json({ error: 'Please provide all required fields' });
         }
 
-        const listing = await Listing.create({
+        // Normalise location — QuickSell sends { city, state } string fields;
+        // fall back to Bangalore if absent or in a different shape.
+        const normaliseLocation = (loc) => {
+            if (loc && typeof loc.city === 'string' && typeof loc.state === 'string') return loc;
+            return { city: 'Bangalore', state: 'Karnataka' };
+        };
+
+        const listingPayload = {
             seller: req.user._id,
             title,
             description,
@@ -136,11 +147,22 @@ router.post('/', protect, async (req, res) => {
             price,
             originalPrice: originalPrice || 0,
             images: images || [],
-            location,
+            location: normaliseLocation(location),
             deliveryOptions: deliveryOptions || { meetup: true, shipping: false },
             estimatedPrice: estimatedPrice || { value: 0, confidence: 0, reasoning: '' },
-            retailPrice: retailPrice || { value: 0, source: '' }
-        });
+            retailPrice: retailPrice || { value: 0, source: '' },
+        };
+
+        // Store trust-score results on the listing if provided
+        if (trustScore !== undefined) {
+            listingPayload.trustScore = trustScore;
+            listingPayload.trustBand = trustBand;
+        }
+        if (conditionBlemishes?.length) {
+            listingPayload.conditionAnalysis = { blemishes: conditionBlemishes };
+        }
+
+        const listing = await Listing.create(listingPayload);
 
         // Populate seller info
         await listing.populate('seller', 'name avatar rating isVerified');

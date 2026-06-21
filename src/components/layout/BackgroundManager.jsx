@@ -1,5 +1,4 @@
 import LynchBackground from './LynchBackground';
-import WhiteBackground from './WhiteBackground';
 
 const BackgroundManager = ({ currentTheme }) => {
     // Two themes only:
