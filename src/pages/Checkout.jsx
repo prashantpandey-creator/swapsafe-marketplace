@@ -117,9 +117,13 @@ function Checkout() {
     }
 
     const handlePayment = async () => {
+        if (!products || products.length === 0) {
+            alert('No items to checkout.')
+            return
+        }
         setIsProcessing(true)
         try {
-            const listingId = products[0]._id || products[0].id
+            const listingId = products[0]?._id || products[0]?.id
             const deliveryAddress = deliveryMethod === 'delivery' ? shippingAddress : null
 
             if (paymentMethod === 'credits') {
@@ -154,7 +158,7 @@ function Checkout() {
                     amount: orderData.order.amount,
                     currency: orderData.order.currency,
                     name: 'Guardian Market',
-                    description: products[0].title,
+                    description: products[0]?.title,
                     order_id: orderData.order.razorpayOrderId,
                     handler: async function (response) {
                         try {

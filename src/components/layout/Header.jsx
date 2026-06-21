@@ -185,7 +185,7 @@ const Header = ({ currentTheme, toggleTheme }) => {
 
                 {[
                     { path: '/messages', icon: MessageSquare },
-                    { path: isAuthenticated ? '/profile' : '/login', icon: User },
+                    { path: isAuthenticated ? `/profile/${user?.id}` : '/login', icon: User },
                 ].map((link) => (
                     <Link
                         key={link.path}

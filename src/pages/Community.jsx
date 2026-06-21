@@ -20,8 +20,8 @@ function Community() {
         first ? setLoading(true) : setLoadingMore(true);
         try {
             const res = await communityAPI.getFeed({ scope: nextScope, page: nextPage });
-            setPosts((prev) => (first ? res.posts : [...prev, ...res.posts]));
-            setHasMore(res.hasMore);
+            setPosts((prev) => (first ? (res.posts || []) : [...prev, ...(res.posts || [])]));
+            setHasMore(res.hasMore || false);
             setPage(nextPage);
         } catch (_) {
             if (first) setPosts([]);

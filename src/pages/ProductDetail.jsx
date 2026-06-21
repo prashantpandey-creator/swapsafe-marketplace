@@ -98,7 +98,7 @@ function ProductDetail() {
             id: product._id || product.id,
             title: product.title,
             price: product.price,
-            image: product.images[0],
+            image: product.images?.[0] || images?.[0] || '',
             seller: safeSeller,
             deliveryMethod: deliveryAvailable ? 'shipping' : 'meetup'
         })

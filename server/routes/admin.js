@@ -16,8 +16,19 @@ const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8001';
 // Path to script (Assuming server runs from /server directory)
 const SCRIPT_PATH = path.resolve(__dirname, '../../ai-engine/start_engine.sh');
 
+// Admin guard — requires a matching x-admin-key header against ADMIN_KEY env.
+// If ADMIN_KEY is unset we DENY by default (fail closed) so these powerful
+// routes (shell exec, DB seed) are never accidentally exposed.
+const requireAdmin = (req, res, next) => {
+    const key = req.headers['x-admin-key'];
+    if (!process.env.ADMIN_KEY || key !== process.env.ADMIN_KEY) {
+        return res.status(403).json({ error: 'Forbidden' });
+    }
+    next();
+};
+
 // 1. Check System Status
-router.get('/status', async (req, res) => {
+router.get('/status', requireAdmin, async (req, res) => {
     let aiStatus = 'offline';
 
     try {
@@ -38,7 +49,7 @@ router.get('/status', async (req, res) => {
 });
 
 // 2. Start AI Engine
-router.post('/start-ai-engine', async (req, res) => {
+router.post('/start-ai-engine', requireAdmin, async (req, res) => {
     console.log("🚀 Triggering AI Engine Start...");
 
     // Check if checks pass first
@@ -70,7 +81,7 @@ router.post('/start-ai-engine', async (req, res) => {
 });
 
 // 3. Seed Database (listings, users, and products)
-router.post('/seed', async (req, res) => {
+router.post('/seed', requireAdmin, async (req, res) => {
     console.log("🌱 Triggering Database Seeding...");
     
     const cmd1 = `node "${path.resolve(__dirname, '../seed.js')}"`;

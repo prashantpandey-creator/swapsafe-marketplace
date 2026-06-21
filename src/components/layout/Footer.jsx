@@ -36,7 +36,7 @@ const Footer = () => {
                         <ul className="space-y-4">
                             <li><Link to="/browse" className="text-gray-400 hover:text-legion-gold transition-colors">Browse Listings</Link></li>
                             <li><Link to="/sell" className="text-gray-400 hover:text-legion-gold transition-colors">Sell an Item</Link></li>
-                            <li><Link to="/categories" className="text-gray-400 hover:text-legion-gold transition-colors">Categories</Link></li>
+                            <li><Link to="/browse" className="text-gray-400 hover:text-legion-gold transition-colors">Categories</Link></li>
                             <li><Link to="/community" className="text-gray-400 hover:text-legion-gold transition-colors">Community Feed</Link></li>
                         </ul>
                     </div>
@@ -45,8 +45,8 @@ const Footer = () => {
                     <div>
                         <h4 className="text-white font-bold text-lg mb-6">Support & Legal</h4>
                         <ul className="space-y-4">
-                            <li><Link to="/help" className="text-gray-400 hover:text-legion-gold transition-colors">Help Center</Link></li>
-                            <li><Link to="/safety" className="text-gray-400 hover:text-legion-gold transition-colors">Trust & Safety</Link></li>
+                            <li><Link to="/shield" className="text-gray-400 hover:text-legion-gold transition-colors">Help Center</Link></li>
+                            <li><Link to="/shield" className="text-gray-400 hover:text-legion-gold transition-colors">Trust & Safety</Link></li>
                             <li><Link to="/privacy" className="text-gray-400 hover:text-legion-gold transition-colors">Privacy Policy</Link></li>
                             <li><Link to="/terms" className="text-gray-400 hover:text-legion-gold transition-colors">Terms of Service</Link></li>
                         </ul>

@@ -141,7 +141,7 @@ router.post('/create-credit-order', protect, async (req, res) => {
 
         // 3. Check Balance
         if (buyer.credits < totalAmount) {
-            return res.status(400).json({ error: `nsufficient credits. Required: ${totalAmount}, Available: ${buyer.credits}` });
+            return res.status(400).json({ error: `Insufficient credits. Required: ${totalAmount}, Available: ${buyer.credits}` });
         }
 
         // 4. Process "Transaction" (Deduct from Buyer, Hold in Escrow)

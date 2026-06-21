@@ -8,6 +8,7 @@
 import express from 'express';
 import ProductDatabase from '../models/ProductDatabase.js';
 import { validateUniqueId } from '../utils/idValidators.js';
+import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -221,7 +222,7 @@ router.get('/search', async (req, res) => {
  * Add a new product to the database (AI-generated)
  * This allows the database to grow as users list new products
  */
-router.post('/contribute', async (req, res) => {
+router.post('/contribute', protect, async (req, res) => {
     try {
         const { brand, model, category, subcategory, uniqueIdType } = req.body;
 

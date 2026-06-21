@@ -485,8 +485,6 @@ router.post('/enhance-photo', upload.fields([
             // }
 
             throw proxyError; // Re-throw to show real error
-
-            throw proxyError; // Re-throw for Pro mode errors if not connection related
         }
 
     } catch (error) {
@@ -549,7 +547,7 @@ router.post('/analyze-image', upload.single('file'), async (req, res) => {
         // FIRE-AND-FORGET: log to TrainingPair for later fine-tuning (Move 5, Phase 3+)
         // Never blocks the response, never fails the request.
         if (result?.title && result?.confidence >= 0.80) {
-            const { TrainingPair } = await import('../models/TrainingPair.js');
+            const TrainingPair = (await import('../models/TrainingPair.js')).default;
             try {
                 const dataUrl = req.file?.dataUrl || null; // if frontend passed a data URL
                 const imageUrl = dataUrl || `file://${req.file.originalname}`;
