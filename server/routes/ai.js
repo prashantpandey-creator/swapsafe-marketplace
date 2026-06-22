@@ -785,4 +785,112 @@ router.post('/trust-score', async (req, res) => {
     }
 });
 
+// ---------------------------------------------------------------------------
+// Pro Photo Cleanup  — Gemini hand-removal + white bg + upscale
+// ---------------------------------------------------------------------------
+import rateLimit from 'express-rate-limit';
+
+const proPhotoLimiter = rateLimit({
+    windowMs: 24 * 60 * 60 * 1000, // 24 h
+    max: parseInt(process.env.AI_PHOTO_DAILY_LIMIT || '10', 10),
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => req.user?._id?.toString() || req.ip,
+    message: { success: false, error: 'Daily photo cleanup limit reached. Try again tomorrow.' },
+});
+
+// Optional auth — authenticated users get per-account quota, anon gets per-IP
+const optionalAuth = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return next();
+    import('../middleware/auth.js').then(({ protect }) => {
+        // run protect but swallow auth errors (anonymous is fine)
+        protect(req, res, (err) => next()); // always call next
+    }).catch(() => next());
+};
+
+// @route   POST /api/ai/pro-cleanup
+// @desc    Remove hand/arm, reconstruct product, white background, upscale
+// @access  Public (rate-limited 10/day per user)
+router.post('/pro-cleanup', optionalAuth, proPhotoLimiter, upload.single('file'), async (req, res) => {
+    const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8001';
+
+    if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+
+    const start = Date.now();
+
+    const nodeFetch = (await import('node-fetch')).default;
+    const FormData = (await import('form-data')).default;
+
+    // --- Try Pro path (Gemini) ---
+    try {
+        const form = new FormData();
+        form.append('file', req.file.buffer, {
+            filename: req.file.originalname || 'upload.jpg',
+            contentType: req.file.mimetype || 'image/jpeg',
+        });
+
+        const proResponse = await nodeFetch(`${AI_ENGINE_URL}/api/v1/studio/pro-cleanup`, {
+            method: 'POST',
+            body: form,
+            headers: form.getHeaders(),
+        });
+
+        if (proResponse.ok) {
+            const data = await proResponse.json();
+            return res.json({
+                success: true,
+                tier: 'pro',
+                image_data: data.image_data,
+                dimensions: data.dimensions,
+                upscaled: data.upscaled,
+                upscale_method: data.upscale_method,
+                provider: data.provider,
+                processing_time_ms: Date.now() - start,
+            });
+        }
+
+        // 503 = Gemini not configured on engine; 502 = Gemini call failed
+        // Either way — fall through to free rembg
+        console.warn(`⚠️  Pro cleanup returned ${proResponse.status}, falling back to free enhance`);
+    } catch (err) {
+        console.warn(`⚠️  Pro cleanup engine error: ${err.message}, falling back to free enhance`);
+    }
+
+    // --- Fallback: free rembg enhance ---
+    try {
+        const form = new FormData();
+        form.append('file', req.file.buffer, {
+            filename: req.file.originalname || 'upload.jpg',
+            contentType: req.file.mimetype || 'image/jpeg',
+        });
+
+        const fallbackResponse = await nodeFetch(`${AI_ENGINE_URL}/api/v1/studio/enhance`, {
+            method: 'POST',
+            body: form,
+            headers: form.getHeaders(),
+        });
+
+        if (fallbackResponse.ok) {
+            const data = await fallbackResponse.json();
+            return res.json({
+                success: true,
+                tier: 'free-fallback',
+                image_data: data.image_data,
+                dimensions: null,
+                upscaled: false,
+                provider: null,
+                processing_time_ms: Date.now() - start,
+            });
+        }
+
+        throw new Error(`Fallback enhance returned ${fallbackResponse.status}`);
+    } catch (err) {
+        console.error('❌ Both pro cleanup and fallback failed:', err.message);
+        return res.status(500).json({ success: false, error: 'Photo cleanup failed' });
+    }
+});
+
 export default router;

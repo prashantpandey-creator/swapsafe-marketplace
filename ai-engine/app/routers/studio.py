@@ -944,6 +944,52 @@ async def process_local_enhanced(
 
 
 
+@router.post("/pro-cleanup")
+async def pro_cleanup(file: UploadFile = File(...)):
+    """
+    Pro photo cleanup: remove hand/arm, reconstruct product, white background.
+    Uses Gemini 2.5 Flash Image. Returns 503 if not configured, 502 on call failure.
+    """
+    from app.services.gemini_studio_service import gemini_studio_service
+    from app.services.upscale_service import upscale_service
+    from starlette.concurrency import run_in_threadpool
+    import base64, io as _io
+    from PIL import Image
+
+    if not gemini_studio_service.available:
+        raise HTTPException(status_code=503, detail="Gemini not configured on this server")
+
+    image_bytes = await file.read()
+
+    try:
+        result = await run_in_threadpool(gemini_studio_service.cleanup_product_photo, image_bytes)
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+    # Upscale: Gemini gives ~864x1184; push to ~1728x2368 via Pillow (free, CPU)
+    try:
+        raw_b64 = result["image_data"].split(",", 1)[1]
+        raw_bytes = base64.b64decode(raw_b64)
+        up_result = await upscale_service.upscale_image(raw_bytes, target_size=(2048, 2048), enhance_colors=True)
+        result["image_data"] = up_result["image_data"]
+        result["dimensions"] = list(up_result["final_size"])
+        result["upscaled"] = True
+        result["upscale_method"] = up_result.get("method", "pillow")
+    except Exception as e:
+        print(f"⚠️  Upscale failed (returning Gemini output as-is): {e}")
+        result["upscaled"] = False
+
+    return {
+        "success": True,
+        "image_data": result["image_data"],
+        "dimensions": result.get("dimensions"),
+        "processing_time_ms": result.get("processing_time_ms"),
+        "provider": result.get("provider"),
+        "upscaled": result.get("upscaled", False),
+        "upscale_method": result.get("upscale_method"),
+    }
+
+
 @router.get("/health")
 async def health_check():
     """Check if the studio service is healthy"""
