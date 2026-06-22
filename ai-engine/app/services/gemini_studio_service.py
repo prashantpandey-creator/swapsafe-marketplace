@@ -1,24 +1,49 @@
 """
 Gemini Studio Service - Pro photo cleanup via Gemini 2.5 Flash Image
-One-call pipeline: remove hand/arm + reconstruct hidden product area + white background.
+Pipeline: analyze → inpaint hand only → rembg cutout → upscale
 
-Cost: ~$0.039/image (1290 output tokens @ $30/1M)
+  1. Vision analysis (cheap, ~$0.0004) — describes product shape + arm coverage
+  2. Inpaint (expensive, ~$0.039) — erases ONLY the hand/arm pixels, nothing else
+  3. rembg background removal (free) — traces the real product edges
+  4. Pillow upscale (free, done in router) — 2x LANCZOS
+
+Gemini never regenerates the product body — it only fills where the hand was.
+rembg never hallucinates shape — it traces the actual edges after the hand is gone.
 """
 import os
 import io
 import time
 import base64
+import json
 from PIL import Image
 
-# Faithful identity prompt — no style drift, no invented features
-CLEANUP_PROMPT = (
-    "Remove any human hand, arm, fingers, or sleeve visible in this photo. "
-    "Reconstruct any part of the product that was hidden behind the hand, "
-    "faithfully matching the existing material, texture, color, and shape of the product. "
-    "Place the product on a pure white background. "
-    "CRITICAL — preserve the product's true identity: do NOT add, remove, or restyle any "
-    "features (no cutaways, no added electronics, no color changes, no style changes). "
-    "Do not invent details that aren't visible in the original photo."
+ANALYSIS_PROMPT = (
+    "Describe this product for use as a reference during hand-removal editing. "
+    "Reply with ONLY a JSON object, no markdown. Format: "
+    '{"product": "...", "shape_outline": "...", "primary_color": "...", '
+    '"material_texture": "...", "arm_coverage": "..."} '
+    "For shape_outline: describe the EXACT silhouette — e.g. 'smooth continuous curve with "
+    "no notch or cutaway on either side' or 'rectangular slab with rounded corners'. "
+    "For arm_coverage: describe exactly what the hand/arm/sleeve covers and what is "
+    "visible behind or around it — e.g. 'left arm in dark sleeve covers upper left of body "
+    "from neck joint to waist; behind it is more of the same spruce top surface'. "
+    "Do not invent features that are not visible."
+)
+
+INPAINT_PROMPT_TEMPLATE = (
+    "A human hand and arm are holding the product in this photo. "
+    "Erase the ENTIRE arm — from shoulder to fingertips — including ALL skin, fabric, "
+    "sleeve, clothing, and wristwatch. Replace those pixels with what is behind them: "
+    "continue the product surface and/or the original background seamlessly. "
+    "\n\nDO NOT touch anything else. Every non-arm pixel must stay IDENTICAL. "
+    "The product outline and silhouette must remain EXACTLY as they are in the original — "
+    "no reshaping, no added features, no removed features."
+    "\n\nPRODUCT REFERENCE (from pre-analysis — treat as ground truth):\n{description}\n\n"
+    "RULES:\n"
+    "- You are ONLY erasing the arm. You are NOT re-rendering the product.\n"
+    "- Fill the erased area by extending the adjacent product texture or background.\n"
+    "- Do NOT reshape, resize, recolor, or add/remove any product feature.\n"
+    "- Do NOT change the background (walls, floor, sky — keep them as-is)."
 )
 
 
@@ -60,11 +85,51 @@ class GeminiStudioService:
             self._configure_api()
         return self._available
 
-    def cleanup_product_photo(self, image_bytes: bytes, prompt: str = CLEANUP_PROMPT) -> dict:
+    def _analyze_product(self, pil_image: "Image.Image") -> str:
         """
-        Remove hand + reconstruct + white background in one Gemini call.
-        Returns dict with image_data (base64 data URI), dimensions, processing_time_ms, provider.
-        Raises RuntimeError on failure (caller should treat as 502).
+        Pass 1: cheap vision call to describe the product's exact shape and features.
+        Returns a plain-English description string to inject into the cleanup prompt.
+        Falls back to empty string on any failure — cleanup still runs, just without the anchor.
+        """
+        try:
+            r = self._client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[ANALYSIS_PROMPT, pil_image],
+            )
+            raw = r.text.strip()
+            # Strip markdown fences if present
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+            parsed = json.loads(raw)
+            # Flatten to a readable sentence Gemini can follow in the next prompt
+            parts = []
+            for k, v in parsed.items():
+                if v and str(v).strip():
+                    parts.append(f"{k.replace('_', ' ')}: {v}")
+            description = "; ".join(parts)
+            print(f"   🔍 Product analysis: {description[:120]}...")
+            return description
+        except Exception as e:
+            print(f"   ⚠️  Product analysis failed ({e}), proceeding without anchor")
+            return ""
+
+    def _extract_image(self, result) -> "Image.Image":
+        for part in result.candidates[0].content.parts:
+            if hasattr(part, "inline_data") and part.inline_data:
+                raw = part.inline_data.data
+                if isinstance(raw, str):
+                    raw = base64.b64decode(raw)
+                return Image.open(io.BytesIO(raw)).convert("RGB")
+        return None
+
+    def cleanup_product_photo(self, image_bytes: bytes) -> dict:
+        """
+        Smart two-pass cleanup:
+          Pass 1 (vision, ~$0.0004): analyze product shape + hand location
+          Pass 2 (inpaint, ~$0.039): erase ONLY the hand, keep everything else pixel-perfect
+        Then rembg handles background removal — no Gemini involvement in the cutout.
         """
         if not self.available:
             raise RuntimeError("Gemini not configured")
@@ -72,6 +137,13 @@ class GeminiStudioService:
         start = time.time()
         pil_image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
+        # Pass 1 — describe the product so Pass 2 knows what's behind the hand
+        description = self._analyze_product(pil_image)
+        prompt = INPAINT_PROMPT_TEMPLATE.format(
+            description=description or "no pre-analysis available — be conservative, only erase the hand"
+        )
+
+        # Pass 2 — erase ONLY the hand, keep original background and product intact
         try:
             result = self._client.models.generate_content(
                 model="gemini-2.5-flash-image",
@@ -80,29 +152,42 @@ class GeminiStudioService:
         except Exception as e:
             raise RuntimeError(f"Gemini API error: {e}") from e
 
-        # Extract image from response
-        out_image = None
-        for part in result.candidates[0].content.parts:
-            if hasattr(part, "inline_data") and part.inline_data:
-                raw = part.inline_data.data
-                if isinstance(raw, str):
-                    raw = base64.b64decode(raw)
-                out_image = Image.open(io.BytesIO(raw)).convert("RGB")
-                break
-
-        if out_image is None:
+        inpainted = self._extract_image(result)
+        if inpainted is None:
             raise RuntimeError("Gemini returned no image in response")
 
+        inpaint_ms = int((time.time() - start) * 1000)
+
+        # Pass 3 — rembg background removal on the clean (hand-free) photo
+        # This preserves the EXACT product shape because rembg traces the real edges
+        try:
+            from app.services.birefnet_service import birefnet_service
+            rgba = birefnet_service.remove_background(inpainted)
+            alpha_quality = birefnet_service.last_alpha_quality
+
+            white = Image.new("RGB", rgba.size, (255, 255, 255))
+            white.paste(rgba, (0, 0), rgba)
+            final = white
+            bg_method = "rembg"
+        except Exception as e:
+            print(f"   ⚠️  rembg failed ({e}), returning inpainted image as-is")
+            final = inpainted
+            alpha_quality = None
+            bg_method = "none"
+
         buf = io.BytesIO()
-        out_image.save(buf, format="PNG")
+        final.save(buf, format="PNG")
         b64 = base64.b64encode(buf.getvalue()).decode()
 
         return {
             "status": "success",
             "image_data": f"data:image/png;base64,{b64}",
-            "dimensions": list(out_image.size),
+            "dimensions": list(final.size),
             "processing_time_ms": int((time.time() - start) * 1000),
+            "inpaint_ms": inpaint_ms,
             "provider": "gemini-2.5-flash-image",
+            "bg_removal": bg_method,
+            "alpha_quality": alpha_quality,
         }
 
 

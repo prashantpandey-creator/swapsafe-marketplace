@@ -987,6 +987,8 @@ async def pro_cleanup(file: UploadFile = File(...)):
         "provider": result.get("provider"),
         "upscaled": result.get("upscaled", False),
         "upscale_method": result.get("upscale_method"),
+        "alpha_quality": result.get("alpha_quality"),
+        "bg_removal": result.get("bg_removal"),
     }
 
 
