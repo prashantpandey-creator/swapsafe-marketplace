@@ -1,96 +1,70 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { listingsAPI } from '../services/api'
 
-// ── Condition badge ───────────────────────────────────────────────────────────
+const SKETCHFAB_MODEL_ID = '46430c73087e4951a6bdf2f4bd3305f4'
+const EMBED_URL = `https://sketchfab.com/models/${SKETCHFAB_MODEL_ID}/embed?autostart=1&ui_stop=0&ui_inspector=0&ui_watermark=0&ui_watermark_link=0&ui_ar=0&ui_help=0&ui_settings=0&ui_vr=0&ui_fullscreen=0&ui_annotations=0&dnt=1&camera=0&transparent=0&autospin=0`
+
 function ConditionBadge({ condition }) {
     const map = {
-        'new':      { label: 'New',      color: 'rgba(80,200,120,0.85)' },
-        'like_new': { label: 'Like New', color: 'rgba(100,180,100,0.8)' },
-        'good':     { label: 'Good',     color: 'rgba(201,168,76,0.85)' },
-        'fair':     { label: 'Fair',     color: 'rgba(180,120,60,0.8)'  },
-        'poor':     { label: 'Poor',     color: 'rgba(180,60,60,0.8)'   },
+        'new':      { label: 'New',      color: 'rgba(80,200,120,0.9)' },
+        'like_new': { label: 'Like New', color: 'rgba(100,180,100,0.85)' },
+        'good':     { label: 'Good',     color: 'rgba(201,168,76,0.9)' },
+        'fair':     { label: 'Fair',     color: 'rgba(180,120,60,0.85)' },
+        'poor':     { label: 'Poor',     color: 'rgba(180,60,60,0.85)' },
     }
-    const entry = map[condition?.toLowerCase()] || { label: condition || '—', color: 'rgba(140,120,120,0.7)' }
+    const entry = map[condition?.toLowerCase()] || { label: condition || '—', color: 'rgba(140,120,120,0.8)' }
     return (
         <span style={{
-            display: 'inline-block',
-            padding: '2px 7px',
-            borderRadius: 4,
-            fontSize: 10,
-            fontWeight: 600,
-            letterSpacing: '0.05em',
-            background: entry.color,
-            color: '#0C0606',
-            textTransform: 'uppercase',
-        }}>
-            {entry.label}
-        </span>
+            display: 'inline-block', padding: '2px 7px', borderRadius: 4,
+            fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
+            background: entry.color, color: '#0A0505', textTransform: 'uppercase',
+        }}>{entry.label}</span>
     )
 }
 
-// ── Skeleton card ─────────────────────────────────────────────────────────────
-function SkeletonCard() {
-    return (
-        <div style={{
-            width: 200,
-            background: 'rgba(8,4,4,0.85)',
-            border: '1px solid rgba(195,25,25,0.2)',
-            borderRadius: 10,
-            padding: 12,
-            backdropFilter: 'blur(8px)',
-        }}>
-            <div style={{ width: '100%', height: 130, background: 'rgba(195,25,25,0.06)', borderRadius: 6, marginBottom: 10, animation: 'lynchPulse 1.8s ease-in-out infinite' }} />
-            <div style={{ height: 11, background: 'rgba(195,25,25,0.08)', borderRadius: 4, marginBottom: 8, width: '80%', animation: 'lynchPulse 1.8s ease-in-out infinite 0.2s' }} />
-            <div style={{ height: 16, background: 'rgba(201,168,76,0.12)', borderRadius: 4, width: '50%', animation: 'lynchPulse 1.8s ease-in-out infinite 0.4s' }} />
-        </div>
-    )
-}
-
-// ── Product card ──────────────────────────────────────────────────────────────
-function FloorCard({ listing, index }) {
+function ProductCard({ listing, index }) {
     return (
         <motion.div
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 + index * 0.15, duration: 0.55, ease: 'easeOut' }}
+            transition={{ delay: 0.4 + index * 0.12, duration: 0.5 }}
         >
             <Link to={`/product/${listing._id}`} style={{ textDecoration: 'none', display: 'block' }}>
-                <div style={{
-                    width: 200,
-                    background: 'rgba(8,4,4,0.88)',
-                    border: '1px solid rgba(195,25,25,0.28)',
-                    borderRadius: 10,
-                    padding: 12,
-                    backdropFilter: 'blur(10px)',
-                    cursor: 'pointer',
-                    transition: 'transform 0.25s, border-color 0.25s, box-shadow 0.25s',
-                    boxShadow: '0 14px 34px rgba(0,0,0,0.55)',
-                }}
+                <div
+                    style={{
+                        width: 175,
+                        background: 'rgba(6,2,2,0.82)',
+                        border: '1px solid rgba(195,25,25,0.32)',
+                        borderRadius: 10,
+                        padding: 11,
+                        backdropFilter: 'blur(16px)',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04)',
+                        cursor: 'pointer',
+                        transition: 'transform 0.22s, border-color 0.22s, box-shadow 0.22s',
+                    }}
                     onMouseEnter={e => {
-                        e.currentTarget.style.borderColor = 'rgba(195,25,25,0.7)'
-                        e.currentTarget.style.transform = 'translateY(-6px)'
-                        e.currentTarget.style.boxShadow = '0 20px 44px rgba(195,25,25,0.22), 0 6px 18px rgba(0,0,0,0.6)'
+                        e.currentTarget.style.transform = 'translateY(-8px) scale(1.03)'
+                        e.currentTarget.style.borderColor = 'rgba(220,40,40,0.7)'
+                        e.currentTarget.style.boxShadow = '0 20px 50px rgba(195,25,25,0.28), 0 6px 20px rgba(0,0,0,0.7)'
                     }}
                     onMouseLeave={e => {
-                        e.currentTarget.style.borderColor = 'rgba(195,25,25,0.28)'
-                        e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.boxShadow = '0 14px 34px rgba(0,0,0,0.55)'
+                        e.currentTarget.style.transform = 'translateY(0) scale(1)'
+                        e.currentTarget.style.borderColor = 'rgba(195,25,25,0.32)'
+                        e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04)'
                     }}
                 >
-                    <div style={{ width: '100%', height: 130, borderRadius: 6, overflow: 'hidden', marginBottom: 10, background: 'rgba(22,10,10,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '100%', height: 105, borderRadius: 6, overflow: 'hidden', marginBottom: 9, background: 'rgba(18,8,8,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {listing.images?.[0]
-                            ? <img src={listing.images[0]} alt={listing.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                            : <span style={{ fontSize: 28, opacity: 0.3 }}>◈</span>}
+                            ? <img src={listing.images[0]} alt={listing.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : <span style={{ fontSize: 26, opacity: 0.25 }}>◈</span>}
                     </div>
-                    <p style={{ color: 'rgba(235,215,200,0.88)', fontSize: 13, fontWeight: 500, lineHeight: 1.35, marginBottom: 8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                    <p style={{ color: 'rgba(240,220,210,0.9)', fontSize: 12, fontWeight: 500, lineHeight: 1.3, marginBottom: 7, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', margin: '0 0 7px' }}>
                         {listing.title}
                     </p>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                        <span style={{ color: '#C9A84C', fontSize: 16, fontWeight: 700, letterSpacing: '0.02em' }}>
-                            ${listing.price?.toLocaleString() ?? '—'}
-                        </span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#C9A84C', fontSize: 15, fontWeight: 700 }}>${listing.price?.toLocaleString() ?? '—'}</span>
                         <ConditionBadge condition={listing.condition} />
                     </div>
                 </div>
@@ -99,22 +73,28 @@ function FloorCard({ listing, index }) {
     )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+function SkeletonCard() {
+    return (
+        <div style={{ width: 175, background: 'rgba(6,2,2,0.82)', border: '1px solid rgba(195,25,25,0.15)', borderRadius: 10, padding: 11, backdropFilter: 'blur(16px)' }}>
+            <div style={{ width: '100%', height: 105, background: 'rgba(195,25,25,0.05)', borderRadius: 6, marginBottom: 9, animation: 'lPulse 1.8s ease-in-out infinite' }} />
+            <div style={{ height: 10, background: 'rgba(255,255,255,0.05)', borderRadius: 4, marginBottom: 7, width: '75%', animation: 'lPulse 1.8s ease-in-out infinite 0.2s' }} />
+            <div style={{ height: 15, background: 'rgba(201,168,76,0.08)', borderRadius: 4, width: '45%', animation: 'lPulse 1.8s ease-in-out infinite 0.4s' }} />
+        </div>
+    )
+}
+
 export default function LandingLynch() {
     const [listings, setListings] = useState([])
     const [loading, setLoading] = useState(true)
     const [query, setQuery] = useState('')
+    const [modelReady, setModelReady] = useState(false)
+    const iframeRef = useRef(null)
     const navigate = useNavigate()
 
     useEffect(() => {
         let cancelled = false
-        setLoading(true)
         listingsAPI.getAll({ limit: 4 })
-            .then(data => {
-                if (cancelled) return
-                const arr = Array.isArray(data) ? data : (data?.listings ?? [])
-                setListings(arr.slice(0, 4))
-            })
+            .then(data => { if (!cancelled) setListings(Array.isArray(data) ? data : (data?.listings ?? [])) })
             .catch(() => { if (!cancelled) setListings([]) })
             .finally(() => { if (!cancelled) setLoading(false) })
         return () => { cancelled = true }
@@ -128,149 +108,155 @@ export default function LandingLynch() {
     return (
         <>
             <style>{`
-                @keyframes lynchPulse { 0%,100%{opacity:.4} 50%{opacity:.75} }
-                @keyframes lynchGlow {
-                    0%,100% { text-shadow: 0 0 18px rgba(195,25,25,.3), 0 0 42px rgba(195,25,25,.12); }
-                    50%     { text-shadow: 0 0 28px rgba(220,40,40,.5), 0 0 60px rgba(195,25,25,.22); }
-                }
+                @keyframes lPulse { 0%,100%{opacity:.35} 50%{opacity:.7} }
+                @keyframes lGlow { 0%,100%{text-shadow:0 0 20px rgba(195,25,25,.4),0 0 50px rgba(195,25,25,.18)} 50%{text-shadow:0 0 32px rgba(225,45,45,.65),0 0 80px rgba(195,25,25,.32)} }
+                @keyframes lFade { from{opacity:0} to{opacity:1} }
             `}</style>
 
-            {/* Single centered column. Background canvas shows through (it's zIndex 0). */}
-            <div style={{
-                position: 'relative',
-                minHeight: 'calc(100vh - 80px)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-                textAlign: 'center',
-                padding: '6vh 20px 4vh',
-                boxSizing: 'border-box',
-            }}>
+            <div style={{ position: 'relative', minHeight: 'calc(100vh - 80px)', overflow: 'hidden', background: '#050102' }}>
 
-                {/* ── Hero ── */}
+                {/* ── THE ACTUAL 3D RED ROOM ── */}
+                <iframe
+                    ref={iframeRef}
+                    src={EMBED_URL}
+                    title="Twin Peaks Red Room"
+                    allow="autoplay; fullscreen; xr-spatial-tracking"
+                    allowFullScreen
+                    onLoad={() => setTimeout(() => setModelReady(true), 2500)}
+                    style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        border: 'none',
+                        opacity: modelReady ? 1 : 0,
+                        transition: 'opacity 1.2s ease',
+                        pointerEvents: 'none', // so UI clicks pass through
+                    }}
+                />
+
+                {/* Loading state while model initializes */}
+                {!modelReady && (
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050102' }}>
+                        <p style={{ color: 'rgba(195,25,25,0.5)', fontFamily: 'Georgia, serif', letterSpacing: '0.3em', fontSize: 12, textTransform: 'uppercase', animation: 'lPulse 2s ease-in-out infinite' }}>
+                            Entering the Lodge…
+                        </p>
+                    </div>
+                )}
+
+                {/* Darken the 3D scene just enough for text readability */}
+                <div style={{ position: 'absolute', inset: 0, background: 'rgba(4,1,1,0.28)', pointerEvents: 'none', zIndex: 2 }} />
+
+                {/* Vignette edges */}
+                <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 45%, transparent 40%, rgba(3,1,1,0.75) 100%)', pointerEvents: 'none', zIndex: 3 }} />
+
+                {/* ── HERO TEXT (top third, over the back wall of the room) ── */}
                 <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.7, ease: 'easeOut' }}
-                    style={{ width: 'min(620px, 94vw)', marginBottom: '5vh' }}
+                    initial={{ opacity: 0, y: -12 }}
+                    animate={{ opacity: modelReady ? 1 : 0, y: modelReady ? 0 : -12 }}
+                    transition={{ duration: 0.8 }}
+                    style={{
+                        position: 'absolute',
+                        top: '8%',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        textAlign: 'center',
+                        zIndex: 10,
+                        width: 'min(640px, 92vw)',
+                    }}
                 >
-                    <p style={{
-                        fontFamily: 'Georgia, serif',
-                        letterSpacing: '0.34em',
-                        color: 'rgba(245,240,232,0.62)',
-                        fontSize: 11,
-                        textTransform: 'uppercase',
-                        margin: '0 0 16px',
-                    }}>
+                    <p style={{ fontFamily: 'Georgia, serif', letterSpacing: '0.36em', color: 'rgba(245,235,220,0.7)', fontSize: 11, textTransform: 'uppercase', margin: '0 0 14px' }}>
                         The Black Lodge Marketplace
                     </p>
-
-                    <h1 style={{
-                        fontSize: 'clamp(40px, 7vw, 78px)',
-                        fontWeight: 700,
-                        color: '#F5F0E8',
-                        lineHeight: 1.04,
-                        margin: '0 0 12px',
-                        fontFamily: 'Georgia, serif',
-                        letterSpacing: '0.03em',
-                        animation: 'lynchGlow 4s ease-in-out infinite',
-                    }}>
+                    <h1 style={{ fontSize: 'clamp(42px, 6.5vw, 80px)', fontWeight: 700, color: '#F5EEE6', lineHeight: 1.04, margin: '0 0 12px', fontFamily: 'Georgia, serif', animation: 'lGlow 4s ease-in-out infinite' }}>
                         BuyersLegion
                     </h1>
-
-                    <p style={{
-                        color: 'rgba(245,220,200,0.7)',
-                        fontSize: 13,
-                        letterSpacing: '0.2em',
-                        textTransform: 'uppercase',
-                        margin: '0 0 28px',
-                        fontFamily: 'Georgia, serif',
-                    }}>
+                    <p style={{ color: 'rgba(245,215,195,0.65)', fontSize: 12, letterSpacing: '0.22em', textTransform: 'uppercase', margin: '0 0 26px', fontFamily: 'Georgia, serif' }}>
                         SwapSafe · Verified P2P
                     </p>
 
-                    {/* Search bar */}
-                    <form onSubmit={handleSearch} style={{ position: 'relative', width: '100%', margin: '0 auto 22px' }}>
+                    <form onSubmit={handleSearch} style={{ position: 'relative', width: '100%', marginBottom: 18 }}>
                         <input
                             value={query}
                             onChange={e => setQuery(e.target.value)}
                             placeholder="Search the Lodge…"
                             style={{
-                                width: '100%', height: 50, padding: '0 128px 0 20px',
-                                background: 'rgba(8,4,4,0.78)', border: '1px solid rgba(195,25,25,0.42)',
-                                borderRadius: 10, color: '#F5F0E8', outline: 'none',
-                                backdropFilter: 'blur(14px)', fontSize: 15, boxSizing: 'border-box',
-                                boxShadow: '0 8px 30px rgba(195,25,25,0.12)',
+                                width: '100%', height: 48, padding: '0 126px 0 18px',
+                                background: 'rgba(5,2,2,0.75)', border: '1px solid rgba(195,25,25,0.45)',
+                                borderRadius: 10, color: '#F5EEE6', outline: 'none',
+                                backdropFilter: 'blur(18px)', fontSize: 14, boxSizing: 'border-box',
+                                boxShadow: '0 8px 30px rgba(195,25,25,0.18)',
                             }}
-                            onFocus={e => { e.target.style.borderColor = 'rgba(220,40,40,0.8)' }}
-                            onBlur={e => { e.target.style.borderColor = 'rgba(195,25,25,0.42)' }}
+                            onFocus={e => { e.target.style.borderColor = 'rgba(220,40,40,0.85)' }}
+                            onBlur={e => { e.target.style.borderColor = 'rgba(195,25,25,0.45)' }}
                         />
                         <button type="submit" style={{
-                            position: 'absolute', right: 6, top: 6, height: 38, padding: '0 22px',
-                            background: 'rgba(195,25,25,0.88)', color: '#F5F0E8', border: 'none',
-                            borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.03em',
-                            transition: 'background 0.2s',
+                            position: 'absolute', right: 6, top: 6, height: 36, padding: '0 20px',
+                            background: 'rgba(195,25,25,0.9)', color: '#F5EEE6', border: 'none',
+                            borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                            transition: 'background 0.18s',
                         }}
-                            onMouseEnter={e => { e.target.style.background = 'rgba(225,40,40,0.95)' }}
-                            onMouseLeave={e => { e.target.style.background = 'rgba(195,25,25,0.88)' }}
-                        >
-                            Search
-                        </button>
+                            onMouseEnter={e => { e.target.style.background = 'rgba(225,40,40,0.98)' }}
+                            onMouseLeave={e => { e.target.style.background = 'rgba(195,25,25,0.9)' }}
+                        >Search</button>
                     </form>
 
-                    {/* CTA row */}
-                    <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                        <Link to="/browse" style={ctaPrimary}>Browse Items</Link>
-                        <Link to="/sell/quick" style={ctaGhost}>Sell Here</Link>
-                        <Link to="/community" style={ctaGhost}>Community</Link>
+                    <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                        {[
+                            { to: '/browse', label: 'Browse Items', primary: true },
+                            { to: '/sell/quick', label: 'Sell Here', primary: false },
+                            { to: '/community', label: 'Community', primary: false },
+                        ].map(({ to, label, primary }) => (
+                            <Link key={to} to={to} style={{
+                                padding: '10px 22px',
+                                background: primary ? 'rgba(195,25,25,0.88)' : 'rgba(5,2,2,0.72)',
+                                border: `1px solid ${primary ? 'rgba(220,40,40,0.5)' : 'rgba(195,25,25,0.42)'}`,
+                                color: '#F5EEE6', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                                textDecoration: 'none', backdropFilter: 'blur(10px)',
+                                boxShadow: primary ? '0 6px 22px rgba(195,25,25,0.25)' : 'none',
+                                transition: 'all 0.18s',
+                            }}
+                                onMouseEnter={e => { e.currentTarget.style.background = primary ? 'rgba(220,35,35,0.96)' : 'rgba(22,8,8,0.85)'; e.currentTarget.style.borderColor = 'rgba(220,40,40,0.7)' }}
+                                onMouseLeave={e => { e.currentTarget.style.background = primary ? 'rgba(195,25,25,0.88)' : 'rgba(5,2,2,0.72)'; e.currentTarget.style.borderColor = primary ? 'rgba(220,40,40,0.5)' : 'rgba(195,25,25,0.42)' }}
+                            >{label}</Link>
+                        ))}
                     </div>
                 </motion.div>
 
-                {/* ── Featured listings sitting "in the room" ── */}
-                <div style={{ width: 'min(1000px, 96vw)' }}>
-                    <p style={{
-                        fontFamily: 'Georgia, serif',
-                        letterSpacing: '0.22em',
-                        color: 'rgba(245,240,232,0.5)',
-                        fontSize: 11,
-                        textTransform: 'uppercase',
-                        margin: '0 0 20px',
-                    }}>
-                        ⟡ Featured in the Lodge ⟡
-                    </p>
-
-                    <div style={{
+                {/* ── PRODUCT CARDS (float over the room floor area) ── */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: modelReady ? 1 : 0 }}
+                    transition={{ delay: 0.3, duration: 0.9 }}
+                    style={{
+                        position: 'absolute',
+                        bottom: '6%',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
                         display: 'flex',
-                        gap: 20,
-                        justifyContent: 'center',
+                        gap: 18,
+                        zIndex: 10,
                         flexWrap: 'wrap',
-                        perspective: '1400px',
-                    }}>
-                        {loading
-                            ? [0, 1, 2, 3].map(i => <SkeletonCard key={i} />)
-                            : listings.length > 0
-                                ? listings.map((l, i) => <FloorCard key={l._id} listing={l} index={i} />)
-                                : (
-                                    <p style={{ color: 'rgba(195,25,25,0.5)', fontSize: 13, letterSpacing: '0.1em' }}>
-                                        The room is empty. <Link to="/sell/quick" style={{ color: '#C9A84C' }}>Be the first to list.</Link>
-                                    </p>
-                                )}
-                    </div>
-                </div>
+                        justifyContent: 'center',
+                        width: 'min(900px, 96vw)',
+                    }}
+                >
+                    {loading
+                        ? [0, 1, 2, 3].map(i => <SkeletonCard key={i} />)
+                        : listings.map((l, i) => <ProductCard key={l._id} listing={l} index={i} />)
+                    }
+                </motion.div>
 
                 {/* Byline */}
                 <motion.p
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.9, duration: 0.8 }}
+                    animate={{ opacity: modelReady ? 1 : 0 }}
+                    transition={{ delay: 1, duration: 1 }}
                     style={{
-                        marginTop: '5vh',
-                        color: 'rgba(245,220,200,0.32)',
-                        fontSize: 10,
-                        letterSpacing: '0.24em',
-                        textTransform: 'uppercase',
-                        fontFamily: 'Georgia, serif',
+                        position: 'absolute', bottom: 18, left: 24, margin: 0, zIndex: 10,
+                        color: 'rgba(245,215,195,0.28)', fontSize: 9,
+                        letterSpacing: '0.26em', textTransform: 'uppercase', fontFamily: 'Georgia, serif',
+                        pointerEvents: 'none',
                     }}
                 >
                     The owls are not what they seem
@@ -278,31 +264,4 @@ export default function LandingLynch() {
             </div>
         </>
     )
-}
-
-const ctaPrimary = {
-    padding: '11px 26px',
-    background: 'rgba(195,25,25,0.85)',
-    color: '#F5F0E8',
-    borderRadius: 8,
-    fontSize: 14,
-    fontWeight: 600,
-    textDecoration: 'none',
-    letterSpacing: '0.03em',
-    border: '1px solid rgba(220,40,40,0.4)',
-    backdropFilter: 'blur(8px)',
-    boxShadow: '0 6px 22px rgba(195,25,25,0.2)',
-}
-
-const ctaGhost = {
-    padding: '11px 26px',
-    background: 'rgba(8,4,4,0.72)',
-    border: '1px solid rgba(195,25,25,0.42)',
-    color: '#F5F0E8',
-    borderRadius: 8,
-    fontSize: 14,
-    fontWeight: 600,
-    textDecoration: 'none',
-    letterSpacing: '0.03em',
-    backdropFilter: 'blur(8px)',
 }
