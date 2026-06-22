@@ -158,16 +158,34 @@ class GeminiStudioService:
 
         inpaint_ms = int((time.time() - start) * 1000)
 
+        # Pad the inpainted image so rembg doesn't clip edges touching the frame
+        pad = 40
+        w, h = inpainted.size
+        padded = Image.new("RGB", (w + pad * 2, h + pad * 2), (255, 255, 255))
+        padded.paste(inpainted, (pad, pad))
+
         # Pass 3 — rembg background removal on the clean (hand-free) photo
-        # This preserves the EXACT product shape because rembg traces the real edges
         try:
             from app.services.birefnet_service import birefnet_service
-            rgba = birefnet_service.remove_background(inpainted)
+            rgba = birefnet_service.remove_background(padded)
             alpha_quality = birefnet_service.last_alpha_quality
 
-            white = Image.new("RGB", rgba.size, (255, 255, 255))
-            white.paste(rgba, (0, 0), rgba)
-            final = white
+            # Crop to tight bounding box of the product, then center on white canvas
+            bbox = rgba.getbbox()
+            if bbox:
+                cropped = rgba.crop(bbox)
+                cw, ch = cropped.size
+                # Add 5% breathing room on each side
+                margin = int(max(cw, ch) * 0.05)
+                canvas_w = cw + margin * 2
+                canvas_h = ch + margin * 2
+                white = Image.new("RGB", (canvas_w, canvas_h), (255, 255, 255))
+                white.paste(cropped, (margin, margin), cropped)
+                final = white
+            else:
+                white = Image.new("RGB", rgba.size, (255, 255, 255))
+                white.paste(rgba, (0, 0), rgba)
+                final = white
             bg_method = "rembg"
         except Exception as e:
             print(f"   ⚠️  rembg failed ({e}), returning inpainted image as-is")
