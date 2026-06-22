@@ -59,7 +59,7 @@ const Header = ({ currentTheme, toggleTheme }) => {
                         </div>
 
                         {/* 2. CENTER: NAVIGATION */}
-                        <nav className="hidden md:flex items-center gap-1 justify-self-center">
+                        <nav className="hidden lg:flex items-center gap-1 justify-self-center">
                             {[
                                 { path: '/browse', label: 'Market', icon: ShoppingBag },
                                 { path: '/community', label: 'Community', icon: Users },
@@ -80,7 +80,7 @@ const Header = ({ currentTheme, toggleTheme }) => {
                         {/* 3. RIGHT: ACTIONS & PROFILE */}
                         <div className="flex items-center gap-2 justify-self-end">
                             {/* Primary CTA */}
-                            <Link to="/sell" className="m-btn-accent hidden sm:inline-flex">
+                            <Link to="/sell" className="m-btn-accent hidden lg:inline-flex">
                                 <Plus size={16} strokeWidth={2.5} />
                                 <span>Sell</span>
                             </Link>
@@ -162,7 +162,7 @@ const Header = ({ currentTheme, toggleTheme }) => {
 
             {/* --- MOBILE NAV (Bottom Dock) --- */}
             <nav
-                className="md:hidden fixed left-1/2 -translate-x-1/2 z-50 bg-[var(--m-bar-bg)] backdrop-blur-xl border border-[var(--m-hairline)] rounded-[18px] px-4 py-2.5 flex items-center gap-5 shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
+                className="lg:hidden fixed left-1/2 -translate-x-1/2 z-50 bg-[var(--m-bar-bg)] backdrop-blur-xl border border-[var(--m-hairline)] rounded-[18px] px-3 py-3 flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
                 style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
             >
                 {[
@@ -179,9 +179,11 @@ const Header = ({ currentTheme, toggleTheme }) => {
                 ))}
 
                 {/* Center Add Button */}
-                <Link to="/sell" className="flex items-center justify-center w-13 h-13 bg-[var(--m-accent)] rounded-full text-black hover:brightness-110 transition-all -mt-8 border-4 border-[#08080B]" style={{ width: '3.25rem', height: '3.25rem' }}>
-                    <Plus size={26} strokeWidth={2.5} />
-                </Link>
+                <div className="relative flex items-center justify-center" style={{ width: '3.25rem', marginTop: '-0.5rem', marginBottom: '-0.5rem' }}>
+                    <Link to="/sell" className="flex items-center justify-center w-14 h-14 bg-[var(--m-accent)] rounded-full text-black hover:brightness-110 transition-all border-4 border-[#08080B]">
+                        <Plus size={26} strokeWidth={2.5} />
+                    </Link>
+                </div>
 
                 {[
                     { path: '/messages', icon: MessageSquare },
