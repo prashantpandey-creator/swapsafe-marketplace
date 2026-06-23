@@ -286,11 +286,16 @@ const QuickSell = () => {
                 });
             }, 500);
 
+            const enhanceAbort = new AbortController();
+            const enhanceTimer = setTimeout(() => enhanceAbort.abort(), 30000);
+
             const response = await fetch(`${API_URL}/ai/enhance-photo`, {
                 method: 'POST',
-                body: formDataPayload
+                body: formDataPayload,
+                signal: enhanceAbort.signal,
             });
 
+            clearTimeout(enhanceTimer);
             clearInterval(progressInterval);
 
             if (response.ok) {
@@ -361,12 +366,17 @@ const QuickSell = () => {
                 setEnhanceProgress(prev => prev >= 90 ? prev : prev + 1.5);
             }, 500);
 
+            const cleanupAbort = new AbortController();
+            const cleanupTimer = setTimeout(() => cleanupAbort.abort(), 45000);
+
             const response = await fetch(`${API_URL}/ai/pro-cleanup`, {
                 method: 'POST',
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
                 body: formDataPayload,
+                signal: cleanupAbort.signal,
             });
 
+            clearTimeout(cleanupTimer);
             clearInterval(progressInterval);
 
             const remaining = response.headers.get('ratelimit-remaining');

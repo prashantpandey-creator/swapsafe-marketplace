@@ -175,38 +175,38 @@ const QuickSellDetails = ({
 
                 {/* Enhancement Controls */}
                 {!currentImage?.isStock && currentImage && (
-                    <div className="absolute bottom-8 flex flex-col items-center gap-2 z-20">
-                        <div className="flex gap-3">
+                    <div className="absolute bottom-4 md:bottom-8 flex flex-col items-center gap-2 z-20 px-4 w-full md:w-auto">
+                        <div className="flex flex-wrap justify-center gap-2 md:gap-3">
                             <button
                                 onClick={() => setUseProMode(!useProMode)}
-                                className={`h-11 px-4 rounded-xl flex items-center gap-2 backdrop-blur-xl border transition-all ${useProMode
+                                className={`h-10 md:h-11 px-3 md:px-4 rounded-xl flex items-center gap-1.5 backdrop-blur-xl border transition-all ${useProMode
                                     ? 'bg-[var(--legion-gold)]/10 border-[var(--legion-gold)] text-[var(--legion-gold)]'
                                     : 'bg-black/60 border-white/10 text-gray-400'
                                     }`}
                             >
-                                <Zap size={16} className={useProMode ? 'fill-current' : ''} />
-                                <span className="text-xs font-black">{useProMode ? 'PRO MODE' : 'FAST MODE'}</span>
+                                <Zap size={14} className={useProMode ? 'fill-current' : ''} />
+                                <span className="text-[10px] md:text-xs font-black">{useProMode ? 'PRO' : 'FAST'}</span>
                             </button>
                             <button
                                 onClick={() => onEnhance(currentImageId)}
                                 disabled={isEnhancing}
-                                className="h-11 px-5 rounded-xl bg-white text-black font-black hover:bg-[var(--legion-gold)] transition-all flex items-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50"
+                                className="h-10 md:h-11 px-4 md:px-5 rounded-xl bg-white text-black font-black hover:bg-[var(--legion-gold)] transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 disabled:opacity-50"
                             >
-                                <Sparkles size={16} fill="black" />
-                                {currentImage.status === 'enhanced' ? 'REDO' : 'ENHANCE'}
+                                <Sparkles size={14} fill="black" />
+                                <span className="text-[10px] md:text-xs">{currentImage.status === 'enhanced' ? 'REDO' : 'ENHANCE'}</span>
                             </button>
                             <button
                                 onClick={() => onProCleanup?.(currentImageId)}
                                 disabled={isEnhancing || proCleanupQuota === 0}
-                                className={`h-11 px-5 rounded-xl font-black transition-all flex items-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50 ${
+                                className={`h-10 md:h-11 px-4 md:px-5 rounded-xl font-black transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 disabled:opacity-50 ${
                                     userPlan === 'pro'
                                         ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:from-purple-500 hover:to-pink-400'
                                         : 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white hover:from-indigo-500 hover:to-blue-400'
                                 }`}
                                 title={proCleanupQuota === 0 ? 'Daily limit reached' : userPlan === 'pro' ? 'AI removes hands & cleans background' : 'Remove background & upscale'}
                             >
-                                <Sparkles size={16} />
-                                {userPlan === 'pro' ? 'PRO CLEANUP' : 'SMART CLEANUP'}
+                                <Sparkles size={14} />
+                                <span className="text-[10px] md:text-xs">{userPlan === 'pro' ? 'CLEANUP' : 'CLEANUP'}</span>
                             </button>
                         </div>
                         {proCleanupQuota !== null && proCleanupQuota !== undefined && (
