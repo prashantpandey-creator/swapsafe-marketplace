@@ -345,6 +345,16 @@ const QuickSell = () => {
         const targetImage = gallery.find(img => img.id === targetId);
         if (!targetImage || !targetImage.file) return;
 
+        const imgDims = await new Promise(resolve => {
+            const im = new Image();
+            im.onload = () => resolve({ w: im.naturalWidth, h: im.naturalHeight });
+            im.onerror = () => resolve(null);
+            im.src = targetImage.src;
+        });
+        if (imgDims && Math.min(imgDims.w, imgDims.h) < 400) {
+            info(`Image is only ${imgDims.w}×${imgDims.h}px — cleanup may produce artifacts. Try a higher-res photo.`);
+        }
+
         setGallery(prev => prev.map(img =>
             img.id === targetId ? { ...img, status: 'enhancing' } : img
         ));

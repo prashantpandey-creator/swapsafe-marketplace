@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, AlertCircle, Sparkles, Zap, ChevronRight, X, Loader, Search, ArrowRight, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, Sparkles, Zap, ChevronRight, X, Loader, Search, ArrowRight, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
 import { listingsAPI } from '../../services/api'; // Correct API usage
 
 const QuickSellDetails = ({
@@ -33,9 +33,12 @@ const QuickSellDetails = ({
 }) => {
     const currentImage = gallery.find(img => img.id === currentImageId);
     const [useStockImage, setUseStockImage] = useState(false);
+    const [showOriginal, setShowOriginal] = useState(false);
     const [isRefining, setIsRefining] = useState(false);
 
     const [hasRefined, setHasRefined] = useState(false);
+
+    useEffect(() => { setShowOriginal(false); }, [currentImageId]);
 
     // Initial Auto-fill (NO auto-refinement — wait for user to confirm name)
     useEffect(() => {
@@ -147,24 +150,35 @@ const QuickSellDetails = ({
                 {currentImage ? (
                     <AnimatePresence mode="wait">
                         <motion.img
-                            key={currentImage.enhancedSrc || currentImage.src}
+                            key={(showOriginal ? currentImage.src : (currentImage.enhancedSrc || currentImage.src))}
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0 }}
-                            src={currentImage.enhancedSrc || currentImage.src}
+                            src={showOriginal ? currentImage.src : (currentImage.enhancedSrc || currentImage.src)}
                             alt="Preview"
                             className="max-w-full max-h-full object-contain drop-shadow-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
                         />
-                        {/* Cleanup tier badge */}
-                        {currentImage?.cleanupTier && currentImage.status === 'enhanced' && (
-                            <div className={`absolute top-6 right-6 z-20 px-3 py-1 rounded-full text-[10px] font-black tracking-wider backdrop-blur-xl border ${
-                                currentImage.cleanupTier === 'pro'
-                                    ? 'bg-purple-600/80 border-purple-400/50 text-white'
-                                    : currentImage.cleanupTier === 'pro-fallback'
-                                        ? 'bg-amber-600/80 border-amber-400/50 text-white'
-                                        : 'bg-indigo-600/80 border-indigo-400/50 text-white'
-                            }`}>
-                                {currentImage.cleanupTier === 'pro' ? 'PRO CLEANUP' : currentImage.cleanupTier === 'pro-fallback' ? 'FALLBACK' : 'SMART CLEANUP'}
+                        {/* Cleanup tier badge + view original toggle */}
+                        {currentImage?.enhancedSrc && currentImage.status === 'enhanced' && (
+                            <div className="absolute top-6 right-6 z-20 flex items-center gap-2">
+                                <button
+                                    onClick={() => setShowOriginal(prev => !prev)}
+                                    className="px-3 py-1 rounded-full text-[10px] font-black tracking-wider backdrop-blur-xl border bg-black/60 border-white/20 text-gray-300 hover:text-white hover:border-white/40 transition-all flex items-center gap-1.5"
+                                >
+                                    {showOriginal ? <EyeOff size={12} /> : <Eye size={12} />}
+                                    {showOriginal ? 'CLEANED' : 'ORIGINAL'}
+                                </button>
+                                {currentImage.cleanupTier && (
+                                    <div className={`px-3 py-1 rounded-full text-[10px] font-black tracking-wider backdrop-blur-xl border ${
+                                        currentImage.cleanupTier === 'pro'
+                                            ? 'bg-purple-600/80 border-purple-400/50 text-white'
+                                            : currentImage.cleanupTier === 'pro-fallback'
+                                                ? 'bg-amber-600/80 border-amber-400/50 text-white'
+                                                : 'bg-indigo-600/80 border-indigo-400/50 text-white'
+                                    }`}>
+                                        {currentImage.cleanupTier === 'pro' ? 'PRO' : currentImage.cleanupTier === 'pro-fallback' ? 'FALLBACK' : 'SMART'}
+                                    </div>
+                                )}
                             </div>
                         )}
                         {/* Loading/Enhancing Overlay */}
