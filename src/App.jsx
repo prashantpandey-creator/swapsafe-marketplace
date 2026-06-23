@@ -40,6 +40,15 @@ import BackgroundManager from './components/layout/BackgroundManager'
 import LynchAudioPlayer from './components/layout/LynchAudioPlayer'
 import ServerWaker from './components/common/ServerWaker'
 
+// In Lynch mode the landing renders its own Sketchfab 3D room, so the canvas
+// LynchBackground must NOT paint behind it (the old curtains bleed through the
+// iframe during load). Suppress the canvas only on '/' in Lynch mode.
+function RoutedBackground({ theme }) {
+    const location = useLocation()
+    if (theme === 'lynch' && location.pathname === '/') return null
+    return <BackgroundManager currentTheme={theme} />
+}
+
 // Redirects unauthenticated users to /login, preserving intended destination
 function ProtectedRoute({ children }) {
     const { isAuthenticated, isLoading } = useAuth()
@@ -99,7 +108,7 @@ function App() {
                     <WishlistProvider>
                         <ToastProvider>
                             <Router>
-                                <BackgroundManager currentTheme={theme} />
+                                <RoutedBackground theme={theme} />
                                 <LynchAudioPlayer active={theme === 'lynch'} />
                                 <ServerWaker />
                                 <div className="app" style={{ position: 'relative', zIndex: 1 }}>
