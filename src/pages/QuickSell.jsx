@@ -582,7 +582,15 @@ const QuickSell = () => {
     };
 
     return (
-        <div className="fixed inset-0 z-[60] bg-black overflow-hidden font-sans">
+        <div
+            className="fixed inset-0 z-[60] bg-black overflow-hidden font-sans"
+            style={{
+                paddingTop: 'calc(72px + env(safe-area-inset-top, 0px))',
+                paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+                paddingLeft: 'env(safe-area-inset-left, 0px)',
+                paddingRight: 'env(safe-area-inset-right, 0px)',
+            }}
+        >
             <SpiralBackground />
 
             {/* Trust Nudge Modal */}

@@ -8,7 +8,7 @@ const QuickSellLanding = ({ onSelectCamera, onSelectGallery, isAutoDetect, setIs
     return (
         <div className="flex flex-col h-full relative">
             {/* Header / Title Area */}
-            <div className="pt-12 px-6 pb-8 z-10 text-center">
+            <div className="pt-6 px-6 pb-8 z-10 text-center">
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -96,7 +96,10 @@ const QuickSellLanding = ({ onSelectCamera, onSelectGallery, isAutoDetect, setIs
             </div>
 
             {/* Bottom Controls: Auto-Detect Toggle */}
-            <div className="absolute bottom-12 left-0 right-0 px-8 flex justify-center z-20">
+            <div
+                className="absolute left-0 right-0 px-8 flex justify-center z-20"
+                style={{ bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}
+            >
                 <button
                     onClick={() => setIsAutoDetect(!isAutoDetect)}
                     className={`flex items-center gap-3 px-5 py-3 rounded-full backdrop-blur-md border transition-all duration-300 ${isAutoDetect

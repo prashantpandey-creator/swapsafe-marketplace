@@ -129,6 +129,10 @@ const CameraViewfinder = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-[var(--void-deep)] text-white font-sans flex flex-col"
+            style={{
+                paddingTop: 'env(safe-area-inset-top, 0px)',
+                paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+            }}
         >
             <canvas ref={canvasRef} className="hidden" />
 

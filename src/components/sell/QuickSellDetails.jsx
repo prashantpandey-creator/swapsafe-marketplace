@@ -139,7 +139,7 @@ const QuickSellDetails = ({
     };
 
     return (
-        <div className="flex flex-col md:flex-row h-screen bg-black text-white font-sans overflow-hidden">
+        <div className="flex flex-col md:flex-row h-full bg-black text-white font-sans overflow-hidden">
 
             {/* --- LEFT COLUMN: PREVIEW (60%) --- */}
             <div className="relative w-full md:w-[60%] h-[40vh] md:h-full bg-zinc-900/50 flex items-center justify-center p-8 group">
