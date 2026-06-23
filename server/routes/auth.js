@@ -265,6 +265,30 @@ router.get('/me', protect, async (req, res) => {
     }
 });
 
+// @route   PUT /api/auth/plan
+// @access  Private
+router.put('/plan', protect, async (req, res) => {
+    try {
+        const { plan } = req.body;
+        if (!['free', 'pro'].includes(plan)) {
+            return res.status(400).json({ error: 'Invalid plan. Must be "free" or "pro"' });
+        }
+
+        const user = await User.findById(req.user._id);
+        user.plan = plan;
+        await user.save();
+
+        res.json({
+            success: true,
+            plan: user.plan,
+            message: plan === 'pro' ? 'Upgraded to Pro!' : 'Switched to Free plan',
+        });
+    } catch (error) {
+        console.error('Update plan error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // @route   PUT /api/auth/profile
 // @access  Private
 router.put('/profile', protect, async (req, res) => {

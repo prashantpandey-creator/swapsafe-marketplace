@@ -155,6 +155,18 @@ const QuickSellDetails = ({
                             alt="Preview"
                             className="max-w-full max-h-full object-contain drop-shadow-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
                         />
+                        {/* Cleanup tier badge */}
+                        {currentImage?.cleanupTier && currentImage.status === 'enhanced' && (
+                            <div className={`absolute top-6 right-6 z-20 px-3 py-1 rounded-full text-[10px] font-black tracking-wider backdrop-blur-xl border ${
+                                currentImage.cleanupTier === 'pro'
+                                    ? 'bg-purple-600/80 border-purple-400/50 text-white'
+                                    : currentImage.cleanupTier === 'pro-fallback'
+                                        ? 'bg-amber-600/80 border-amber-400/50 text-white'
+                                        : 'bg-indigo-600/80 border-indigo-400/50 text-white'
+                            }`}>
+                                {currentImage.cleanupTier === 'pro' ? 'PRO CLEANUP' : currentImage.cleanupTier === 'pro-fallback' ? 'FALLBACK' : 'SMART CLEANUP'}
+                            </div>
+                        )}
                         {/* Loading/Enhancing Overlay */}
                         {isEnhancing && gallery.find(img => img.id === currentImageId)?.status === 'enhancing' && (
                             <div className="absolute inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center z-30">

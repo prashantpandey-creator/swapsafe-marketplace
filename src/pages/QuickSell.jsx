@@ -395,6 +395,7 @@ const QuickSell = () => {
                             ...img,
                             status: 'enhanced',
                             enhancedSrc: result.image_data,
+                            cleanupTier: result.tier || 'free',
                             lowQuality: result.tier === 'free-fallback',
                             alphaQuality: null,
                         } : img
@@ -402,11 +403,11 @@ const QuickSell = () => {
 
                     const elapsed = (result.processing_time_ms / 1000).toFixed(1);
                     if (result.tier === 'pro') {
-                        success(`Pro cleanup done! Hand removed. (${elapsed}s)`);
+                        success(`Pro cleanup — hand removed & upscaled (${elapsed}s)`);
                     } else if (result.tier === 'pro-fallback') {
-                        info(`Background cleaned — hand removal unavailable right now. (${elapsed}s)`);
+                        info(`Background cleaned — hand removal unavailable right now (${elapsed}s)`);
                     } else {
-                        success(`Smart cleanup done! (${elapsed}s)`);
+                        success(`Background removed & cleaned (${elapsed}s) — upgrade to Pro for hand removal!`);
                     }
                 } else {
                     throw new Error(result.error || 'No image data');
