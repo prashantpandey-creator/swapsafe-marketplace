@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { listingsAPI } from '../services/api'
 
 const MODEL_ID = '46430c73087e4951a6bdf2f4bd3305f4'
-const SKETCHFAB_API = 'https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js'
+const EMBED_SRC = `https://sketchfab.com/models/${MODEL_ID}/embed?autostart=1&preload=1&ui_stop=0&ui_inspector=0&ui_watermark=0&ui_watermark_link=0&ui_ar=0&ui_help=0&ui_settings=0&ui_vr=0&ui_fullscreen=0&ui_annotations=0&ui_controls=0&ui_hint=0&ui_loading=0&ui_infos=0&scrollwheel=0&double_click=0&dnt=1&camera=0&autospin=0`
 
 function Badge({ condition }) {
     const map = { new:'rgba(80,200,120,0.9)', like_new:'rgba(100,180,100,0.85)', good:'rgba(201,168,76,0.9)', fair:'rgba(180,120,60,0.85)', poor:'rgba(180,60,60,0.85)' }
@@ -35,77 +35,23 @@ function Card({ listing, i }) {
     )
 }
 
-function loadSketchfabScript() {
-    return new Promise((resolve, reject) => {
-        if (window.Sketchfab) return resolve(window.Sketchfab)
-        const existing = document.querySelector(`script[src="${SKETCHFAB_API}"]`)
-        if (existing) {
-            existing.addEventListener('load', () => resolve(window.Sketchfab))
-            existing.addEventListener('error', reject)
-            return
-        }
-        const s = document.createElement('script')
-        s.src = SKETCHFAB_API
-        s.async = true
-        s.onload = () => resolve(window.Sketchfab)
-        s.onerror = reject
-        document.head.appendChild(s)
-    })
-}
-
 export default function LandingLynch() {
     const [listings, setListings] = useState([])
     const [ready, setReady] = useState(false)
     const [query, setQuery] = useState('')
     const navigate = useNavigate()
-    const iframeRef = useRef(null)
-    const apiRef = useRef(null)
+    const timerRef = useRef(null)
 
     useEffect(() => {
         listingsAPI.getAll({ limit:4 })
             .then(d => setListings(Array.isArray(d) ? d : (d?.listings??[])))
             .catch(() => setListings([]))
+        return () => { if (timerRef.current) clearTimeout(timerRef.current) }
     }, [])
 
-    // Boot the Sketchfab viewer with a LOCKED camera + real "loaded" event
-    useEffect(() => {
-        let cancelled = false
-        loadSketchfabScript().then((Sketchfab) => {
-            if (cancelled || !iframeRef.current) return
-            const client = new Sketchfab('1.12.1', iframeRef.current)
-            client.init(MODEL_ID, {
-                autostart: 1,
-                preload: 1,
-                ui_stop: 0, ui_inspector: 0, ui_watermark: 0, ui_watermark_link: 0,
-                ui_ar: 0, ui_help: 0, ui_settings: 0, ui_vr: 0, ui_fullscreen: 0,
-                ui_annotations: 0, ui_controls: 0, ui_hint: 0, ui_loading: 0,
-                ui_infos: 0, scrollwheel: 0, double_click: 0, dnt: 1,
-                success: (api) => {
-                    apiRef.current = api
-                    api.start()
-                    api.addEventListener('viewerready', () => {
-                        // FREEZE the camera — no zoom, no pan, no flying into the curtains
-                        try { api.setEnableCameraConstraints(true, () => {}) } catch (_) {}
-                        try {
-                            api.setCameraConstraints({
-                                usePanConstraints: true,
-                                useZoomConstraints: true,
-                                useYawConstraints: true,
-                                usePitchConstraints: true,
-                                zoomIn: 0, zoomOut: 0,
-                                left: 0, right: 0, up: 0, down: 0,
-                            }, () => {})
-                        } catch (_) {}
-                        // Belt-and-suspenders: kill orbit interaction outright
-                        try { api.setUserInteraction?.(false) } catch (_) {}
-                        if (!cancelled) setReady(true)
-                    })
-                },
-                error: () => { if (!cancelled) setReady(true) },
-            })
-        }).catch(() => { if (!cancelled) setReady(true) })
-        return () => { cancelled = true }
-    }, [])
+    const handleIframeLoad = () => {
+        timerRef.current = setTimeout(() => setReady(true), 1800)
+    }
 
     const handleSearch = e => {
         e.preventDefault()
@@ -116,27 +62,31 @@ export default function LandingLynch() {
         <>
             <style>{`
                 @keyframes lGlow { 0%,100%{text-shadow:0 0 22px rgba(195,25,25,.5),0 0 60px rgba(195,25,25,.22)} 50%{text-shadow:0 0 36px rgba(225,45,45,.75),0 0 90px rgba(195,25,25,.38)} }
-                @keyframes lEnter { from{opacity:0;letter-spacing:0.6em} to{opacity:1;letter-spacing:0.36em} }
                 @keyframes lFlicker { 0%,100%{opacity:.85} 8%{opacity:.4} 10%{opacity:.9} 40%{opacity:.7} 42%{opacity:1} }
                 @keyframes lShimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(220%)} }
                 @keyframes lFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
             `}</style>
 
-            {/* Solid backdrop so the OLD canvas curtains never bleed through during load */}
-            <div style={{ position:'fixed', inset:0, background:'#0a0204', zIndex:0, pointerEvents:'none' }} />
+            {/* Solid backdrop behind everything — kills canvas bleed-through */}
+            <div style={{ position:'fixed', inset:0, background:'#0a0204', zIndex:-1, pointerEvents:'none' }} />
 
             <div style={{ position:'relative', height:'calc(100vh - 80px)', overflow:'hidden', background:'#0a0204' }}>
 
-                {/* ── THE REAL 3D ROOM (Viewer API, camera locked) ── */}
+                {/* ── THE REAL 3D ROOM ── plain iframe, proven to work */}
                 <iframe
-                    ref={iframeRef}
+                    src={EMBED_SRC}
                     title="Twin Peaks Red Room"
                     allow="autoplay; fullscreen; xr-spatial-tracking"
                     allowFullScreen
-                    style={{ position:'absolute', inset:0, width:'100%', height:'100%', border:'none', opacity: ready ? 1 : 0, transition:'opacity 1.6s ease', pointerEvents:'none' }}
+                    onLoad={handleIframeLoad}
+                    style={{
+                        position:'absolute', inset:0, width:'100%', height:'100%', border:'none',
+                        opacity: ready ? 1 : 0, transition:'opacity 1.4s ease',
+                        pointerEvents:'none',
+                    }}
                 />
 
-                {/* Loading screen — a curtain that parts to reveal the Lodge */}
+                {/* ── LOADING SCREEN — curtains part to reveal the Lodge ── */}
                 <AnimatePresence>
                     {!ready && (
                         <motion.div exit={{ opacity:0 }} transition={{ duration:1 }}
@@ -148,7 +98,7 @@ export default function LandingLynch() {
                             <motion.div exit={{ x:'100%' }} transition={{ duration:1.1, ease:[0.7,0,0.3,1] }}
                                 style={{ position:'absolute', top:0, right:0, bottom:0, width:'50%', background:'linear-gradient(270deg, #2a0606 0%, #5e0d0d 45%, #7a1414 100%)', boxShadow:'inset 40px 0 80px rgba(0,0,0,0.6)' }} />
 
-                            {/* Center plate */}
+                            {/* Center content */}
                             <div style={{ position:'relative', zIndex:2, textAlign:'center', animation:'lFloat 4s ease-in-out infinite' }}>
                                 <p style={{ fontFamily:'Georgia,serif', letterSpacing:'0.5em', color:'rgba(245,225,205,0.85)', fontSize:10, textTransform:'uppercase', margin:'0 0 14px', animation:'lFlicker 3s infinite' }}>
                                     Welcome
@@ -156,7 +106,6 @@ export default function LandingLynch() {
                                 <h2 style={{ fontFamily:'Georgia,serif', fontWeight:700, fontSize:'clamp(28px,5vw,52px)', color:'#F5EEE6', margin:'0 0 18px', letterSpacing:'0.04em', textShadow:'0 0 30px rgba(195,25,25,0.6)' }}>
                                     The Black Lodge
                                 </h2>
-                                {/* Progress shimmer bar */}
                                 <div style={{ width:200, height:2, margin:'0 auto', background:'rgba(195,25,25,0.25)', borderRadius:2, overflow:'hidden', position:'relative' }}>
                                     <div style={{ position:'absolute', top:0, left:0, height:'100%', width:'45%', background:'linear-gradient(90deg, transparent, #C9A84C, transparent)', animation:'lShimmer 1.4s ease-in-out infinite' }} />
                                 </div>
@@ -168,14 +117,13 @@ export default function LandingLynch() {
                     )}
                 </AnimatePresence>
 
-                {/* Edge vignette — softens iframe edges, keeps UI readable */}
-                <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at 50% 42%, transparent 42%, rgba(3,1,1,0.55) 100%)', pointerEvents:'none', zIndex:5 }} />
-                {/* Top fade — hero text zone */}
-                <div style={{ position:'absolute', top:0, left:0, right:0, height:'45%', background:'linear-gradient(180deg, rgba(3,1,1,0.45) 0%, transparent 100%)', pointerEvents:'none', zIndex:5 }} />
-                {/* Bottom fade — card zone */}
-                <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'38%', background:'linear-gradient(0deg, rgba(3,1,1,0.62) 0%, transparent 100%)', pointerEvents:'none', zIndex:5 }} />
+                {/* Light overlays — enough for text readability, NOT enough to drown the room */}
+                <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at 50% 45%, transparent 60%, rgba(3,1,1,0.3) 100%)', pointerEvents:'none', zIndex:5 }} />
+                <div style={{ position:'absolute', top:0, left:0, right:0, height:'28%', background:'linear-gradient(180deg, rgba(3,1,1,0.3) 0%, transparent 100%)', pointerEvents:'none', zIndex:5 }} />
+                {/* Bottom fade — taller to organically cover Sketchfab's "click to rotate" hint */}
+                <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'32%', background:'linear-gradient(0deg, rgba(3,1,1,0.65) 0%, rgba(3,1,1,0.25) 50%, transparent 100%)', pointerEvents:'none', zIndex:5 }} />
 
-                {/* ── HERO TEXT ── floats over back wall of the room */}
+                {/* ── HERO TEXT ── floats over back wall */}
                 <AnimatePresence>
                     {ready && (
                         <motion.div
@@ -195,7 +143,7 @@ export default function LandingLynch() {
                     )}
                 </AnimatePresence>
 
-                {/* ── SEARCH + CTAs ── mid-room, horizon line */}
+                {/* ── SEARCH + CTAs ── mid-room */}
                 <AnimatePresence>
                     {ready && (
                         <motion.div
