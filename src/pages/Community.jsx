@@ -8,6 +8,12 @@ import PostCard from '../components/community/PostCard';
 
 function Community() {
     const { isAuthenticated } = useAuth();
+    const [isLynch, setIsLynch] = useState(() => document.body.classList.contains('theme-lynch'));
+    useEffect(() => {
+        const obs = new MutationObserver(() => setIsLynch(document.body.classList.contains('theme-lynch')));
+        obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        return () => obs.disconnect();
+    }, []);
     const [scope, setScope] = useState('global');
     const [posts, setPosts] = useState([]);
     const [page, setPage] = useState(1);
@@ -55,10 +61,16 @@ function Community() {
             >
                 {/* Header */}
                 <div className="flex items-center gap-2.5 mb-5">
-                    <span className="flex items-center justify-center w-9 h-9 rounded-[10px] bg-[var(--m-surface)] border border-[var(--m-hairline)]">
-                        <Users size={18} className="text-[var(--m-accent)]" />
+                    <span
+                        className="flex items-center justify-center w-9 h-9 rounded-[10px] bg-[var(--m-surface)] border border-[var(--m-hairline)]"
+                        style={isLynch ? { background: 'rgba(6,2,2,0.84)', border: '1px solid rgba(195,25,25,0.3)', backdropFilter: 'blur(16px)' } : {}}
+                    >
+                        <Users size={18} className="text-[var(--m-accent)]" style={isLynch ? { color: '#C9A84C' } : {}} />
                     </span>
-                    <h1 className="text-xl font-semibold tracking-tight text-[var(--m-fg)]">Community</h1>
+                    <h1
+                        className="text-xl font-semibold tracking-tight text-[var(--m-fg)]"
+                        style={isLynch ? { fontFamily: 'Georgia, serif', color: '#F5EEE6', letterSpacing: '0.06em', textShadow: '0 0 30px rgba(195,25,25,0.35)' } : {}}
+                    >Community</h1>
                 </div>
 
                 {/* Tabs */}
@@ -68,9 +80,10 @@ function Community() {
                             key={t.key}
                             onClick={() => setScope(t.key)}
                             className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm transition-colors ${scope === t.key ? 'text-[var(--m-fg)]' : 'text-[var(--m-fg-muted)] hover:text-[var(--m-fg)]'}`}
+                            style={isLynch ? { fontFamily: 'Georgia, serif', letterSpacing: '0.08em', textTransform: 'uppercase', color: scope === t.key ? '#F5EEE6' : 'rgba(245,215,195,0.5)' } : {}}
                         >
                             <t.icon size={15} /> {t.label}
-                            {scope === t.key && <span className="absolute left-3 right-3 bottom-[-1px] h-[1.5px] bg-[var(--m-accent)] rounded" />}
+                            {scope === t.key && <span className="absolute left-3 right-3 bottom-[-1px] h-[1.5px] bg-[var(--m-accent)] rounded" style={isLynch ? { background: 'rgba(195,25,25,0.9)' } : {}} />}
                         </button>
                     ))}
                 </div>
@@ -86,7 +99,7 @@ function Community() {
                         <Loader className="animate-spin text-[var(--m-fg-subtle)]" size={28} />
                     </div>
                 ) : posts.length === 0 ? (
-                    <div className="text-center py-16 text-[var(--m-fg-muted)] text-sm">
+                    <div className="text-center py-16 text-[var(--m-fg-muted)] text-sm" style={isLynch ? { fontFamily: 'Georgia, serif', color: 'rgba(245,215,195,0.5)', letterSpacing: '0.06em' } : {}}>
                         {scope === 'following'
                             ? 'Follow members to see their posts here.'
                             : 'No posts yet — be the first to share something.'}

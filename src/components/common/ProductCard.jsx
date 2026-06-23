@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { formatPrice, getTimeAgo, getConditionColor } from '../../data/mockData';
 import GuardianBadge from '../trust/GuardianBadge';
@@ -5,7 +6,22 @@ import { useWishlist } from '../../context/WishlistContext';
 import { Heart, Eye, MapPin, CheckCircle } from 'lucide-react';
 import './ProductCard.css';
 
+// Lynch (Twin Peaks Red Room) condition badge colors
+const lynchConditionColor = (condition) => {
+    const c = (condition || '').toLowerCase();
+    if (c.includes('new') || c.includes('like')) return '#6BBF59'; // green
+    if (c.includes('good') || c.includes('excellent')) return '#C9A84C'; // gold
+    return '#D9A441'; // amber for fair/used
+};
+
 function ProductCard({ product }) {
+    const [isLynch, setIsLynch] = useState(() => document.body.classList.contains('theme-lynch'));
+    useEffect(() => {
+        const obs = new MutationObserver(() => setIsLynch(document.body.classList.contains('theme-lynch')));
+        obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        return () => obs.disconnect();
+    }, []);
+
     // ... existing destructuring ...
     const {
         _id,
@@ -47,8 +63,35 @@ function ProductCard({ product }) {
         toggleWishlist(product)
     }
 
+    const lynchCardStyle = isLynch ? {
+        background: 'rgba(6,2,2,0.84)',
+        border: '1px solid rgba(195,25,25,0.3)',
+        borderRadius: 10,
+        backdropFilter: 'blur(16px)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
+        transition: 'transform 0.2s, border-color 0.2s, box-shadow 0.2s',
+    } : {};
+
+    const handleLynchEnter = isLynch ? (e) => {
+        e.currentTarget.style.transform = 'translateY(-6px)';
+        e.currentTarget.style.borderColor = 'rgba(220,40,40,0.7)';
+        e.currentTarget.style.boxShadow = '0 20px 50px rgba(195,25,25,0.28)';
+    } : undefined;
+
+    const handleLynchLeave = isLynch ? (e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.borderColor = 'rgba(195,25,25,0.3)';
+        e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.7)';
+    } : undefined;
+
     return (
-        <Link to={`/product/${productId}`} className="product-card glass-panel">
+        <Link
+            to={`/product/${productId}`}
+            className="product-card glass-panel"
+            style={lynchCardStyle}
+            onMouseEnter={handleLynchEnter}
+            onMouseLeave={handleLynchLeave}
+        >
             <div className="product-image">
                 <img
                     src={imageUrl}
@@ -94,18 +137,37 @@ function ProductCard({ product }) {
             <div className="product-info">
                 <div>
                     <div className="product-meta-header">
-                        <span className={`condition-badge badge-${getConditionColor(condition)}`}>
+                        <span
+                            className={`condition-badge badge-${getConditionColor(condition)}`}
+                            style={isLynch ? {
+                                background: `${lynchConditionColor(condition)}22`,
+                                color: lynchConditionColor(condition),
+                                border: `1px solid ${lynchConditionColor(condition)}55`,
+                                fontFamily: 'Georgia, serif',
+                                letterSpacing: '0.1em',
+                                textTransform: 'uppercase',
+                            } : {}}
+                        >
                             {condition?.replace('-', ' ') || 'Unknown'}
                         </span>
                     </div>
 
-                    <h3 className="product-title">{title}</h3>
+                    <h3
+                        className="product-title"
+                        style={isLynch ? { fontFamily: 'Georgia, serif', color: '#F5EEE6', letterSpacing: '0.02em' } : {}}
+                    >{title}</h3>
                 </div>
 
-                <p className="product-description">{description}</p>
+                <p
+                    className="product-description"
+                    style={isLynch ? { color: 'rgba(245,215,195,0.6)' } : {}}
+                >{description}</p>
 
                 <div className="product-pricing">
-                    <span className="product-price">{formatPrice(price)}</span>
+                    <span
+                        className="product-price"
+                        style={isLynch ? { color: '#C9A84C', fontFamily: 'Georgia, serif', fontWeight: 700 } : {}}
+                    >{formatPrice(price)}</span>
                     {originalPrice && originalPrice > price && (
                         <span className="product-original">{formatPrice(originalPrice)}</span>
                     )}
@@ -114,15 +176,21 @@ function ProductCard({ product }) {
                 <div className="product-footer">
                     <div className="seller-info">
                         <img src={sellerAvatar} alt={safeSeller.name || 'Seller'} className="seller-avatar" />
-                        <span className="seller-name">
+                        <span
+                            className="seller-name"
+                            style={isLynch ? { color: 'rgba(245,215,195,0.7)', fontFamily: 'Georgia, serif' } : {}}
+                        >
                             {safeSeller.name || 'Anonymous'}
                             {sellerVerified && (
-                                <CheckCircle size={14} className="verified-icon text-legion-gold fill-legion-gold/20" />
+                                <CheckCircle size={14} className="verified-icon text-legion-gold fill-legion-gold/20" style={isLynch ? { color: '#C9A84C' } : {}} />
                             )}
                         </span>
                     </div>
 
-                    <div className="product-location">
+                    <div
+                        className="product-location"
+                        style={isLynch ? { color: 'rgba(245,215,195,0.5)', fontFamily: 'Georgia, serif' } : {}}
+                    >
                         <MapPin size={12} />
                         <span>{location.city || 'Unknown'}</span>
                     </div>

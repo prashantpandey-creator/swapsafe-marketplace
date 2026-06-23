@@ -32,11 +32,93 @@ const Header = ({ currentTheme, toggleTheme }) => {
         setIsMobileMenuOpen(false);
     }, [location]);
 
+    // Only the default professional theme gets the extra polish below.
+    // The 'lynch' creative theme is owned by another process — never styled here.
+    const isClassic = currentTheme !== 'lynch';
+
     return (
         <>
+            {/* Classic-theme-only refinements. Scoped to [data-theme='classic'] so the
+                lynch theme is provably untouched (it never carries this attribute value). */}
+            {isClassic && (
+                <style>{`
+                    [data-theme='classic'].m-bar {
+                        background-color: rgba(8, 8, 11, 0.55);
+                        -webkit-backdrop-filter: blur(20px) saturate(140%);
+                        backdrop-filter: blur(20px) saturate(140%);
+                    }
+                    [data-theme='classic'].m-bar[data-scrolled='true'] {
+                        background-color: rgba(8, 8, 11, 0.82);
+                        box-shadow: 0 1px 0 0 var(--m-hairline), 0 8px 24px -16px rgba(0,0,0,0.7);
+                    }
+                    /* Nav links: animated gold underline that grows from center on hover,
+                       fills fully when active. More intentional than the base ::after. */
+                    [data-theme='classic'] .m-navlink {
+                        font-weight: 500;
+                        letter-spacing: 0.005em;
+                    }
+                    [data-theme='classic'] .m-navlink:hover {
+                        background-color: transparent;
+                        color: var(--m-fg);
+                    }
+                    [data-theme='classic'] .m-navlink::after {
+                        content: '';
+                        position: absolute;
+                        left: 14px;
+                        right: 14px;
+                        bottom: 3px;
+                        height: 1.5px;
+                        border-radius: 2px;
+                        background-color: var(--legion-gold);
+                        transform: scaleX(0);
+                        transform-origin: center;
+                        transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), opacity 220ms;
+                        opacity: 0.85;
+                    }
+                    [data-theme='classic'] .m-navlink:hover::after {
+                        transform: scaleX(0.55);
+                    }
+                    [data-theme='classic'] .m-navlink[data-active='true'] {
+                        color: var(--m-fg);
+                    }
+                    [data-theme='classic'] .m-navlink[data-active='true']::after {
+                        transform: scaleX(1);
+                        opacity: 1;
+                    }
+                    /* Sell CTA: subtle gold gradient + soft glow so the money button
+                       reads as primary, but stays tasteful (no hard shadow stack). */
+                    [data-theme='classic'] .m-btn-accent {
+                        background-image: linear-gradient(180deg, #FBD66A 0%, var(--legion-gold) 60%, #E5B22F 100%);
+                        box-shadow: 0 1px 1px rgba(0,0,0,0.25), 0 4px 16px -6px var(--legion-gold-glow);
+                        font-weight: 650;
+                        transition: box-shadow var(--m-ease), filter var(--m-ease), transform var(--m-ease);
+                    }
+                    [data-theme='classic'] .m-btn-accent:hover {
+                        filter: brightness(1.04);
+                        box-shadow: 0 1px 1px rgba(0,0,0,0.25), 0 6px 22px -6px var(--legion-gold-glow);
+                        transform: translateY(-0.5px);
+                    }
+                    [data-theme='classic'] .m-btn-accent:active {
+                        transform: translateY(0);
+                        filter: brightness(0.98);
+                    }
+                    /* Mobile bottom dock: glassier panel + glowing gold Sell FAB */
+                    [data-theme='classic'].m-dock {
+                        background-color: rgba(10, 10, 15, 0.78);
+                        -webkit-backdrop-filter: blur(18px) saturate(140%);
+                        backdrop-filter: blur(18px) saturate(140%);
+                    }
+                    [data-theme='classic'] .m-dock-fab {
+                        background-image: linear-gradient(180deg, #FBD66A 0%, var(--legion-gold) 60%, #E5B22F 100%);
+                        box-shadow: 0 6px 20px -4px var(--legion-gold-glow);
+                    }
+                `}</style>
+            )}
+
             {/* --- DESKTOP HEADER (Minimalist) --- */}
             <header
                 data-scrolled={isScrolled}
+                data-theme={isClassic ? 'classic' : 'lynch'}
                 className="m-bar fixed top-0 left-0 right-0 z-50"
                 style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
             >
@@ -46,13 +128,17 @@ const Header = ({ currentTheme, toggleTheme }) => {
 
                         {/* 1. LEFT: LOGO & BRAND */}
                         <div className="flex items-center justify-self-start">
-                            <Link to="/" className="flex items-center gap-2.5 group">
+                            <Link
+                                to="/"
+                                className="flex items-center gap-2.5 group rounded-[10px] -ml-1.5 pl-1.5 pr-2 py-1 transition-colors hover:bg-[var(--m-surface)]"
+                                aria-label="Buyers Legion — Home"
+                            >
                                 <img
                                     src={logoV2}
-                                    alt="Buyers Legion"
-                                    className="w-9 h-9 object-contain"
+                                    alt=""
+                                    className="w-9 h-9 object-contain transition-transform duration-200 group-hover:scale-[1.04]"
                                 />
-                                <span className="text-base font-semibold tracking-tight text-[var(--m-fg)] leading-none">
+                                <span className="text-[15px] font-semibold tracking-[-0.01em] text-[var(--m-fg)] leading-none">
                                     Buyers<span className="text-[var(--m-accent)]">Legion</span>
                                 </span>
                             </Link>
@@ -78,10 +164,14 @@ const Header = ({ currentTheme, toggleTheme }) => {
                         </nav>
 
                         {/* 3. RIGHT: ACTIONS & PROFILE */}
-                        <div className="flex items-center gap-2 justify-self-end">
-                            {/* Primary CTA */}
-                            <Link to="/sell" className="m-btn-accent hidden lg:inline-flex">
-                                <Plus size={16} strokeWidth={2.5} />
+                        <div className="flex items-center gap-1.5 justify-self-end">
+                            {/* Primary CTA — the money button */}
+                            <Link
+                                to="/sell"
+                                className="m-btn-accent hidden lg:inline-flex mr-1"
+                                aria-label="Sell an item"
+                            >
+                                <Plus size={16} strokeWidth={2.75} />
                                 <span>Sell</span>
                             </Link>
 
@@ -89,12 +179,15 @@ const Header = ({ currentTheme, toggleTheme }) => {
                             <Link to="/cart" className="m-iconbtn relative" aria-label="Cart">
                                 <ShoppingBag size={19} />
                                 {cartItems.length > 0 && (
-                                    <span className="m-badge">{cartItems.length}</span>
+                                    <span className="m-badge">{cartItems.length > 9 ? '9+' : cartItems.length}</span>
                                 )}
                             </Link>
 
                             {/* Theme toggle */}
                             <ThemeIndicator theme={currentTheme} onToggle={toggleTheme} />
+
+                            {/* Hairline separator before the identity cluster */}
+                            <span className="hidden lg:block w-px h-5 bg-[var(--m-hairline)] mx-1" aria-hidden="true" />
 
                             {/* User Profile */}
                             {isAuthenticated && user ? (
@@ -162,7 +255,8 @@ const Header = ({ currentTheme, toggleTheme }) => {
 
             {/* --- MOBILE NAV (Bottom Dock) --- */}
             <nav
-                className="lg:hidden fixed left-1/2 -translate-x-1/2 z-50 bg-[var(--m-bar-bg)] backdrop-blur-xl border border-[var(--m-hairline)] rounded-[18px] px-3 py-3 flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
+                data-theme={isClassic ? 'classic' : 'lynch'}
+                className="m-dock lg:hidden fixed left-1/2 -translate-x-1/2 z-50 bg-[var(--m-bar-bg)] backdrop-blur-xl border border-[var(--m-hairline)] rounded-[18px] px-3 py-3 flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
                 style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
             >
                 {[
@@ -180,7 +274,7 @@ const Header = ({ currentTheme, toggleTheme }) => {
 
                 {/* Center Add Button */}
                 <div className="relative flex items-center justify-center" style={{ width: '3.25rem', marginTop: '-0.5rem', marginBottom: '-0.5rem' }}>
-                    <Link to="/sell" className="flex items-center justify-center w-14 h-14 bg-[var(--m-accent)] rounded-full text-black hover:brightness-110 transition-all border-4 border-[#08080B]">
+                    <Link to="/sell" aria-label="Sell an item" className="m-dock-fab flex items-center justify-center w-14 h-14 bg-[var(--m-accent)] rounded-full text-black hover:brightness-110 active:scale-95 transition-all border-4 border-[#08080B]">
                         <Plus size={26} strokeWidth={2.5} />
                     </Link>
                 </div>

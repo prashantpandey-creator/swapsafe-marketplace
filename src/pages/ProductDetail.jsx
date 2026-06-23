@@ -24,6 +24,21 @@ function ProductDetail() {
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState(null)
 
+    const [isLynch, setIsLynch] = useState(() => document.body.classList.contains('theme-lynch'))
+    useEffect(() => {
+        const obs = new MutationObserver(() => setIsLynch(document.body.classList.contains('theme-lynch')))
+        obs.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+        return () => obs.disconnect()
+    }, [])
+
+    // Lynch (Twin Peaks Red Room) reusable surface style
+    const lynchPanel = isLynch ? {
+        background: 'rgba(6,2,2,0.84)',
+        border: '1px solid rgba(195,25,25,0.3)',
+        borderRadius: 10,
+        backdropFilter: 'blur(16px)',
+    } : {}
+
     // Scroll to top on mount
     useEffect(() => {
         window.scrollTo(0, 0)
@@ -170,8 +185,8 @@ function ProductDetail() {
                         )}
 
                         {/* Description Block */}
-                        <div className="glass-panel border border-[var(--m-hairline)] rounded-[12px] p-6 md:p-8 mt-8">
-                            <h3 className="text-xl font-bold text-white mb-4">Description</h3>
+                        <div className="glass-panel border border-[var(--m-hairline)] rounded-[12px] p-6 md:p-8 mt-8" style={lynchPanel}>
+                            <h3 className="text-xl font-bold text-white mb-4" style={isLynch ? { color: '#C9A84C', fontFamily: 'Georgia, serif', letterSpacing: '0.08em', textTransform: 'uppercase' } : {}}>Description</h3>
                             <div className="prose prose-invert max-w-none text-gray-300 whitespace-pre-line">
                                 {description}
                             </div>
@@ -205,21 +220,21 @@ function ProductDetail() {
                         {/* Title Block */}
                         <div>
                             <div className="flex justify-between items-start mb-2">
-                                <h1 className="text-3xl font-bold text-white leading-tight">{title}</h1>
+                                <h1 className="text-3xl font-bold text-white leading-tight" style={isLynch ? { fontFamily: 'Georgia, serif', color: '#F5EEE6', textShadow: '0 0 30px rgba(195,25,25,0.35)' } : {}}>{title}</h1>
                             </div>
-                            <div className="flex items-center gap-2 text-[var(--m-fg-muted)] text-sm">
+                            <div className="flex items-center gap-2 text-[var(--m-fg-muted)] text-sm" style={isLynch ? { color: 'rgba(245,215,195,0.6)', fontFamily: 'Georgia, serif', letterSpacing: '0.04em' } : {}}>
                                 <MapPin size={14} />
                                 <span>{location?.city || 'Unknown Location'}, {location?.state}</span>
                             </div>
                         </div>
 
                         {/* Price Card */}
-                        <div className="glass-panel border border-[var(--m-hairline)] rounded-[12px] p-6 relative overflow-hidden">
+                        <div className="glass-panel border border-[var(--m-hairline)] rounded-[12px] p-6 relative overflow-hidden" style={lynchPanel}>
                             {/* Background Glow */}
-                            <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none"></div>
+                            <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none" style={isLynch ? { background: 'radial-gradient(circle, rgba(195,25,25,0.25), transparent 70%)' } : {}}></div>
 
                             <div className="flex items-end gap-3 mb-6">
-                                <span className="text-4xl font-bold text-white">{formatPrice(price)}</span>
+                                <span className="text-4xl font-bold text-white" style={isLynch ? { color: '#C9A84C', fontFamily: 'Georgia, serif', textShadow: '0 0 20px rgba(201,168,76,0.3)' } : {}}>{formatPrice(price)}</span>
                                 {originalPrice && (
                                     <span className="text-lg text-[var(--m-fg-subtle)] line-through mb-1.5">{formatPrice(originalPrice)}</span>
                                 )}
@@ -230,8 +245,9 @@ function ProductDetail() {
                                     <button
                                         onClick={handleBuyNow}
                                         className="w-full bg-[var(--m-accent)] hover:opacity-90 text-black font-bold text-lg py-4 rounded-[10px] transition-all flex items-center justify-center gap-2"
+                                        style={isLynch ? { background: 'rgba(195,25,25,0.92)', color: '#F5EEE6', fontFamily: 'Georgia, serif', letterSpacing: '0.08em', textTransform: 'uppercase', border: '1px solid rgba(220,40,40,0.5)', boxShadow: '0 6px 22px rgba(195,25,25,0.35)' } : {}}
                                     >
-                                        <Shield size={20} className="text-black" />
+                                        <Shield size={20} className="text-black" style={isLynch ? { color: '#F5EEE6' } : {}} />
                                         Secure Buy
                                     </button>
                                     <div className="grid grid-cols-2 gap-3">
@@ -294,8 +310,8 @@ function ProductDetail() {
                         </div>
 
                         {/* Seller Card */}
-                        <div className="glass-panel border border-[var(--m-hairline)] rounded-[12px] p-6">
-                            <h3 className="text-sm font-bold text-[var(--m-fg-subtle)] uppercase tracking-widest mb-4">Seller Information</h3>
+                        <div className="glass-panel border border-[var(--m-hairline)] rounded-[12px] p-6" style={lynchPanel}>
+                            <h3 className="text-sm font-bold text-[var(--m-fg-subtle)] uppercase tracking-widest mb-4" style={isLynch ? { color: '#C9A84C', fontFamily: 'Georgia, serif', letterSpacing: '0.2em' } : {}}>Seller Information</h3>
                             <Link to={`/profile/${safeSeller._id || safeSeller.id}`} className="flex items-center gap-4 group">
                                 <div className="relative">
                                     <img
@@ -311,7 +327,7 @@ function ProductDetail() {
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2">
-                                        <span className="font-bold text-lg text-white group-hover:text-[var(--m-accent)] transition-colors">{safeSeller.name || 'Anonymous User'}</span>
+                                        <span className="font-bold text-lg text-white group-hover:text-[var(--m-accent)] transition-colors" style={isLynch ? { color: '#F5EEE6', fontFamily: 'Georgia, serif' } : {}}>{safeSeller.name || 'Anonymous User'}</span>
                                     </div>
                                     <div className="flex items-center gap-3 text-sm text-[var(--m-fg-muted)] mt-1">
                                         <span className="flex items-center gap-1 text-yellow-400">

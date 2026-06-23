@@ -11,6 +11,13 @@ function Browse() {
     const { category } = useParams()
     const [searchParams, setSearchParams] = useSearchParams()
 
+    const [isLynch, setIsLynch] = useState(() => document.body.classList.contains('theme-lynch'))
+    useEffect(() => {
+        const obs = new MutationObserver(() => setIsLynch(document.body.classList.contains('theme-lynch')))
+        obs.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+        return () => obs.disconnect()
+    }, [])
+
     const [listings, setListings] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -164,10 +171,10 @@ function Browse() {
                 <div className="container">
                     <div className="browse-header-content">
                         <div>
-                            <h1>
+                            <h1 style={isLynch ? { fontFamily: 'Georgia, serif', color: '#F5EEE6', letterSpacing: '0.06em', textShadow: '0 0 40px rgba(195,25,25,0.4)' } : {}}>
                                 {currentCategory ? currentCategory.name : searchQuery ? `Results for "${searchQuery}"` : 'Browse All Items'}
                             </h1>
-                            <p>{filteredListings.length} items found</p>
+                            <p style={isLynch ? { fontFamily: 'Georgia, serif', color: 'rgba(245,215,195,0.6)', letterSpacing: '0.18em', textTransform: 'uppercase', fontSize: 11 } : {}}>{filteredListings.length} items found</p>
                         </div>
 
                         <div className="browse-header-actions">
@@ -386,7 +393,7 @@ function Browse() {
                     {!searchQuery && !activeFilterCount && filteredListings.some(l => l.featured || l.aiVerified) && (
                         <section className="featured-section">
                             <div className="featured-section-header">
-                                <h2>
+                                <h2 style={isLynch ? { fontFamily: 'Georgia, serif', color: '#C9A84C', letterSpacing: '0.14em', textTransform: 'uppercase' } : {}}>
                                     <svg className="icon" viewBox="0 0 24 24" fill="currentColor">
                                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                     </svg>
@@ -407,39 +414,39 @@ function Browse() {
 
                     {/* Active Filters */}
                     {activeFilterCount > 0 && (
-                        <div className="active-filters">
+                        <div className="active-filters" style={isLynch ? { '--lynch-chip': '1' } : {}}>
                             {filters.category && (
-                                <span className="active-filter">
+                                <span className="active-filter" style={isLynch ? { background: 'rgba(195,25,25,0.16)', border: '1px solid rgba(195,25,25,0.42)', color: '#F5EEE6', fontFamily: 'Georgia, serif', letterSpacing: '0.06em' } : {}}>
                                     {categories.find(c => c.slug === filters.category)?.name}
                                     <button onClick={() => handleFilterChange('category', '')}><X size={12} /></button>
                                 </span>
                             )}
                             {filters.condition && (
-                                <span className="active-filter">
+                                <span className="active-filter" style={isLynch ? { background: 'rgba(195,25,25,0.16)', border: '1px solid rgba(195,25,25,0.42)', color: '#F5EEE6', fontFamily: 'Georgia, serif', letterSpacing: '0.06em' } : {}}>
                                     {conditions.find(c => c.value === filters.condition)?.label}
                                     <button onClick={() => handleFilterChange('condition', '')}><X size={12} /></button>
                                 </span>
                             )}
                             {(filters.minPrice || filters.maxPrice) && (
-                                <span className="active-filter">
+                                <span className="active-filter" style={isLynch ? { background: 'rgba(195,25,25,0.16)', border: '1px solid rgba(195,25,25,0.42)', color: '#F5EEE6', fontFamily: 'Georgia, serif', letterSpacing: '0.06em' } : {}}>
                                     {filters.minPrice ? formatPrice(filters.minPrice) : '₹0'} - {filters.maxPrice ? formatPrice(filters.maxPrice) : 'Any'}
                                     <button onClick={() => { handleFilterChange('minPrice', ''); handleFilterChange('maxPrice', '') }}><X size={12} /></button>
                                 </span>
                             )}
                             {filters.location && (
-                                <span className="active-filter">
+                                <span className="active-filter" style={isLynch ? { background: 'rgba(195,25,25,0.16)', border: '1px solid rgba(195,25,25,0.42)', color: '#F5EEE6', fontFamily: 'Georgia, serif', letterSpacing: '0.06em' } : {}}>
                                     {filters.location}
                                     <button onClick={() => handleFilterChange('location', '')}><X size={12} /></button>
                                 </span>
                             )}
                             {filters.deliveryOnly && (
-                                <span className="active-filter">
+                                <span className="active-filter" style={isLynch ? { background: 'rgba(195,25,25,0.16)', border: '1px solid rgba(195,25,25,0.42)', color: '#F5EEE6', fontFamily: 'Georgia, serif', letterSpacing: '0.06em' } : {}}>
                                     Delivery Available
                                     <button onClick={() => handleFilterChange('deliveryOnly', false)}><X size={12} /></button>
                                 </span>
                             )}
                             {filters.verifiedOnly && (
-                                <span className="active-filter">
+                                <span className="active-filter" style={isLynch ? { background: 'rgba(195,25,25,0.16)', border: '1px solid rgba(195,25,25,0.42)', color: '#F5EEE6', fontFamily: 'Georgia, serif', letterSpacing: '0.06em' } : {}}>
                                     AI Verified
                                     <button onClick={() => handleFilterChange('verifiedOnly', false)}><X size={12} /></button>
                                 </span>
@@ -473,7 +480,7 @@ function Browse() {
                         </div>
                     ) : filteredListings.length > 0 ? (
                         <>
-                            <h2 className="section-title">All Items</h2>
+                            <h2 className="section-title" style={isLynch ? { fontFamily: 'Georgia, serif', color: '#F5EEE6', letterSpacing: '0.14em', textTransform: 'uppercase', fontSize: 13 } : {}}>All Items</h2>
                             <div className={`listings-grid ${viewMode === 'list' ? 'list-view' : ''}`}>
                                 {filteredListings.map(listing => (
                                     <ProductCard key={listing._id || listing.id} product={listing} />
