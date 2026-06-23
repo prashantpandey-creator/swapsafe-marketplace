@@ -51,6 +51,7 @@ router.post('/register', authLimiter, async (req, res) => {
                 isVerified: user.isVerified,
                 credits: user.credits,
                 trustLevel: user.trustLevel,
+                plan: user.plan || 'free',
                 createdAt: user.createdAt
             },
             token
@@ -101,6 +102,7 @@ router.post('/login', authLimiter, async (req, res) => {
                 totalSales: user.totalSales,
                 credits: user.credits,
                 trustLevel: user.trustLevel,
+                plan: user.plan || 'free',
                 createdAt: user.createdAt
             },
             token
@@ -173,6 +175,7 @@ router.post('/google', authLimiter, async (req, res) => {
                 totalSales: user.totalSales,
                 credits: user.credits,
                 trustLevel: user.trustLevel,
+                plan: user.plan || 'free',
                 createdAt: user.createdAt,
             },
             token,
@@ -252,6 +255,7 @@ router.get('/me', protect, async (req, res) => {
                 credits: user.credits,
                 trustLevel: user.trustLevel,
                 isGuest: user.isGuest,
+                plan: user.plan || 'free',
                 createdAt: user.createdAt
             }
         });

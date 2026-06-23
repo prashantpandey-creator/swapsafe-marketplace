@@ -15,6 +15,9 @@ const QuickSellDetails = ({
     isSubmitting,
     // Enhancement Props
     onEnhance,
+    onProCleanup,
+    proCleanupQuota,
+    userPlan,
     isEnhancing,
     enhanceStatus,
     enhanceProgress,
@@ -172,25 +175,45 @@ const QuickSellDetails = ({
 
                 {/* Enhancement Controls */}
                 {!currentImage?.isStock && currentImage && (
-                    <div className="absolute bottom-8 flex gap-4 z-20">
-                        <button
-                            onClick={() => setUseProMode(!useProMode)}
-                            className={`h-12 px-4 rounded-xl flex items-center gap-2 backdrop-blur-xl border transition-all ${useProMode
-                                ? 'bg-[var(--legion-gold)]/10 border-[var(--legion-gold)] text-[var(--legion-gold)]'
-                                : 'bg-black/60 border-white/10 text-gray-400'
+                    <div className="absolute bottom-8 flex flex-col items-center gap-2 z-20">
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setUseProMode(!useProMode)}
+                                className={`h-11 px-4 rounded-xl flex items-center gap-2 backdrop-blur-xl border transition-all ${useProMode
+                                    ? 'bg-[var(--legion-gold)]/10 border-[var(--legion-gold)] text-[var(--legion-gold)]'
+                                    : 'bg-black/60 border-white/10 text-gray-400'
+                                    }`}
+                            >
+                                <Zap size={16} className={useProMode ? 'fill-current' : ''} />
+                                <span className="text-xs font-black">{useProMode ? 'PRO MODE' : 'FAST MODE'}</span>
+                            </button>
+                            <button
+                                onClick={() => onEnhance(currentImageId)}
+                                disabled={isEnhancing}
+                                className="h-11 px-5 rounded-xl bg-white text-black font-black hover:bg-[var(--legion-gold)] transition-all flex items-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50"
+                            >
+                                <Sparkles size={16} fill="black" />
+                                {currentImage.status === 'enhanced' ? 'REDO' : 'ENHANCE'}
+                            </button>
+                            <button
+                                onClick={() => onProCleanup?.(currentImageId)}
+                                disabled={isEnhancing || proCleanupQuota === 0}
+                                className={`h-11 px-5 rounded-xl font-black transition-all flex items-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50 ${
+                                    userPlan === 'pro'
+                                        ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:from-purple-500 hover:to-pink-400'
+                                        : 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white hover:from-indigo-500 hover:to-blue-400'
                                 }`}
-                        >
-                            <Zap size={18} className={useProMode ? 'fill-current' : ''} />
-                            <span className="text-xs font-black">{useProMode ? 'PRO MODE' : 'FAST MODE'}</span>
-                        </button>
-                        <button
-                            onClick={() => onEnhance(currentImageId)}
-                            disabled={isEnhancing}
-                            className="h-12 px-6 rounded-xl bg-white text-black font-black hover:bg-[var(--legion-gold)] transition-all flex items-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50"
-                        >
-                            <Sparkles size={18} fill="black" />
-                            {currentImage.status === 'enhanced' ? 'REDO ENHANCE' : 'ENHANCE PHOTO'}
-                        </button>
+                                title={proCleanupQuota === 0 ? 'Daily limit reached' : userPlan === 'pro' ? 'AI removes hands & cleans background' : 'Remove background & upscale'}
+                            >
+                                <Sparkles size={16} />
+                                {userPlan === 'pro' ? 'PRO CLEANUP' : 'SMART CLEANUP'}
+                            </button>
+                        </div>
+                        {proCleanupQuota !== null && proCleanupQuota !== undefined && (
+                            <span className="text-[10px] text-gray-500 font-mono">
+                                {proCleanupQuota} cleanup{proCleanupQuota !== 1 ? 's' : ''} left today
+                            </span>
+                        )}
                     </div>
                 )}
             </div>

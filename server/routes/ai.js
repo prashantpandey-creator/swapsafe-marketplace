@@ -810,10 +810,11 @@ const optionalAuth = (req, res, next) => {
 };
 
 // @route   POST /api/ai/pro-cleanup
-// @desc    Remove hand/arm, reconstruct product, white background, upscale
-// @access  Public (rate-limited 10/day per user)
-router.post('/pro-cleanup', optionalAuth, proPhotoLimiter, upload.single('file'), async (req, res) => {
+// @desc    Smart cleanup — Pro: Gemini hand-removal + rembg + upscale. Free: rembg + upscale.
+// @access  Authenticated (rate-limited 10/day)
+router.post('/pro-cleanup', protect, proPhotoLimiter, upload.single('file'), async (req, res) => {
     const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8001';
+    const userPlan = req.user?.plan || 'free';
 
     if (!req.file) {
         return res.status(400).json({ success: false, error: 'No file uploaded' });
@@ -824,60 +825,63 @@ router.post('/pro-cleanup', optionalAuth, proPhotoLimiter, upload.single('file')
     const nodeFetch = (await import('node-fetch')).default;
     const FormData = (await import('form-data')).default;
 
-    // --- Try Pro path (Gemini) ---
-    try {
-        const form = new FormData();
-        form.append('file', req.file.buffer, {
-            filename: req.file.originalname || 'upload.jpg',
-            contentType: req.file.mimetype || 'image/jpeg',
-        });
-
-        const proResponse = await nodeFetch(`${AI_ENGINE_URL}/api/v1/studio/pro-cleanup`, {
-            method: 'POST',
-            body: form,
-            headers: form.getHeaders(),
-        });
-
-        if (proResponse.ok) {
-            const data = await proResponse.json();
-            return res.json({
-                success: true,
-                tier: 'pro',
-                image_data: data.image_data,
-                dimensions: data.dimensions,
-                upscaled: data.upscaled,
-                upscale_method: data.upscale_method,
-                provider: data.provider,
-                processing_time_ms: Date.now() - start,
+    // --- Pro path: Gemini hand-removal + rembg + upscale ---
+    if (userPlan === 'pro') {
+        try {
+            const form = new FormData();
+            form.append('file', req.file.buffer, {
+                filename: req.file.originalname || 'upload.jpg',
+                contentType: req.file.mimetype || 'image/jpeg',
             });
-        }
 
-        // 503 = Gemini not configured on engine; 502 = Gemini call failed
-        // Either way — fall through to free rembg
-        console.warn(`⚠️  Pro cleanup returned ${proResponse.status}, falling back to free enhance`);
-    } catch (err) {
-        console.warn(`⚠️  Pro cleanup engine error: ${err.message}, falling back to free enhance`);
+            const proResponse = await nodeFetch(`${AI_ENGINE_URL}/api/v1/studio/pro-cleanup`, {
+                method: 'POST',
+                body: form,
+                headers: form.getHeaders(),
+            });
+
+            if (proResponse.ok) {
+                const data = await proResponse.json();
+                return res.json({
+                    success: true,
+                    tier: 'pro',
+                    image_data: data.image_data,
+                    dimensions: data.dimensions,
+                    upscaled: data.upscaled,
+                    upscale_method: data.upscale_method,
+                    provider: data.provider,
+                    processing_time_ms: Date.now() - start,
+                });
+            }
+
+            // Gemini failed — fall through to free path so pro users still get something
+            console.warn(`⚠️  Pro cleanup returned ${proResponse.status}, falling back to free enhance`);
+        } catch (err) {
+            console.warn(`⚠️  Pro cleanup engine error: ${err.message}, falling back to free enhance`);
+        }
     }
 
-    // --- Fallback: free rembg enhance ---
+    // --- Free path (also Pro fallback): rembg + white bg ---
     try {
         const form = new FormData();
         form.append('file', req.file.buffer, {
             filename: req.file.originalname || 'upload.jpg',
             contentType: req.file.mimetype || 'image/jpeg',
         });
+        form.append('return_binary', 'false');
 
-        const fallbackResponse = await nodeFetch(`${AI_ENGINE_URL}/api/v1/studio/enhance`, {
+        const freeResponse = await nodeFetch(`${AI_ENGINE_URL}/api/v1/studio/enhance`, {
             method: 'POST',
             body: form,
             headers: form.getHeaders(),
         });
 
-        if (fallbackResponse.ok) {
-            const data = await fallbackResponse.json();
+        if (freeResponse.ok) {
+            const data = await freeResponse.json();
+            const tier = userPlan === 'pro' ? 'pro-fallback' : 'free';
             return res.json({
                 success: true,
-                tier: 'free-fallback',
+                tier,
                 image_data: data.image_data,
                 dimensions: null,
                 upscaled: false,
@@ -886,9 +890,9 @@ router.post('/pro-cleanup', optionalAuth, proPhotoLimiter, upload.single('file')
             });
         }
 
-        throw new Error(`Fallback enhance returned ${fallbackResponse.status}`);
+        throw new Error(`Enhance returned ${freeResponse.status}`);
     } catch (err) {
-        console.error('❌ Both pro cleanup and fallback failed:', err.message);
+        console.error('❌ Cleanup failed:', err.message);
         return res.status(500).json({ success: false, error: 'Photo cleanup failed' });
     }
 });

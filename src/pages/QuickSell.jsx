@@ -44,6 +44,7 @@ const QuickSell = () => {
     const [gallery, setGallery] = useState([]);
     const [currentImageId, setCurrentImageId] = useState(null);
     const [useProMode, setUseProMode] = useState(false);
+    const [proCleanupQuota, setProCleanupQuota] = useState(null);
 
     // Form Data
     const [formData, setFormData] = useState({
@@ -55,15 +56,6 @@ const QuickSell = () => {
         brand: '',
         model: ''
     });
-
-    // Show loading while checking auth
-    if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-[var(--void-deep)]">
-                <Loader className="animate-spin text-legion-gold" size={48} />
-            </div>
-        );
-    }
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isEnhancing, setIsEnhancing] = useState(false);
@@ -113,6 +105,15 @@ const QuickSell = () => {
         }
         return () => clearInterval(interval);
     }, [jobId, jobStatus, navigate]);
+
+    // Show loading while checking auth (must be after all hooks)
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[var(--void-deep)]">
+                <Loader className="animate-spin text-legion-gold" size={48} />
+            </div>
+        );
+    }
 
     // --- Actions ---
 
@@ -327,6 +328,88 @@ const QuickSell = () => {
                 img.id === targetId ? { ...img, status: 'error' } : img
             ));
             error("Enhancement failed");
+        } finally {
+            setTimeout(() => {
+                setIsEnhancing(false);
+                setEnhanceProgress(0);
+            }, 1000);
+        }
+    };
+
+    const proCleanupPhoto = async (targetId) => {
+        const targetImage = gallery.find(img => img.id === targetId);
+        if (!targetImage || !targetImage.file) return;
+
+        setGallery(prev => prev.map(img =>
+            img.id === targetId ? { ...img, status: 'enhancing' } : img
+        ));
+
+        setIsEnhancing(true);
+        setEnhanceStatus('Pro Cleanup — removing hands...');
+        setEnhanceProgress(5);
+
+        try {
+            const formDataPayload = new FormData();
+            formDataPayload.append('file', targetImage.file);
+
+            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const API_URL = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL}/api`;
+
+            const token = localStorage.getItem('swapsafe_token');
+
+            const progressInterval = setInterval(() => {
+                setEnhanceProgress(prev => prev >= 90 ? prev : prev + 1.5);
+            }, 500);
+
+            const response = await fetch(`${API_URL}/ai/pro-cleanup`, {
+                method: 'POST',
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                body: formDataPayload,
+            });
+
+            clearInterval(progressInterval);
+
+            const remaining = response.headers.get('ratelimit-remaining');
+            if (remaining !== null) setProCleanupQuota(parseInt(remaining, 10));
+
+            if (response.status === 429) {
+                throw new Error('Daily pro cleanup limit reached. Try again tomorrow!');
+            }
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.image_data) {
+                    setEnhanceProgress(100);
+                    setGallery(prev => prev.map(img =>
+                        img.id === targetId ? {
+                            ...img,
+                            status: 'enhanced',
+                            enhancedSrc: result.image_data,
+                            lowQuality: result.tier === 'free-fallback',
+                            alphaQuality: null,
+                        } : img
+                    ));
+
+                    const elapsed = (result.processing_time_ms / 1000).toFixed(1);
+                    if (result.tier === 'pro') {
+                        success(`Pro cleanup done! Hand removed. (${elapsed}s)`);
+                    } else if (result.tier === 'pro-fallback') {
+                        info(`Background cleaned — hand removal unavailable right now. (${elapsed}s)`);
+                    } else {
+                        success(`Smart cleanup done! (${elapsed}s)`);
+                    }
+                } else {
+                    throw new Error(result.error || 'No image data');
+                }
+            } else {
+                throw new Error('Server error');
+            }
+        } catch (err) {
+            console.error('Pro cleanup failed:', err);
+            setGallery(prev => prev.map(img =>
+                img.id === targetId ? { ...img, status: 'error' } : img
+            ));
+            error(err.message || 'Pro cleanup failed');
         } finally {
             setTimeout(() => {
                 setIsEnhancing(false);
@@ -629,6 +712,9 @@ const QuickSell = () => {
                             isSubmitting={isSubmitting}
                             // Enhancer
                             onEnhance={enhancePhoto}
+                            onProCleanup={proCleanupPhoto}
+                            proCleanupQuota={proCleanupQuota}
+                            userPlan={user?.plan || 'free'}
                             isEnhancing={isEnhancing}
                             enhanceStatus={enhanceStatus}
                             enhanceProgress={enhanceProgress}

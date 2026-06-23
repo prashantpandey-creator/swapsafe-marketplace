@@ -61,6 +61,11 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 50000 // Default high balance for testing as requested
     },
+    plan: {
+        type: String,
+        enum: ['free', 'pro'],
+        default: 'free'
+    },
     // Guest System
     isGuest: {
         type: Boolean,
