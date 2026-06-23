@@ -523,9 +523,9 @@ const QuickSell = () => {
             let trustResult = null;
             try {
                 const originalImages = sortedGallery
-                    .filter(img => img.status !== 'enhanced' && !img.isStock && img.src)
+                    .filter(img => !img.isStock && img.src)
                     .map(img => img.src)
-                    .slice(0, 1); // one image is enough for the nudge
+                    .slice(0, 1);
 
                 trustResult = await aiAPI.trustScore({
                     title: listingData.title,
