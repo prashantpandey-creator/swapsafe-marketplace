@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
@@ -9,36 +9,38 @@ import ErrorBoundary from './components/common/ErrorBoundary'
 import Header from './components/layout/Header'
 import Footer from './components/layout/Footer'
 import Landing from './pages/Landing'
-import LandingLynch from './pages/LandingLynch'
-import Browse from './pages/Browse'
-import ProductDetail from './pages/ProductDetail'
-import CreateListing from './pages/CreateListing'
-import SellLanding from './pages/SellLanding'
-import QuickSell from './pages/QuickSell'
-import StudioMode from './pages/StudioMode'
-import Profile from './pages/Profile'
-import Messages from './pages/Messages'
-import Checkout from './pages/Checkout'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import ShopSetup from './pages/ShopSetup'
-import MyListings from './pages/MyListings'
-import TrackOrder from './pages/TrackOrder'
-import Settings from './pages/Settings'
-import EditListing from './pages/EditListing'
-import Cart from './pages/Cart'
-import ThreeDStudio from './pages/ThreeDStudio'
-import SwapSafeShield from './pages/SwapSafeShield'
-import MarketingStudio from './pages/MarketingStudio'
-import Dashboard from './pages/Dashboard'
-import ForgotPassword from './pages/ForgotPassword'
-import Legal from './pages/Legal'
-import Community from './pages/Community'
-import PostDetail from './pages/PostDetail'
-import CommunityProfile from './pages/CommunityProfile'
-import BackgroundManager from './components/layout/BackgroundManager'
-import LynchAudioPlayer from './components/layout/LynchAudioPlayer'
 import ServerWaker from './components/common/ServerWaker'
+
+const LandingLynch = lazy(() => import('./pages/LandingLynch'))
+const BackgroundManager = lazy(() => import('./components/layout/BackgroundManager'))
+const LynchAudioPlayer = lazy(() => import('./components/layout/LynchAudioPlayer'))
+
+const Browse = lazy(() => import('./pages/Browse'))
+const ProductDetail = lazy(() => import('./pages/ProductDetail'))
+const CreateListing = lazy(() => import('./pages/CreateListing'))
+const SellLanding = lazy(() => import('./pages/SellLanding'))
+const QuickSell = lazy(() => import('./pages/QuickSell'))
+const StudioMode = lazy(() => import('./pages/StudioMode'))
+const Profile = lazy(() => import('./pages/Profile'))
+const Messages = lazy(() => import('./pages/Messages'))
+const Checkout = lazy(() => import('./pages/Checkout'))
+const Login = lazy(() => import('./pages/Login'))
+const Register = lazy(() => import('./pages/Register'))
+const ShopSetup = lazy(() => import('./pages/ShopSetup'))
+const MyListings = lazy(() => import('./pages/MyListings'))
+const TrackOrder = lazy(() => import('./pages/TrackOrder'))
+const Settings = lazy(() => import('./pages/Settings'))
+const EditListing = lazy(() => import('./pages/EditListing'))
+const Cart = lazy(() => import('./pages/Cart'))
+const ThreeDStudio = lazy(() => import('./pages/ThreeDStudio'))
+const SwapSafeShield = lazy(() => import('./pages/SwapSafeShield'))
+const MarketingStudio = lazy(() => import('./pages/MarketingStudio'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const Legal = lazy(() => import('./pages/Legal'))
+const Community = lazy(() => import('./pages/Community'))
+const PostDetail = lazy(() => import('./pages/PostDetail'))
+const CommunityProfile = lazy(() => import('./pages/CommunityProfile'))
 
 // In Lynch mode the landing renders its own Sketchfab 3D room, so the canvas
 // LynchBackground must NOT paint behind it (the old curtains bleed through the
@@ -108,12 +110,15 @@ function App() {
                     <WishlistProvider>
                         <ToastProvider>
                             <Router>
-                                <RoutedBackground theme={theme} />
-                                <LynchAudioPlayer active={theme === 'lynch'} />
+                                <Suspense fallback={null}>
+                                    <RoutedBackground theme={theme} />
+                                    <LynchAudioPlayer active={theme === 'lynch'} />
+                                </Suspense>
                                 <ServerWaker />
                                 <div className="app" style={{ position: 'relative', zIndex: 1 }}>
                                     <Header currentTheme={theme} toggleTheme={toggleTheme} />
                                     <main className="main-content" style={{ paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))' }}>
+                                        <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}><div className="w-6 h-6 border-2 border-[var(--legion-gold)] border-t-transparent rounded-full animate-spin" /></div>}>
                                         <Routes>
                                             {/* Public routes */}
                                             <Route path="/" element={theme === 'lynch' ? <LandingLynch /> : <Landing />} />
@@ -152,6 +157,7 @@ function App() {
                                             <Route path="/edit-listing/:id" element={<ProtectedRoute><EditListing /></ProtectedRoute>} />
                                             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                                         </Routes>
+                                        </Suspense>
                                     </main>
                                     <Footer />
                                 </div>

@@ -37,29 +37,28 @@ function Browse() {
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
     const searchQuery = searchParams.get('search') || ''
 
-    // Fetch listings from API
+    const fetchListings = () => {
+        setLoading(true)
+        setError(null)
+        listingsAPI.getAll({
+            category: filters.category || undefined,
+            condition: filters.condition || undefined,
+            minPrice: filters.minPrice || undefined,
+            maxPrice: filters.maxPrice || undefined,
+            search: searchQuery || undefined,
+            sort: filters.sortBy
+        }).then(response => {
+            setListings(response.listings || [])
+        }).catch(err => {
+            console.error('Failed to fetch listings:', err)
+            setError('Failed to load listings. The server might be waking up.')
+            setListings([])
+        }).finally(() => {
+            setLoading(false)
+        })
+    }
+
     useEffect(() => {
-        const fetchListings = async () => {
-            setLoading(true)
-            setError(null)
-            try {
-                const response = await listingsAPI.getAll({
-                    category: filters.category || undefined,
-                    condition: filters.condition || undefined,
-                    minPrice: filters.minPrice || undefined,
-                    maxPrice: filters.maxPrice || undefined,
-                    search: searchQuery || undefined,
-                    sort: filters.sortBy
-                })
-                setListings(response.listings || [])
-            } catch (err) {
-                console.error('Failed to fetch listings:', err)
-                setError('Failed to load listings. Please try again.')
-                setListings([])
-            } finally {
-                setLoading(false)
-            }
-        }
         fetchListings()
     }, [filters.category, filters.condition, filters.minPrice, filters.maxPrice, filters.sortBy, searchQuery])
 
@@ -85,47 +84,6 @@ function Browse() {
             setFilters(prev => ({ ...prev, category }))
         }
     }, [category])
-
-    // Fetch listings
-    const fetchListings = async () => {
-        setLoading(true)
-        setError(null)
-        try {
-            const response = await listingsAPI.getAll({
-                category: filters.category || undefined,
-                condition: filters.condition || undefined,
-                minPrice: filters.minPrice || undefined,
-                maxPrice: filters.maxPrice || undefined,
-                search: searchQuery || undefined,
-                sort: filters.sortBy
-            })
-            setListings(prevListings => {
-                const newListings = response.listings || []
-                // Deduplicate items based on ID
-                const uniqueListings = new Map()
-
-                // If checking for duplicates against *existing* state is desired, uncomment the next line:
-                // prevListings.forEach(item => uniqueListings.set(item._id || item.id, item))
-
-                // For now, we assume a fresh fetch replaces the list (filtering is backend-side),
-                // but we still safeguard against duplicates *within* the response.
-                newListings.forEach(item => uniqueListings.set(item._id || item.id, item))
-
-                return Array.from(uniqueListings.values())
-            })
-        } catch (err) {
-            console.error('Failed to fetch listings:', err)
-            setError('Failed to load listings. The server might be waking up.')
-            setListings([])
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    // Initial fetch and fetch on filter change
-    useEffect(() => {
-        fetchListings()
-    }, [filters.category, filters.condition, filters.minPrice, filters.maxPrice, filters.sortBy, searchQuery])
 
     // Apply client-side filters for location, delivery, verified
     const filteredListings = listings.filter(listing => {
@@ -473,7 +431,7 @@ function Browse() {
                                 </svg>
                             </div>
                             <h3>Unable to load items</h3>
-                            <p className="text-gray-400 mb-4">{error}</p>
+                            <p className="text-[var(--m-fg-muted)] mb-4">{error}</p>
                             <button className="btn btn-primary" onClick={() => fetchListings()}>
                                 Try Again
                             </button>
