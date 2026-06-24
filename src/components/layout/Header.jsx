@@ -43,13 +43,13 @@ const Header = ({ currentTheme, toggleTheme }) => {
             {isClassic && (
                 <style>{`
                     [data-theme='classic'].m-bar {
-                        background-color: rgba(8, 8, 11, 0.55);
+                        background-color: var(--m-bar-bg);
                         -webkit-backdrop-filter: blur(20px) saturate(140%);
                         backdrop-filter: blur(20px) saturate(140%);
                     }
                     [data-theme='classic'].m-bar[data-scrolled='true'] {
-                        background-color: rgba(8, 8, 11, 0.82);
-                        box-shadow: 0 1px 0 0 var(--m-hairline), 0 8px 24px -16px rgba(0,0,0,0.7);
+                        background-color: var(--m-bar-bg);
+                        box-shadow: 0 1px 0 0 var(--m-hairline), 0 8px 24px -16px rgba(0,0,0,0.12);
                     }
                     /* Nav links: animated gold underline that grows from center on hover,
                        fills fully when active. More intentional than the base ::after. */
@@ -85,32 +85,36 @@ const Header = ({ currentTheme, toggleTheme }) => {
                         transform: scaleX(1);
                         opacity: 1;
                     }
-                    /* Sell CTA: subtle gold gradient + soft glow so the money button
-                       reads as primary, but stays tasteful (no hard shadow stack). */
+                    /* Sell CTA: dark pill on light, high contrast.
+                       Uses --m-fg (ink) bg + --bg-card (white) text. */
                     [data-theme='classic'] .m-btn-accent {
-                        background-image: linear-gradient(180deg, #FBD66A 0%, var(--legion-gold) 60%, #E5B22F 100%);
-                        box-shadow: 0 1px 1px rgba(0,0,0,0.25), 0 4px 16px -6px var(--legion-gold-glow);
+                        background-image: none;
+                        background-color: var(--m-fg);
+                        color: var(--bg-card);
+                        box-shadow: 0 1px 2px rgba(0,0,0,0.10);
                         font-weight: 650;
                         transition: box-shadow var(--m-ease), filter var(--m-ease), transform var(--m-ease);
                     }
                     [data-theme='classic'] .m-btn-accent:hover {
-                        filter: brightness(1.04);
-                        box-shadow: 0 1px 1px rgba(0,0,0,0.25), 0 6px 22px -6px var(--legion-gold-glow);
+                        filter: brightness(1.15);
+                        box-shadow: 0 1px 2px rgba(0,0,0,0.12), 0 4px 12px -4px rgba(0,0,0,0.15);
                         transform: translateY(-0.5px);
                     }
                     [data-theme='classic'] .m-btn-accent:active {
                         transform: translateY(0);
-                        filter: brightness(0.98);
+                        filter: brightness(0.95);
                     }
-                    /* Mobile bottom dock: glassier panel + glowing gold Sell FAB */
+                    /* Mobile bottom dock: glassier panel + dark Sell FAB */
                     [data-theme='classic'].m-dock {
-                        background-color: rgba(10, 10, 15, 0.78);
+                        background-color: var(--m-bar-bg);
                         -webkit-backdrop-filter: blur(18px) saturate(140%);
                         backdrop-filter: blur(18px) saturate(140%);
                     }
                     [data-theme='classic'] .m-dock-fab {
-                        background-image: linear-gradient(180deg, #FBD66A 0%, var(--legion-gold) 60%, #E5B22F 100%);
-                        box-shadow: 0 6px 20px -4px var(--legion-gold-glow);
+                        background-image: none;
+                        background-color: var(--m-fg);
+                        color: var(--bg-card);
+                        box-shadow: 0 4px 14px -4px rgba(0,0,0,0.18);
                     }
                 `}</style>
             )}
@@ -214,7 +218,7 @@ const Header = ({ currentTheme, toggleTheme }) => {
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: 6, scale: 0.98 }}
                                                     transition={{ duration: 0.15 }}
-                                                    className="absolute right-0 top-full mt-2 w-60 bg-[#0A0A0F] border border-[var(--m-hairline)] rounded-[10px] shadow-xl p-1.5 z-50 origin-top-right"
+                                                    className="absolute right-0 top-full mt-2 w-60 bg-[var(--bg-card)] border border-[var(--m-hairline)] rounded-[10px] shadow-xl p-1.5 z-50 origin-top-right"
                                                 >
                                                     <div className="px-3 py-2.5 border-b border-[var(--m-hairline)] mb-1.5">
                                                         <p className="font-medium text-[var(--m-fg)] truncate text-sm">{user.name}</p>
@@ -256,7 +260,7 @@ const Header = ({ currentTheme, toggleTheme }) => {
             {/* --- MOBILE NAV (Bottom Dock) --- */}
             <nav
                 data-theme={isClassic ? 'classic' : 'lynch'}
-                className="m-dock lg:hidden fixed left-1/2 -translate-x-1/2 z-50 bg-[var(--m-bar-bg)] backdrop-blur-xl border border-[var(--m-hairline)] rounded-[18px] px-3 py-3 flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
+                className="m-dock lg:hidden fixed left-1/2 -translate-x-1/2 z-50 bg-[var(--m-bar-bg)] backdrop-blur-xl border border-[var(--m-hairline)] rounded-[18px] px-3 py-3 flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
                 style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
             >
                 {[
@@ -274,7 +278,7 @@ const Header = ({ currentTheme, toggleTheme }) => {
 
                 {/* Center Add Button */}
                 <div className="relative flex items-center justify-center" style={{ width: '3.25rem', marginTop: '-0.5rem', marginBottom: '-0.5rem' }}>
-                    <Link to="/sell" aria-label="Sell an item" className="m-dock-fab flex items-center justify-center w-14 h-14 bg-[var(--m-accent)] rounded-full text-black hover:brightness-110 active:scale-95 transition-all border-4 border-[#08080B]">
+                    <Link to="/sell" aria-label="Sell an item" className="m-dock-fab flex items-center justify-center w-14 h-14 bg-[var(--m-fg)] rounded-full text-[var(--bg-card)] hover:brightness-110 active:scale-95 transition-all border-4 border-[var(--m-bar-bg)]">
                         <Plus size={26} strokeWidth={2.5} />
                     </Link>
                 </div>

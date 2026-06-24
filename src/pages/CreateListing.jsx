@@ -39,10 +39,10 @@ const CreateListing = () => {
     // Show loading while checking auth
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[var(--void-deep)]">
+            <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--legion-gold)] mx-auto"></div>
-                    <p className="text-gray-400 mt-4">Loading...</p>
+                    <p className="text-[var(--m-fg-muted)] mt-4">Loading...</p>
                 </div>
             </div>
         );
@@ -254,11 +254,11 @@ const CreateListing = () => {
     };
 
     return (
-        <div className="min-h-screen pt-16 pb-24 bg-[var(--void-deep)]">
+        <div className="min-h-screen pt-16 pb-24 bg-[var(--bg-primary)]">
             {/* Header */}
-            <div className="sticky top-16 z-40 bg-[var(--void-deep)]/90 backdrop-blur-xl border-b border-white/5">
+            <div className="sticky top-16 z-40 bg-[var(--bg-primary)]/90 backdrop-blur-xl border-b border-[var(--m-hairline)]">
                 <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
-                    <h1 className="text-xl font-bold text-white">Sell Your Item</h1>
+                    <h1 className="text-xl font-bold text-[var(--m-fg)]">Sell Your Item</h1>
                     <AIEngineStatusBadge size="sm" showLabel={false} />
                 </div>
             </div>
@@ -272,8 +272,8 @@ const CreateListing = () => {
                             <Camera className="text-[var(--legion-gold)]" size={20} />
                         </div>
                         <div>
-                            <h2 className="text-white font-semibold">Add Photo</h2>
-                            <p className="text-gray-500 text-xs">Snap a clear photo of your item</p>
+                            <h2 className="text-[var(--m-fg)] font-semibold">Add Photo</h2>
+                            <p className="text-[var(--m-fg-subtle)] text-xs">Snap a clear photo of your item</p>
                         </div>
                     </div>
 
@@ -281,8 +281,8 @@ const CreateListing = () => {
                     <div
                         className={`relative aspect-square rounded-xl border-2 border-dashed overflow-hidden transition-all
                             ${productImage
-                                ? 'border-[var(--legion-gold)]/30 bg-black/20'
-                                : 'border-white/20 bg-white/5 hover:border-[var(--legion-gold)] hover:bg-white/10 cursor-pointer'
+                                ? 'border-[var(--legion-gold)]/30 bg-[var(--m-surface)]'
+                                : 'border-[var(--m-hairline)] bg-[var(--m-surface)] hover:border-[var(--legion-gold)] hover:bg-[var(--m-surface)] cursor-pointer'
                             }
                             ${errors.image ? 'border-red-500/50' : ''}
 `}
@@ -321,11 +321,11 @@ const CreateListing = () => {
                             </>
                         ) : (
                             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
-                                <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-4">
-                                    <Camera size={28} className="text-gray-400" />
+                                <div className="w-16 h-16 rounded-full bg-[var(--m-surface)] flex items-center justify-center mb-4">
+                                    <Camera size={28} className="text-[var(--m-fg-muted)]" />
                                 </div>
-                                <p className="text-white font-medium mb-1">Tap to take photo</p>
-                                <p className="text-gray-500 text-xs">or upload from gallery</p>
+                                <p className="text-[var(--m-fg)] font-medium mb-1">Tap to take photo</p>
+                                <p className="text-[var(--m-fg-subtle)] text-xs">or upload from gallery</p>
                             </div>
                         )}
                     </div>
@@ -342,7 +342,7 @@ const CreateListing = () => {
                             </button>
                             <button
                                 onClick={() => fileInputRef.current?.click()}
-                                className="flex items-center justify-center gap-2 py-3 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-colors"
+                                className="flex items-center justify-center gap-2 py-3 bg-[var(--m-surface)] text-[var(--m-fg)] font-medium rounded-lg hover:bg-[var(--m-surface)] transition-colors"
                             >
                                 <Upload size={18} />
                                 Gallery
@@ -371,25 +371,25 @@ const CreateListing = () => {
                                     <TrendingUp className="text-green-400" size={20} />
                                 </div>
                                 <div className="flex-1">
-                                    <h2 className="text-white font-semibold">AI Price Oracle</h2>
-                                    <p className="text-gray-500 text-xs">{priceEstimate.confidence}% confidence</p>
+                                    <h2 className="text-[var(--m-fg)] font-semibold">AI Price Oracle</h2>
+                                    <p className="text-[var(--m-fg-subtle)] text-xs">{priceEstimate.confidence}% confidence</p>
                                 </div>
                                 <Sparkles className="text-[var(--legion-gold)]" size={20} />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-green-500/10 rounded-lg p-4 text-center">
-                                    <p className="text-gray-400 text-xs mb-1">Suggested Price</p>
+                                    <p className="text-[var(--m-fg-muted)] text-xs mb-1">Suggested Price</p>
                                     <p className="text-2xl font-bold text-green-400">₹{priceEstimate.suggested?.toLocaleString()}</p>
                                 </div>
-                                <div className="bg-white/5 rounded-lg p-4 text-center">
-                                    <p className="text-gray-400 text-xs mb-1">Retail Value</p>
-                                    <p className="text-2xl font-bold text-white">₹{priceEstimate.retail?.toLocaleString()}</p>
+                                <div className="bg-[var(--m-surface)] rounded-lg p-4 text-center">
+                                    <p className="text-[var(--m-fg-muted)] text-xs mb-1">Retail Value</p>
+                                    <p className="text-2xl font-bold text-[var(--m-fg)]">₹{priceEstimate.retail?.toLocaleString()}</p>
                                 </div>
                             </div>
 
                             {priceEstimate.reasoning && (
-                                <p className="text-gray-400 text-xs mt-4 leading-relaxed">
+                                <p className="text-[var(--m-fg-muted)] text-xs mt-4 leading-relaxed">
                                     💡 {priceEstimate.reasoning}
                                 </p>
                             )}
@@ -404,22 +404,22 @@ const CreateListing = () => {
                             <Package className="text-purple-400" size={20} />
                         </div>
                         <div>
-                            <h2 className="text-white font-semibold">Item Details</h2>
-                            <p className="text-gray-500 text-xs">Describe what you're selling</p>
+                            <h2 className="text-[var(--m-fg)] font-semibold">Item Details</h2>
+                            <p className="text-[var(--m-fg-subtle)] text-xs">Describe what you're selling</p>
                         </div>
                     </div>
 
                     <div className="space-y-4">
                         {/* Title */}
                         <div>
-                            <label className="block text-gray-400 text-xs font-medium mb-2">TITLE *</label>
+                            <label className="block text-[var(--m-fg-muted)] text-xs font-medium mb-2">TITLE *</label>
                             <input
                                 type="text"
                                 value={formData.title}
                                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                 placeholder="What are you selling?"
-                                className={`w-full bg-white/5 border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--legion-gold)] transition-colors
-                                    ${errors.title ? 'border-red-500/50' : 'border-white/10'}
+                                className={`w-full bg-[var(--m-surface)] border rounded-lg px-4 py-3 text-[var(--m-fg)] placeholder-[var(--m-fg-subtle)] focus:outline-none focus:border-[var(--legion-gold)] transition-colors
+                                    ${errors.title ? 'border-red-500/50' : 'border-[var(--m-hairline)]'}
 `}
                             />
                             {errors.title && <p className="text-red-400 text-xs mt-1">{errors.title}</p>}
@@ -427,7 +427,7 @@ const CreateListing = () => {
 
                         {/* Category */}
                         <div>
-                            <label className="block text-gray-400 text-xs font-medium mb-2">CATEGORY *</label>
+                            <label className="block text-[var(--m-fg-muted)] text-xs font-medium mb-2">CATEGORY *</label>
                             <div className="grid grid-cols-3 gap-2">
                                 {CATEGORIES.map(cat => (
                                     <button
@@ -437,7 +437,7 @@ const CreateListing = () => {
                                         className={`py-3 px-2 rounded-lg text-center transition-all text-sm
                                             ${formData.category === cat.id
                                                 ? 'bg-[var(--legion-gold)] text-black font-semibold'
-                                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                                : 'bg-[var(--m-surface)] text-[var(--m-fg-muted)] hover:bg-[var(--m-surface)]'
                                             }
 `}
                                     >
@@ -451,7 +451,7 @@ const CreateListing = () => {
 
                         {/* Condition */}
                         <div>
-                            <label className="block text-gray-400 text-xs font-medium mb-2">CONDITION</label>
+                            <label className="block text-[var(--m-fg-muted)] text-xs font-medium mb-2">CONDITION</label>
                             <div className="grid grid-cols-2 gap-2">
                                 {CONDITIONS.map(cond => (
                                     <button
@@ -460,13 +460,13 @@ const CreateListing = () => {
                                         onClick={() => { setFormData({ ...formData, condition: cond.id }); setTimeout(getNewPriceEstimate, 100); }}
                                         className={`py-3 px-3 rounded-lg text-left transition-all
                                             ${formData.condition === cond.id
-                                                ? 'bg-[var(--legion-gold)]/20 border-[var(--legion-gold)] border text-white'
-                                                : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
+                                                ? 'bg-[var(--legion-gold)]/20 border-[var(--legion-gold)] border text-[var(--m-fg)]'
+                                                : 'bg-[var(--m-surface)] border border-[var(--m-hairline)] text-[var(--m-fg-muted)] hover:bg-[var(--m-surface)]'
                                             }
 `}
                                     >
                                         <span className="font-medium text-sm block">{cond.label}</span>
-                                        <span className="text-[10px] text-gray-500">{cond.desc}</span>
+                                        <span className="text-[10px] text-[var(--m-fg-subtle)]">{cond.desc}</span>
                                     </button>
                                 ))}
                             </div>
@@ -474,16 +474,16 @@ const CreateListing = () => {
 
                         {/* Price */}
                         <div>
-                            <label className="block text-gray-400 text-xs font-medium mb-2">YOUR PRICE (₹) *</label>
+                            <label className="block text-[var(--m-fg-muted)] text-xs font-medium mb-2">YOUR PRICE (₹) *</label>
                             <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--m-fg-subtle)]">₹</span>
                                 <input
                                     type="number"
                                     value={formData.price}
                                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                                     placeholder="0"
-                                    className={`w-full bg-white/5 border rounded-lg pl-10 pr-4 py-3 text-white text-xl font-bold placeholder-gray-600 focus:outline-none focus:border-[var(--legion-gold)] transition-colors
-                                        ${errors.price ? 'border-red-500/50' : 'border-white/10'}
+                                    className={`w-full bg-[var(--m-surface)] border rounded-lg pl-10 pr-4 py-3 text-[var(--m-fg)] text-xl font-bold placeholder-[var(--m-fg-subtle)] focus:outline-none focus:border-[var(--legion-gold)] transition-colors
+                                        ${errors.price ? 'border-red-500/50' : 'border-[var(--m-hairline)]'}
 `}
                                 />
                             </div>
@@ -502,39 +502,39 @@ const CreateListing = () => {
 
                         {/* Description */}
                         <div>
-                            <label className="block text-gray-400 text-xs font-medium mb-2">DESCRIPTION (Optional)</label>
+                            <label className="block text-[var(--m-fg-muted)] text-xs font-medium mb-2">DESCRIPTION (Optional)</label>
                             <textarea
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 placeholder="Add more details about your item..."
                                 rows={3}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--legion-gold)] transition-colors resize-none"
+                                className="w-full bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-lg px-4 py-3 text-[var(--m-fg)] placeholder-[var(--m-fg-subtle)] focus:outline-none focus:border-[var(--legion-gold)] transition-colors resize-none"
                             />
                         </div>
 
                         {/* Location */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-gray-400 text-xs font-medium mb-2">CITY *</label>
+                                <label className="block text-[var(--m-fg-muted)] text-xs font-medium mb-2">CITY *</label>
                                 <input
                                     type="text"
                                     value={formData.location.city}
                                     onChange={(e) => setFormData({ ...formData, location: { ...formData.location, city: e.target.value } })}
                                     placeholder="Mumbai"
-                                    className={`w-full bg-white/5 border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--legion-gold)] transition-colors
-                                        ${errors.city ? 'border-red-500/50' : 'border-white/10'}
+                                    className={`w-full bg-[var(--m-surface)] border rounded-lg px-4 py-3 text-[var(--m-fg)] placeholder-[var(--m-fg-subtle)] focus:outline-none focus:border-[var(--legion-gold)] transition-colors
+                                        ${errors.city ? 'border-red-500/50' : 'border-[var(--m-hairline)]'}
 `}
                                 />
                             </div>
                             <div>
-                                <label className="block text-gray-400 text-xs font-medium mb-2">STATE *</label>
+                                <label className="block text-[var(--m-fg-muted)] text-xs font-medium mb-2">STATE *</label>
                                 <input
                                     type="text"
                                     value={formData.location.state}
                                     onChange={(e) => setFormData({ ...formData, location: { ...formData.location, state: e.target.value } })}
                                     placeholder="Maharashtra"
-                                    className={`w-full bg-white/5 border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--legion-gold)] transition-colors
-                                        ${errors.state ? 'border-red-500/50' : 'border-white/10'}
+                                    className={`w-full bg-[var(--m-surface)] border rounded-lg px-4 py-3 text-[var(--m-fg)] placeholder-[var(--m-fg-subtle)] focus:outline-none focus:border-[var(--legion-gold)] transition-colors
+                                        ${errors.state ? 'border-red-500/50' : 'border-[var(--m-hairline)]'}
 `}
                                 />
                             </div>
@@ -552,7 +552,7 @@ const CreateListing = () => {
             </div>
 
             {/* Fixed Bottom Submit Button */}
-            <div className="fixed bottom-0 left-0 right-0 bg-[var(--void-deep)]/95 backdrop-blur-xl border-t border-white/10 p-4">
+            <div className="fixed bottom-0 left-0 right-0 bg-[var(--bg-primary)]/95 backdrop-blur-xl border-t border-[var(--m-hairline)] p-4">
                 <div className="max-w-lg mx-auto">
                     <button
                         onClick={handleSubmit}

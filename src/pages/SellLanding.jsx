@@ -35,14 +35,14 @@ const SellLanding = () => {
     ];
 
     return (
-        <div className="min-h-screen pt-20 pb-12 bg-[var(--void-deep)]">
+        <div className="min-h-screen pt-20 pb-12 bg-[var(--bg-primary)]">
             {/* Header */}
             <div className="max-w-lg mx-auto px-4 mb-8">
                 <div className="flex items-center justify-between mb-4">
-                    <h1 className="text-3xl font-bold text-white">Start Selling</h1>
+                    <h1 className="text-3xl font-bold text-[var(--m-fg)]">Start Selling</h1>
                     <AIEngineStatusBadge size="sm" showLabel={false} />
                 </div>
-                <p className="text-gray-400">
+                <p className="text-[var(--m-fg-muted)]">
                     Choose how you want to list your item
                 </p>
             </div>
@@ -69,7 +69,7 @@ const SellLanding = () => {
                                 {/* Content */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <h2 className="text-xl font-bold text-white">{card.title}</h2>
+                                        <h2 className="text-xl font-bold text-[var(--m-fg)]">{card.title}</h2>
                                         {card.badge && (
                                             <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-[10px] font-bold rounded-full">
                                                 {card.badge}
@@ -79,7 +79,7 @@ const SellLanding = () => {
                                     <p className="text-[var(--legion-gold)] text-sm font-medium mb-2">
                                         {card.subtitle}
                                     </p>
-                                    <p className="text-gray-400 text-sm mb-3">
+                                    <p className="text-[var(--m-fg-muted)] text-sm mb-3">
                                         {card.description}
                                     </p>
 
@@ -88,7 +88,7 @@ const SellLanding = () => {
                                         {card.features.map((feature, i) => (
                                             <span
                                                 key={i}
-                                                className="px-2 py-1 bg-white/5 text-gray-400 text-xs rounded-full"
+                                                className="px-2 py-1 bg-[var(--m-surface)] text-[var(--m-fg-muted)] text-xs rounded-full"
                                             >
                                                 {feature}
                                             </span>
@@ -98,8 +98,8 @@ const SellLanding = () => {
 
                                 {/* Arrow & Time */}
                                 <div className="flex flex-col items-end gap-2">
-                                    <ChevronRight className="text-gray-600 group-hover:text-[var(--legion-gold)] transition-colors" size={24} />
-                                    <span className="text-gray-600 text-xs flex items-center gap-1">
+                                    <ChevronRight className="text-[var(--m-fg-subtle)] group-hover:text-[var(--legion-gold)] transition-colors" size={24} />
+                                    <span className="text-[var(--m-fg-subtle)] text-xs flex items-center gap-1">
                                         <Clock size={12} />
                                         {card.time}
                                     </span>
@@ -115,21 +115,21 @@ const SellLanding = () => {
                 <div className="glass-panel p-5 border-[var(--legion-gold)]/20">
                     <div className="flex items-center gap-2 mb-3">
                         <Sparkles className="text-[var(--legion-gold)]" size={18} />
-                        <h3 className="text-white font-semibold">Pro Tips for Better Sales</h3>
+                        <h3 className="text-[var(--m-fg)] font-semibold">Pro Tips for Better Sales</h3>
                     </div>
 
-                    <ul className="space-y-2 text-sm text-gray-400">
+                    <ul className="space-y-2 text-sm text-[var(--m-fg-muted)]">
                         <li className="flex items-start gap-2">
                             <Star className="text-[var(--legion-gold)] mt-0.5 flex-shrink-0" size={14} />
-                            <span>Include <span className="text-white">brand name</span> and <span className="text-white">model number</span> for accurate pricing</span>
+                            <span>Include <span className="text-[var(--m-fg)]">brand name</span> and <span className="text-[var(--m-fg)]">model number</span> for accurate pricing</span>
                         </li>
                         <li className="flex items-start gap-2">
                             <Star className="text-[var(--legion-gold)] mt-0.5 flex-shrink-0" size={14} />
-                            <span>Use <span className="text-white">natural lighting</span> for the best photos</span>
+                            <span>Use <span className="text-[var(--m-fg)]">natural lighting</span> for the best photos</span>
                         </li>
                         <li className="flex items-start gap-2">
                             <Star className="text-[var(--legion-gold)] mt-0.5 flex-shrink-0" size={14} />
-                            <span>Items priced <span className="text-white">20-30% below retail</span> sell 3x faster</span>
+                            <span>Items priced <span className="text-[var(--m-fg)]">20-30% below retail</span> sell 3x faster</span>
                         </li>
                     </ul>
                 </div>
@@ -137,7 +137,7 @@ const SellLanding = () => {
 
             {/* Recent Listings Preview */}
             <div className="max-w-lg mx-auto px-4 mt-6 text-center">
-                <p className="text-gray-600 text-xs">
+                <p className="text-[var(--m-fg-subtle)] text-xs">
                     Join 2,500+ sellers on Guardian Marketplace
                 </p>
             </div>

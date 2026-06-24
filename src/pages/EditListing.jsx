@@ -169,18 +169,18 @@ function EditListing() {
     if (isLoading) return <div className="text-center py-20">Loading...</div>
 
     return (
-        <div className="create-listing-page pt-24 pb-12 min-h-screen bg-legion-bg">
+        <div className="create-listing-page pt-24 pb-12 min-h-screen bg-[var(--bg-primary)]">
             <div className="container max-w-3xl mx-auto px-4">
-                <div className="bg-legion-card border border-white/10 rounded-2xl p-8 shadow-2xl">
-                    <h1 className="text-3xl font-bold text-white mb-8">Edit Listing</h1>
+                <div className="bg-[var(--bg-card)] border border-[var(--m-hairline)] rounded-2xl p-8 shadow-2xl">
+                    <h1 className="text-3xl font-bold text-[var(--m-fg)] mb-8">Edit Listing</h1>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Images Section */}
                         <div className="space-y-4">
-                            <label className="block text-sm font-bold text-gray-300">Images</label>
+                            <label className="block text-sm font-bold text-[var(--m-fg-muted)]">Images</label>
                             <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
                                 {previewUrls.map((url, index) => (
-                                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden group border border-white/10">
+                                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden group border border-[var(--m-hairline)]">
                                         <img src={url} alt="Preview" className="w-full h-full object-cover" />
                                         <button
                                             type="button"
@@ -192,7 +192,7 @@ function EditListing() {
                                     </div>
                                 ))}
                                 {previewUrls.length < 5 && (
-                                    <label className="aspect-square rounded-lg border-2 border-dashed border-white/20 hover:border-legion-gold flex flex-col items-center justify-center cursor-pointer transition-colors text-gray-400 hover:text-legion-gold">
+                                    <label className="aspect-square rounded-lg border-2 border-dashed border-[var(--m-hairline)] hover:border-legion-gold flex flex-col items-center justify-center cursor-pointer transition-colors text-[var(--m-fg-muted)] hover:text-legion-gold">
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mb-2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                         <span className="text-xs">Add Photo</span>
                                         <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
@@ -204,24 +204,24 @@ function EditListing() {
                         {/* Title & Description */}
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm text-gray-400 mb-1">Title</label>
+                                <label className="block text-sm text-[var(--m-fg-muted)] mb-1">Title</label>
                                 <input
                                     type="text"
                                     name="title"
                                     value={formData.title}
                                     onChange={handleInputChange}
-                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-legion-gold outline-none"
+                                    className="w-full bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-lg px-4 py-3 text-[var(--m-fg)] focus:border-legion-gold outline-none"
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm text-gray-400 mb-1">Description</label>
+                                <label className="block text-sm text-[var(--m-fg-muted)] mb-1">Description</label>
                                 <textarea
                                     name="description"
                                     value={formData.description}
                                     onChange={handleInputChange}
                                     rows="4"
-                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-legion-gold outline-none resize-none"
+                                    className="w-full bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-lg px-4 py-3 text-[var(--m-fg)] focus:border-legion-gold outline-none resize-none"
                                     required
                                 ></textarea>
                             </div>
@@ -230,12 +230,12 @@ function EditListing() {
                         {/* Details Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm text-gray-400 mb-1">Category</label>
+                                <label className="block text-sm text-[var(--m-fg-muted)] mb-1">Category</label>
                                 <select
                                     name="category"
                                     value={formData.category}
                                     onChange={handleInputChange}
-                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-legion-gold outline-none appearance-none"
+                                    className="w-full bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-lg px-4 py-3 text-[var(--m-fg)] focus:border-legion-gold outline-none appearance-none"
                                     required
                                 >
                                     <option value="" disabled>Select Category</option>
@@ -245,12 +245,12 @@ function EditListing() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm text-gray-400 mb-1">Condition</label>
+                                <label className="block text-sm text-[var(--m-fg-muted)] mb-1">Condition</label>
                                 <select
                                     name="condition"
                                     value={formData.condition}
                                     onChange={handleInputChange}
-                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-legion-gold outline-none appearance-none"
+                                    className="w-full bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-lg px-4 py-3 text-[var(--m-fg)] focus:border-legion-gold outline-none appearance-none"
                                     required
                                 >
                                     <option value="" disabled>Select Condition</option>
@@ -264,35 +264,35 @@ function EditListing() {
                         {/* Price & Location */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm text-gray-400 mb-1">Price (₹)</label>
+                                <label className="block text-sm text-[var(--m-fg-muted)] mb-1">Price (₹)</label>
                                 <input
                                     type="number"
                                     name="price"
                                     value={formData.price}
                                     onChange={handleInputChange}
-                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-legion-gold outline-none"
+                                    className="w-full bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-lg px-4 py-3 text-[var(--m-fg)] focus:border-legion-gold outline-none"
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm text-gray-400 mb-1">City</label>
+                                <label className="block text-sm text-[var(--m-fg-muted)] mb-1">City</label>
                                 <input
                                     type="text"
                                     name="city"
                                     value={formData.location.city}
                                     onChange={handleLocationChange}
-                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-legion-gold outline-none"
+                                    className="w-full bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-lg px-4 py-3 text-[var(--m-fg)] focus:border-legion-gold outline-none"
                                     required
                                 />
                             </div>
                         </div>
 
                         {/* Actions */}
-                        <div className="flex justify-end gap-3 pt-6 border-t border-white/10">
+                        <div className="flex justify-end gap-3 pt-6 border-t border-[var(--m-hairline)]">
                             <button
                                 type="button"
                                 onClick={() => navigate('/dashboard')}
-                                className="px-6 py-3 text-gray-400 hover:text-white transition-colors"
+                                className="px-6 py-3 text-[var(--m-fg-muted)] hover:text-[var(--m-fg)] transition-colors"
                             >
                                 Cancel
                             </button>

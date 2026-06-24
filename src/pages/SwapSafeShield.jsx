@@ -135,12 +135,12 @@ function SwapSafeShieldPage() {
     };
 
     return (
-        <div className="min-h-screen bg-legion-bg pt-20 pb-16">
+        <div className="min-h-screen bg-[var(--bg-primary)] pt-20 pb-16">
             {/* Back Button */}
             <div className="container mx-auto px-4 mb-8">
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                    className="flex items-center gap-2 text-[var(--m-fg-muted)] hover:text-[var(--m-fg)] transition-colors"
                 >
                     <ArrowLeft size={20} />
                     <span>Back</span>
@@ -165,13 +165,13 @@ function SwapSafeShieldPage() {
                         <Shield className="w-14 h-14 text-black" />
                     </motion.div>
 
-                    <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
+                    <h1 className="text-4xl md:text-5xl font-black text-[var(--m-fg)] mb-4">
                         SwapSafe Shield
                     </h1>
                     <p className="text-xl text-[var(--legion-gold)] font-medium mb-4">
                         100% Protected Purchases
                     </p>
-                    <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+                    <p className="text-[var(--m-fg-muted)] max-w-2xl mx-auto text-lg">
                         Every verified purchase on SwapSafe is backed by our comprehensive protection guarantee.
                         Buy with confidence knowing we've got your back.
                     </p>
@@ -182,7 +182,7 @@ function SwapSafeShieldPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8 mb-12"
+                    className="bg-[var(--m-surface)] backdrop-blur-xl border border-[var(--m-hairline)] rounded-2xl p-6 md:p-8 mb-12"
                 >
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
                         {TRUST_STATS.map((stat) => {
@@ -192,8 +192,8 @@ function SwapSafeShieldPage() {
                                     <div className="w-12 h-12 bg-[var(--legion-gold)]/10 rounded-xl flex items-center justify-center mx-auto mb-3">
                                         <Icon className="w-6 h-6 text-[var(--legion-gold)]" />
                                     </div>
-                                    <p className="text-2xl md:text-3xl font-bold text-white">{stat.value}</p>
-                                    <p className="text-gray-400 text-sm">{stat.label}</p>
+                                    <p className="text-2xl md:text-3xl font-bold text-[var(--m-fg)]">{stat.value}</p>
+                                    <p className="text-[var(--m-fg-muted)] text-sm">{stat.label}</p>
                                 </div>
                             );
                         })}
@@ -207,7 +207,7 @@ function SwapSafeShieldPage() {
                     transition={{ delay: 0.3 }}
                     className="mb-12"
                 >
-                    <h2 className="text-2xl font-bold text-white mb-6 text-center">
+                    <h2 className="text-2xl font-bold text-[var(--m-fg)] mb-6 text-center">
                         Your Protection Includes
                     </h2>
                     <div className="grid gap-4">
@@ -221,12 +221,12 @@ function SwapSafeShieldPage() {
                                     transition={{ delay: 0.4 + idx * 0.1 }}
                                     className={`bg-gradient-to-r ${colorMap[feature.color]} border rounded-xl p-5 flex items-start gap-4`}
                                 >
-                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-black/30 flex-shrink-0">
+                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[var(--m-surface)] flex-shrink-0">
                                         <Icon className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h3 className="text-white font-bold text-lg">{feature.title}</h3>
-                                        <p className="text-gray-300 text-sm mt-1">{feature.description}</p>
+                                        <h3 className="text-[var(--m-fg)] font-bold text-lg">{feature.title}</h3>
+                                        <p className="text-[var(--m-fg-muted)] text-sm mt-1">{feature.description}</p>
                                     </div>
                                 </motion.div>
                             );
@@ -239,9 +239,9 @@ function SwapSafeShieldPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="bg-legion-card border border-white/10 rounded-2xl p-6 md:p-8 mb-12"
+                    className="bg-[var(--bg-card)] border border-[var(--m-hairline)] rounded-2xl p-6 md:p-8 mb-12"
                 >
-                    <h2 className="text-2xl font-bold text-white mb-8 text-center">
+                    <h2 className="text-2xl font-bold text-[var(--m-fg)] mb-8 text-center">
                         How SwapSafe Shield Works
                     </h2>
                     <div className="grid md:grid-cols-4 gap-6">
@@ -249,17 +249,17 @@ function SwapSafeShieldPage() {
                             const Icon = step.icon;
                             return (
                                 <div key={step.step} className="relative text-center">
-                                    <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4 relative">
+                                    <div className="w-16 h-16 bg-[var(--m-surface)] rounded-2xl flex items-center justify-center mx-auto mb-4 relative">
                                         <Icon className="w-7 h-7 text-[var(--legion-gold)]" />
                                         <span className="absolute -top-2 -right-2 w-6 h-6 bg-[var(--legion-gold)] text-black text-xs font-bold rounded-full flex items-center justify-center">
                                             {step.step}
                                         </span>
                                     </div>
-                                    <h3 className="text-white font-bold mb-2">{step.title}</h3>
-                                    <p className="text-gray-400 text-sm">{step.description}</p>
+                                    <h3 className="text-[var(--m-fg)] font-bold mb-2">{step.title}</h3>
+                                    <p className="text-[var(--m-fg-muted)] text-sm">{step.description}</p>
 
                                     {idx < HOW_IT_WORKS.length - 1 && (
-                                        <div className="hidden md:block absolute top-8 -right-3 text-gray-600">
+                                        <div className="hidden md:block absolute top-8 -right-3 text-[var(--m-fg-subtle)]">
                                             <ArrowRight size={20} />
                                         </div>
                                     )}
@@ -276,7 +276,7 @@ function SwapSafeShieldPage() {
                     transition={{ delay: 0.6 }}
                     className="mb-12"
                 >
-                    <h2 className="text-2xl font-bold text-white mb-6 text-center">
+                    <h2 className="text-2xl font-bold text-[var(--m-fg)] mb-6 text-center">
                         Frequently Asked Questions
                     </h2>
                     <div className="space-y-4">
@@ -286,13 +286,13 @@ function SwapSafeShieldPage() {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.7 + idx * 0.1 }}
-                                className="bg-white/5 border border-white/10 rounded-xl p-5"
+                                className="bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-xl p-5"
                             >
-                                <h3 className="text-white font-bold mb-2 flex items-center gap-2">
+                                <h3 className="text-[var(--m-fg)] font-bold mb-2 flex items-center gap-2">
                                     <MessageCircle size={18} className="text-[var(--legion-gold)]" />
                                     {faq.question}
                                 </h3>
-                                <p className="text-gray-400 text-sm pl-7">{faq.answer}</p>
+                                <p className="text-[var(--m-fg-muted)] text-sm pl-7">{faq.answer}</p>
                             </motion.div>
                         ))}
                     </div>
@@ -314,7 +314,7 @@ function SwapSafeShieldPage() {
                         <ArrowRight className="w-5 h-5" />
                     </Link>
 
-                    <p className="text-gray-500 text-sm mt-4">
+                    <p className="text-[var(--m-fg-subtle)] text-sm mt-4">
                         Every purchase on SwapSafe is automatically protected
                     </p>
                 </motion.div>
@@ -324,7 +324,7 @@ function SwapSafeShieldPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1 }}
-                    className="mt-16 pt-8 border-t border-white/10 flex items-center justify-center gap-6 flex-wrap text-gray-500 text-sm"
+                    className="mt-16 pt-8 border-t border-[var(--m-hairline)] flex items-center justify-center gap-6 flex-wrap text-[var(--m-fg-subtle)] text-sm"
                 >
                     <div className="flex items-center gap-2">
                         <Lock size={16} />

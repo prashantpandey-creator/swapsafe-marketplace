@@ -17,14 +17,14 @@ const TacticalInput = ({
         <div className="relative group">
             {/* Label */}
             <label className={`absolute left-4 transition-all duration-200 pointer-events-none font-mono text-xs tracking-wider z-10
-                ${isFocused || value ? '-top-2.5 bg-[#0A0A0F] px-2 text-[var(--legion-gold)]' : 'top-4 text-gray-500'}
+                ${isFocused || value ? '-top-2.5 bg-[var(--bg-primary)] px-2 text-[var(--legion-gold)]' : 'top-4 text-[var(--m-fg-subtle)]'}
             `}>
                 {label}
             </label>
 
             {/* Input Container */}
-            <div className={`relative bg-white/5 border transition-all duration-300 rounded-lg overflow-hidden
-                ${isFocused ? 'border-[var(--legion-gold)] shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'border-white/10 hover:border-white/20'}
+            <div className={`relative bg-[var(--m-surface)] border transition-all duration-300 rounded-lg overflow-hidden
+                ${isFocused ? 'border-[var(--legion-gold)] shadow-[0_0_15px_rgba(158,124,12,0.08)]' : 'border-[var(--m-hairline)] hover:border-[var(--m-fg-subtle)]'}
             `}>
 
                 {/* Element */}
@@ -34,7 +34,7 @@ const TacticalInput = ({
                         onChange={onChange}
                         onFocus={() => setIsFocused(true)}
                         onBlur={() => setIsFocused(false)}
-                        className="w-full bg-transparent text-white px-4 py-4 pt-5 outline-none font-sans min-h-[120px] resize-none"
+                        className="w-full bg-transparent text-[var(--m-fg)] px-4 py-4 pt-5 outline-none font-sans min-h-[120px] resize-none"
                         placeholder={isFocused ? placeholder : ""}
                         {...props}
                     />
@@ -45,7 +45,7 @@ const TacticalInput = ({
                         onChange={onChange}
                         onFocus={() => setIsFocused(true)}
                         onBlur={() => setIsFocused(false)}
-                        className="w-full bg-transparent text-white px-4 py-4 pt-5 outline-none font-sans"
+                        className="w-full bg-transparent text-[var(--m-fg)] px-4 py-4 pt-5 outline-none font-sans"
                         placeholder={isFocused ? placeholder : ""}
                         {...props}
                     />
@@ -53,7 +53,7 @@ const TacticalInput = ({
 
                 {/* Right Icon */}
                 {Icon && (
-                    <div className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors ${isFocused ? 'text-[var(--legion-gold)]' : 'text-gray-500'}`}>
+                    <div className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors ${isFocused ? 'text-[var(--legion-gold)]' : 'text-[var(--m-fg-subtle)]'}`}>
                         <Icon size={18} />
                     </div>
                 )}

@@ -30,9 +30,9 @@ function TrackOrder() {
         }
     }
 
-    if (loading) return <div className="p-12 text-center text-white">Loading order details...</div>
+    if (loading) return <div className="p-12 text-center text-[var(--m-fg)]">Loading order details...</div>
     if (error) return <div className="p-12 text-center text-red-400">Error: {error}</div>
-    if (!order) return <Link to="/" className="p-12 block text-center text-white">Order not found. Go Home</Link>
+    if (!order) return <Link to="/" className="p-12 block text-center text-[var(--m-fg)]">Order not found. Go Home</Link>
 
     const isEscrowHeld = order.payment?.status === 'held' || order.escrow?.isHeld
     const product = order.listing || {} // populated?
@@ -125,7 +125,7 @@ function TrackOrder() {
                             <h3>Status: {order.status.toUpperCase()}</h3>
                         </div>
                         <div className="card-body">
-                            <p className="text-gray-400">
+                            <p className="text-[var(--m-fg-muted)]">
                                 {isEscrowHeld
                                     ? "Funds are currently held in the AI Vault. Complete the meetup to release them."
                                     : "Order is processing."}

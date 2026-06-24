@@ -145,7 +145,7 @@ function ProductDetail() {
                             <img
                                 src={images[selectedImage] || 'https://via.placeholder.com/800'}
                                 alt={title}
-                                className="w-full h-full object-contain bg-black/50"
+                                className="w-full h-full object-contain bg-[var(--m-surface)]"
                             />
 
                             {/* Overlay Badges */}
@@ -186,29 +186,29 @@ function ProductDetail() {
 
                         {/* Description Block */}
                         <div className="glass-panel border border-[var(--m-hairline)] rounded-[12px] p-6 md:p-8 mt-8" style={lynchPanel}>
-                            <h3 className="text-xl font-bold text-white mb-4" style={isLynch ? { color: '#C9A84C', fontFamily: 'Georgia, serif', letterSpacing: '0.08em', textTransform: 'uppercase' } : {}}>Description</h3>
-                            <div className="prose prose-invert max-w-none text-gray-300 whitespace-pre-line">
+                            <h3 className="text-xl font-bold text-[var(--m-fg)] mb-4" style={isLynch ? { color: '#C9A84C', fontFamily: 'Georgia, serif', letterSpacing: '0.08em', textTransform: 'uppercase' } : {}}>Description</h3>
+                            <div className="prose prose-invert max-w-none text-[var(--m-fg-muted)] whitespace-pre-line">
                                 {description}
                             </div>
 
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-8 border-t border-[var(--m-hairline)]">
                                 <div>
                                     <span className="block text-xs uppercase tracking-wider text-[var(--m-fg-subtle)] mb-1">Condition</span>
-                                    <span className={`text-sm font-medium px-2 py-1 rounded bg-white/5 inline-block text-${getConditionColor(condition)}-400`}>
+                                    <span className={`text-sm font-medium px-2 py-1 rounded bg-[var(--m-surface)] inline-block text-${getConditionColor(condition)}-400`}>
                                         {conditionInfo?.label || condition}
                                     </span>
                                 </div>
                                 <div>
                                     <span className="block text-xs uppercase tracking-wider text-[var(--m-fg-subtle)] mb-1">Category</span>
-                                    <span className="text-sm font-medium text-white capitalize">{category}</span>
+                                    <span className="text-sm font-medium text-[var(--m-fg)] capitalize">{category}</span>
                                 </div>
                                 <div>
                                     <span className="block text-xs uppercase tracking-wider text-[var(--m-fg-subtle)] mb-1">Listed</span>
-                                    <span className="text-sm font-medium text-white">{getTimeAgo(createdAt)}</span>
+                                    <span className="text-sm font-medium text-[var(--m-fg)]">{getTimeAgo(createdAt)}</span>
                                 </div>
                                 <div>
                                     <span className="block text-xs uppercase tracking-wider text-[var(--m-fg-subtle)] mb-1">Views</span>
-                                    <span className="text-sm font-medium text-white">{views || 0}</span>
+                                    <span className="text-sm font-medium text-[var(--m-fg)]">{views || 0}</span>
                                 </div>
                             </div>
                         </div>
@@ -220,7 +220,7 @@ function ProductDetail() {
                         {/* Title Block */}
                         <div>
                             <div className="flex justify-between items-start mb-2">
-                                <h1 className="text-3xl font-bold text-white leading-tight" style={isLynch ? { fontFamily: 'Georgia, serif', color: '#F5EEE6', textShadow: '0 0 30px rgba(195,25,25,0.35)' } : {}}>{title}</h1>
+                                <h1 className="text-3xl font-bold text-[var(--m-fg)] leading-tight" style={isLynch ? { fontFamily: 'Georgia, serif', color: '#F5EEE6', textShadow: '0 0 30px rgba(195,25,25,0.35)' } : {}}>{title}</h1>
                             </div>
                             <div className="flex items-center gap-2 text-[var(--m-fg-muted)] text-sm" style={isLynch ? { color: 'rgba(245,215,195,0.6)', fontFamily: 'Georgia, serif', letterSpacing: '0.04em' } : {}}>
                                 <MapPin size={14} />
@@ -234,7 +234,7 @@ function ProductDetail() {
                             <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none" style={isLynch ? { background: 'radial-gradient(circle, rgba(195,25,25,0.25), transparent 70%)' } : {}}></div>
 
                             <div className="flex items-end gap-3 mb-6">
-                                <span className="text-4xl font-bold text-white" style={isLynch ? { color: '#C9A84C', fontFamily: 'Georgia, serif', textShadow: '0 0 20px rgba(201,168,76,0.3)' } : {}}>{formatPrice(price)}</span>
+                                <span className="text-4xl font-bold text-[var(--m-fg)]" style={isLynch ? { color: '#C9A84C', fontFamily: 'Georgia, serif', textShadow: '0 0 20px rgba(201,168,76,0.3)' } : {}}>{formatPrice(price)}</span>
                                 {originalPrice && (
                                     <span className="text-lg text-[var(--m-fg-subtle)] line-through mb-1.5">{formatPrice(originalPrice)}</span>
                                 )}
@@ -256,7 +256,7 @@ function ProductDetail() {
                                             disabled={isInCart(product._id || product.id)}
                                             className={`w-full font-bold py-3 rounded-[10px] border transition-all flex items-center justify-center gap-2 ${isInCart(product._id || product.id)
                                                 ? 'bg-[var(--m-surface)] border-transparent text-[var(--m-fg-muted)] cursor-not-allowed'
-                                                : 'border-[var(--m-hairline)] hover:border-white text-white bg-transparent'
+                                                : 'border-[var(--m-hairline)] hover:border-[var(--m-fg)] text-[var(--m-fg)] bg-transparent'
                                                 }`}
                                         >
                                             <ShoppingBag size={18} />
@@ -264,7 +264,7 @@ function ProductDetail() {
                                         </button>
                                         <button
                                             onClick={handleContact}
-                                            className="w-full bg-[var(--m-surface)] hover:bg-[var(--m-surface-strong)] text-white font-bold py-3 rounded-[10px] transition-all flex items-center justify-center gap-2"
+                                            className="w-full bg-[var(--m-surface)] hover:bg-[var(--m-surface-strong)] text-[var(--m-fg)] font-bold py-3 rounded-[10px] transition-all flex items-center justify-center gap-2"
                                         >
                                             <MessageSquare size={18} />
                                             Chat
@@ -295,7 +295,7 @@ function ProductDetail() {
                                     </button>
                                 </div>
                             ) : (
-                                <Link to="/dashboard" className="block w-full text-center bg-[var(--m-surface)] hover:bg-[var(--m-surface-strong)] text-white font-bold py-3 rounded-[10px] transition-all">
+                                <Link to="/dashboard" className="block w-full text-center bg-[var(--m-surface)] hover:bg-[var(--m-surface-strong)] text-[var(--m-fg)] font-bold py-3 rounded-[10px] transition-all">
                                     Manage Your Listing
                                 </Link>
                             )}
@@ -303,7 +303,7 @@ function ProductDetail() {
                             {/* Safety Note */}
                             <div className="mt-6 flex items-start gap-3 bg-[var(--m-surface)] p-3 rounded-[10px] border border-[var(--m-hairline)]">
                                 <Shield className="text-[var(--m-accent)] shrink-0 mt-0.5" size={16} />
-                                <p className="text-xs text-gray-300 leading-relaxed">
+                                <p className="text-xs text-[var(--m-fg-muted)] leading-relaxed">
                                     <span className="text-[var(--m-accent)] font-bold">SwapSafe Guarantee:</span> Your money is held in escrow until you confirm the item is as described.
                                 </p>
                             </div>
@@ -327,7 +327,7 @@ function ProductDetail() {
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2">
-                                        <span className="font-bold text-lg text-white group-hover:text-[var(--m-accent)] transition-colors" style={isLynch ? { color: '#F5EEE6', fontFamily: 'Georgia, serif' } : {}}>{safeSeller.name || 'Anonymous User'}</span>
+                                        <span className="font-bold text-lg text-[var(--m-fg)] group-hover:text-[var(--m-accent)] transition-colors" style={isLynch ? { color: '#F5EEE6', fontFamily: 'Georgia, serif' } : {}}>{safeSeller.name || 'Anonymous User'}</span>
                                     </div>
                                     <div className="flex items-center gap-3 text-sm text-[var(--m-fg-muted)] mt-1">
                                         <span className="flex items-center gap-1 text-yellow-400">
@@ -337,7 +337,7 @@ function ProductDetail() {
                                         <span>{safeSeller.totalSales || 0} sales</span>
                                     </div>
                                 </div>
-                                <div className="text-[var(--m-fg-subtle)] group-hover:text-white transition-colors">
+                                <div className="text-[var(--m-fg-subtle)] group-hover:text-[var(--m-fg)] transition-colors">
                                     →
                                 </div>
                             </Link>
@@ -349,16 +349,16 @@ function ProductDetail() {
                                     <div className={`flex items-center gap-3 p-3 rounded-[10px] border ${deliveryAvailable ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/5 border-red-500/10 opacity-50'}`}>
                                         <Package className={deliveryAvailable ? 'text-green-400' : 'text-red-400'} size={20} />
                                         <div>
-                                            <span className="block text-sm font-bold text-white">Nationwide Shipping</span>
+                                            <span className="block text-sm font-bold text-[var(--m-fg)]">Nationwide Shipping</span>
                                             <span className="text-xs text-[var(--m-fg-muted)]">{deliveryAvailable ? 'Available via Secure Courier' : 'Not available for this item'}</span>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3 p-3 rounded-[10px] border bg-[var(--m-surface)] border-[var(--m-hairline)]">
                                         <div className="relative">
-                                            <MapPin className="text-gray-300" size={20} />
+                                            <MapPin className="text-[var(--m-fg-muted)]" size={20} />
                                         </div>
                                         <div>
-                                            <span className="block text-sm font-bold text-white">Local Meetup</span>
+                                            <span className="block text-sm font-bold text-[var(--m-fg)]">Local Meetup</span>
                                             <span className="text-xs text-[var(--m-fg-muted)]">Meet in {location?.city} (Public Safe Zones Rec.)</span>
                                         </div>
                                     </div>
@@ -377,7 +377,7 @@ function ProductDetail() {
                                     >
                                         <MessageSquare className="text-[var(--m-accent)]" size={20} />
                                         <div>
-                                            <span className="block text-sm font-bold text-white">Chat with Seller</span>
+                                            <span className="block text-sm font-bold text-[var(--m-fg)]">Chat with Seller</span>
                                             <span className="text-xs text-[var(--m-fg-muted)]">Discuss details or negotiate</span>
                                         </div>
                                     </Link>
@@ -427,16 +427,16 @@ function ProductDetail() {
                         animate={{ opacity: 1, scale: 1 }}
                         className="relative bg-legion-card border border-[var(--m-hairline)] rounded-[12px] p-6 max-w-md w-full shadow-2xl"
                     >
-                        <h3 className="text-xl font-bold text-white mb-4">Message Seller</h3>
+                        <h3 className="text-xl font-bold text-[var(--m-fg)] mb-4">Message Seller</h3>
                         <textarea
-                            className="w-full bg-black/30 border border-[var(--m-hairline)] rounded-[10px] p-4 text-white focus:border-[var(--m-accent)] outline-none resize-none min-h-[120px]"
+                            className="w-full bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-[10px] p-4 text-[var(--m-fg)] focus:border-[var(--m-accent)] outline-none resize-none min-h-[120px]"
                             placeholder={`Hi ${safeSeller.name}, is this item still available?`}
                             autoFocus
                         ></textarea>
                         <div className="flex gap-3 mt-4 justify-end">
                             <button
                                 onClick={() => setShowContactModal(false)}
-                                className="px-4 py-2 text-[var(--m-fg-muted)] hover:text-white transition-colors"
+                                className="px-4 py-2 text-[var(--m-fg-muted)] hover:text-[var(--m-fg)] transition-colors"
                             >
                                 Cancel
                             </button>

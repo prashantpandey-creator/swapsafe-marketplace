@@ -121,15 +121,61 @@
     --m-ease: 180ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  /* ─── LIGHT THEME (classic / default) ─────────────────────────
+     Warm editorial palette. Every dark token overridden to light.
+     Lynch overrides these again in body.theme-lynch below. */
+  body:not(.theme-lynch) {
+    --bg-primary: #FAF9F6;
+    --bg-secondary: #F3F1EC;
+    --bg-card: #FFFFFF;
+    --bg-glass: rgba(255, 255, 255, 0.85);
+    --bg-void-light: #F3F1EC;
+    --void-deep: #FAF9F6;
+    --void-surface: #FFFFFF;
+    --void-border: rgba(0, 0, 0, 0.06);
+
+    --text-primary: #141311;
+    --text-secondary: #3D3B36;
+    --text-muted: #7A776F;
+
+    --legion-gold: #9E7C0C;
+    --legion-gold-dim: rgba(158, 124, 12, 0.08);
+    --legion-gold-glow: rgba(158, 124, 12, 0.15);
+
+    --glass-surface: rgba(255, 255, 255, 0.8);
+    --glass-base: rgba(0, 0, 0, 0.02);
+    --glass-border: rgba(0, 0, 0, 0.06);
+    --glass-highlight: rgba(0, 0, 0, 0.03);
+
+    --shadow-glow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.08);
+
+    --m-fg: #141311;
+    --m-fg-muted: #7A776F;
+    --m-fg-subtle: #AAA7A0;
+    --m-surface: rgba(0, 0, 0, 0.03);
+    --m-surface-strong: rgba(0, 0, 0, 0.05);
+    --m-hairline: rgba(0, 0, 0, 0.08);
+    --m-bar-bg: rgba(255, 255, 255, 0.88);
+    --m-accent: #9E7C0C;
+
+    color-scheme: light;
+    color: #141311;
+    background-color: #FAF9F6;
+  }
+
   html {
     background-color: var(--bg-primary);
     color-scheme: dark;
   }
+  body:not(.theme-lynch) html, html:has(body:not(.theme-lynch)) {
+    color-scheme: light;
+    background-color: #FAF9F6;
+  }
 
   body {
-    @apply text-gray-200 font-sans antialiased;
+    @apply font-sans antialiased;
     background-color: var(--bg-primary);
-    /* Background gradients removed - canvas provides visual backdrop */
     min-height: 100vh;
     overflow-x: hidden;
     line-height: var(--leading-relaxed);
@@ -169,6 +215,24 @@
   * {
     scrollbar-width: thin;
     scrollbar-color: rgba(245, 197, 66, 0.35) rgba(15, 23, 42, 0.6);
+  }
+
+  body:not(.theme-lynch) * {
+    scrollbar-color: rgba(158, 124, 12, 0.25) rgba(0, 0, 0, 0.04);
+  }
+  body:not(.theme-lynch) *::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.03);
+  }
+  body:not(.theme-lynch) *::-webkit-scrollbar-thumb {
+    background: rgba(158, 124, 12, 0.2);
+    border: 2px solid rgba(0, 0, 0, 0.03);
+  }
+  body:not(.theme-lynch) *::-webkit-scrollbar-thumb:hover {
+    background: rgba(158, 124, 12, 0.35);
+  }
+  body:not(.theme-lynch) ::selection {
+    background: rgba(158, 124, 12, 0.18);
+    color: #141311;
   }
 
   *::-webkit-scrollbar {
@@ -294,7 +358,7 @@
   }
   .m-btn-ghost:hover {
     background-color: var(--m-surface);
-    border-color: rgba(255, 255, 255, 0.16);
+    border-color: var(--m-hairline);
   }
 
   /* count badge (cart) */
@@ -352,6 +416,19 @@
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     z-index: 10;
+  }
+
+  body:not(.theme-lynch) .glass-panel {
+    background-color: #FFFFFF;
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    backdrop-filter: none;
+  }
+  body:not(.theme-lynch) .glass-panel::after {
+    display: none;
+  }
+  body:not(.theme-lynch) .glass-panel::before {
+    display: none;
   }
 
   .btn-primary {
@@ -537,15 +614,21 @@
    THEME VARIATIONS
    ============================================ */
 
-/* Classic Theme - Sacred Geometry (Gold) */
+/* Classic Theme - Premium Light (Editorial Warm) */
 body.theme-classic {
-  --legion-gold: #D4AF37;
-  --legion-gold-dim: rgba(212, 175, 55, 0.15);
-  --legion-gold-glow: rgba(212, 175, 55, 0.5);
-  --void-deep: #050505;
-  --void-surface: #0A0A0F;
-  background-image:
-    radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.03), transparent 40%);
+  --legion-gold: #9E7C0C;
+  --legion-gold-dim: rgba(158, 124, 12, 0.08);
+  --legion-gold-glow: rgba(158, 124, 12, 0.15);
+  --void-deep: #FAF9F6;
+  --void-surface: #FFFFFF;
+  --bg-primary: #FAF9F6;
+  --bg-secondary: #F3F1EC;
+  --bg-card: #FFFFFF;
+  --text-primary: #141311;
+  --text-secondary: #3D3B36;
+  --text-muted: #7A776F;
+  background-image: none;
+  background-color: #FAF9F6;
 }
 
 /* Esoteric Theme - Hindu Mystical (Saffron & Sacred Red) */

@@ -124,14 +124,14 @@ function Settings() {
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${activeTab === tab.id
                                     ? 'bg-legion-gold text-legion-bg font-bold shadow-lg shadow-legion-gold/20'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    : 'text-[var(--m-fg-muted)] hover:text-[var(--m-fg)] hover:bg-[var(--m-surface)]'
                                     }`}
                             >
                                 <tab.icon size={18} />
                                 {tab.label}
                             </button>
                         ))}
-                        <div className="h-px bg-white/10 my-2"></div>
+                        <div className="h-px bg-[var(--m-hairline)] my-2"></div>
                         <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-left text-red-500 hover:bg-red-500/10 transition-colors">
                             <Trash2 size={18} />
                             Delete Account
@@ -148,7 +148,7 @@ function Settings() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.2 }}
-                            className="glass-panel p-6 md:p-8 rounded-xl border border-glass-border"
+                            className="glass-panel p-6 md:p-8 rounded-xl border border-[var(--m-hairline)]"
                         >
                             {/* --- PROFILE TAB --- */}
                             {activeTab === 'profile' && (
@@ -170,43 +170,43 @@ function Settings() {
                                         </div>
                                         <div>
                                             <h3 className="font-bold text-lg">{user?.name}</h3>
-                                            <p className="text-slate-400 text-sm">Legionnaire since {new Date().getFullYear()}</p>
+                                            <p className="text-[var(--m-fg-muted)] text-sm">Legionnaire since {new Date().getFullYear()}</p>
                                             <button className="text-legion-gold text-sm hover:underline mt-1">Change Avatar</button>
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="form-group">
-                                            <label className="block text-sm text-slate-400 mb-2">Display Name</label>
+                                            <label className="block text-sm text-[var(--m-fg-muted)] mb-2">Display Name</label>
                                             <input
                                                 type="text"
                                                 value={formData.name}
                                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:border-legion-gold outline-none transition-colors text-white"
+                                                className="w-full bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-lg px-4 py-3 focus:border-legion-gold outline-none transition-colors text-[var(--m-fg)]"
                                             />
                                         </div>
                                         <div className="form-group">
-                                            <label className="block text-sm text-slate-400 mb-2">Email Address</label>
+                                            <label className="block text-sm text-[var(--m-fg-muted)] mb-2">Email Address</label>
                                             <div className="relative">
-                                                <Mail className="absolute left-3 top-3.5 text-slate-500" size={18} />
+                                                <Mail className="absolute left-3 top-3.5 text-[var(--m-fg-subtle)]" size={18} />
                                                 <input
                                                     type="email"
                                                     value={formData.email}
                                                     disabled
-                                                    className="w-full bg-black/40 border border-white/5 rounded-lg pl-10 pr-4 py-3 text-slate-500 cursor-not-allowed"
+                                                    className="w-full bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-lg pl-10 pr-4 py-3 text-[var(--m-fg-subtle)] cursor-not-allowed"
                                                 />
                                             </div>
                                         </div>
                                         <div className="form-group md:col-span-2">
-                                            <label className="block text-sm text-slate-400 mb-2">Bio</label>
+                                            <label className="block text-sm text-[var(--m-fg-muted)] mb-2">Bio</label>
                                             <textarea
                                                 rows={4}
                                                 value={formData.bio}
                                                 onChange={e => setFormData({ ...formData, bio: e.target.value })}
-                                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:border-legion-gold outline-none transition-colors text-white resize-none"
+                                                className="w-full bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-lg px-4 py-3 focus:border-legion-gold outline-none transition-colors text-[var(--m-fg)] resize-none"
                                                 maxLength={150}
                                             />
-                                            <p className="text-xs text-slate-500 mt-2 text-right">{formData.bio.length}/150 characters</p>
+                                            <p className="text-xs text-[var(--m-fg-subtle)] mt-2 text-right">{formData.bio.length}/150 characters</p>
                                         </div>
                                     </div>
                                 </div>
@@ -221,7 +221,7 @@ function Settings() {
                                         <Shield className="text-legion-gold shrink-0 mt-1" size={20} />
                                         <div>
                                             <h4 className="font-bold text-legion-gold">Password Protected</h4>
-                                            <p className="text-sm text-slate-300">Your account is secured with a password. Last changed 3 months ago.</p>
+                                            <p className="text-sm text-[var(--m-fg-muted)]">Your account is secured with a password. Last changed 3 months ago.</p>
                                         </div>
                                     </div>
 
@@ -235,30 +235,30 @@ function Settings() {
                                             )}
                                             <div className="space-y-4">
                                                 <div className="form-group">
-                                                    <label className="block text-sm text-slate-400 mb-2">Current Password</label>
+                                                    <label className="block text-sm text-[var(--m-fg-muted)] mb-2">Current Password</label>
                                                     <input
                                                         type="password"
                                                         value={passwordData.current}
                                                         onChange={e => setPasswordData({ ...passwordData, current: e.target.value })}
-                                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:border-legion-gold outline-none transition-colors text-white"
+                                                        className="w-full bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-lg px-4 py-3 focus:border-legion-gold outline-none transition-colors text-[var(--m-fg)]"
                                                     />
                                                 </div>
                                                 <div className="form-group">
-                                                    <label className="block text-sm text-slate-400 mb-2">New Password</label>
+                                                    <label className="block text-sm text-[var(--m-fg-muted)] mb-2">New Password</label>
                                                     <input
                                                         type="password"
                                                         value={passwordData.new}
                                                         onChange={e => setPasswordData({ ...passwordData, new: e.target.value })}
-                                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:border-legion-gold outline-none transition-colors text-white"
+                                                        className="w-full bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-lg px-4 py-3 focus:border-legion-gold outline-none transition-colors text-[var(--m-fg)]"
                                                     />
                                                 </div>
                                                 <div className="form-group">
-                                                    <label className="block text-sm text-slate-400 mb-2">Confirm New Password</label>
+                                                    <label className="block text-sm text-[var(--m-fg-muted)] mb-2">Confirm New Password</label>
                                                     <input
                                                         type="password"
                                                         value={passwordData.confirm}
                                                         onChange={e => setPasswordData({ ...passwordData, confirm: e.target.value })}
-                                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:border-legion-gold outline-none transition-colors text-white"
+                                                        className="w-full bg-[var(--m-surface)] border border-[var(--m-hairline)] rounded-lg px-4 py-3 focus:border-legion-gold outline-none transition-colors text-[var(--m-fg)]"
                                                     />
                                                 </div>
                                                 <button
@@ -275,8 +275,8 @@ function Settings() {
                                         <div className="mt-8 pt-8 border-t border-red-500/20">
                                             <h2 className="text-xl font-bold mb-4 text-red-400">Danger Zone</h2>
                                             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                                <h4 className="font-bold text-white mb-2">Delete Account</h4>
-                                                <p className="text-sm text-gray-300 mb-4">
+                                                <h4 className="font-bold text-[var(--m-fg)] mb-2">Delete Account</h4>
+                                                <p className="text-sm text-[var(--m-fg-muted)] mb-4">
                                                     Permanently delete your account and all associated data. This action cannot be undone.
                                                 </p>
                                                 <button
@@ -312,10 +312,10 @@ function Settings() {
                                             { id: 'push', label: 'Push Notifications', desc: 'Get real-time alerts on your device.' },
                                             { id: 'marketing', label: 'Marketing Emails', desc: 'Receive news about new features and promotions.' },
                                         ].map(item => (
-                                            <div key={item.id} className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/5">
+                                            <div key={item.id} className="flex items-center justify-between p-4 bg-[var(--m-surface)] rounded-lg border border-[var(--m-hairline)]">
                                                 <div>
                                                     <h4 className="font-bold">{item.label}</h4>
-                                                    <p className="text-sm text-slate-400">{item.desc}</p>
+                                                    <p className="text-sm text-[var(--m-fg-muted)]">{item.desc}</p>
                                                 </div>
                                                 <label className="relative inline-flex items-center cursor-pointer">
                                                     <input
@@ -336,7 +336,7 @@ function Settings() {
                             )}
 
                             {/* --- SAVE BAR --- */}
-                            <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+                            <div className="mt-8 pt-6 border-t border-[var(--m-hairline)] flex items-center justify-between">
                                 {successMsg ? (
                                     <span className="text-emerald-400 font-medium animate-fadeIn">✅ {successMsg}</span>
                                 ) : (
